@@ -1,0 +1,94 @@
+% ============================================================
+%  Advanced Algorithms — shared preamble
+% ============================================================
+
+\usepackage[a4paper,
+            top=25mm, bottom=25mm,
+            left=25mm, right=55mm,   % wide right margin for notes
+            marginparwidth=45mm,
+            marginparsep=4mm]{geometry}
+
+% --- typography & encoding ---
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{microtype}
+\usepackage{lmodern}
+
+% --- math ---
+\usepackage{amsmath, amssymb, amsthm, mathtools}
+
+% --- margin notes ---
+\usepackage{marginnote}
+\usepackage{sidenotes}          % \sidenote{}, \marginnote{}
+
+% --- code listings ---
+\usepackage{listings}
+\usepackage{xcolor}
+
+\definecolor{codebg}{RGB}{245,245,245}
+\definecolor{codecomment}{RGB}{100,100,100}
+\definecolor{codekw}{RGB}{0,0,200}
+\definecolor{codestr}{RGB}{163,21,21}
+
+\lstset{
+  backgroundcolor=\color{codebg},
+  basicstyle=\ttfamily\small,
+  keywordstyle=\color{codekw}\bfseries,
+  commentstyle=\color{codecomment}\itshape,
+  stringstyle=\color{codestr},
+  numbers=left, numberstyle=\tiny\color{gray},
+  numbersep=6pt,
+  breaklines=true,
+  frame=single, framesep=4pt,
+  captionpos=b,
+  tabsize=4,
+  showstringspaces=false,
+}
+
+% --- pseudocode ---
+\usepackage[ruled, vlined, linesnumbered]{algorithm2e}
+\SetAlgoLined
+\DontPrintSemicolon
+
+% --- graphics / figures ---
+\usepackage{float}      % provides [H] float placement
+\usepackage{graphicx}
+\usepackage{caption}    % provides \caption*{} for unnumbered captions
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta, positioning, shapes.geometric, decorations.pathmorphing, decorations.pathreplacing}
+
+% --- hyperlinks ---
+\usepackage[colorlinks=true, linkcolor=blue!70!black,
+            citecolor=green!50!black, urlcolor=blue]{hyperref}
+
+% --- misc ---
+\usepackage{enumitem}
+\usepackage{booktabs}
+\usepackage{cleveref}
+
+% ---- theorem environments ----
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}[section]
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{corollary}[theorem]{Corollary}
+\newtheorem{proposition}[theorem]{Proposition}
+
+\theoremstyle{definition}
+\newtheorem{definition}[theorem]{Definition}
+\newtheorem{example}[theorem]{Example}
+\newtheorem{problem}[theorem]{Problem}
+
+\theoremstyle{remark}
+\newtheorem{remark}[theorem]{Remark}
+\newtheorem{note}[theorem]{Note}
+
+% ---- custom margin-note shorthand ----
+% \aside{text}  — unnumbered note in the margin
+\newcommand{\aside}[1]{%
+  \marginnote{\footnotesize\itshape #1}%
+}
+
+% ---- complexity shortcuts ----
+\newcommand{\Oh}[1]{\mathcal{O}\!\left(#1\right)}
+\newcommand{\Th}[1]{\Theta\!\left(#1\right)}
+\newcommand{\Om}[1]{\Omega\!\left(#1\right)}

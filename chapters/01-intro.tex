@@ -1,0 +1,467 @@
+\chapter{Introduction \& Exact Pattern Matching}
+
+% ── Section ──────────────────────────────────────────────
+\section{Definition}
+
+The exact pattern matching problem is defined as follows:
+\begin{problem}[Exact pattern matching]
+  Given an alphabet $\Sigma$, and two strings $T$, $P$ $\in \Sigma^*$, for which $|T| = n$ and $|P| = m$, find all
+  occurrences of $P$ in $T$.
+\end{problem}
+
+\begin{example}
+  Let $\Sigma = \{a, b\}$, $T = \texttt{ababbab}$ and $P = \texttt{abb}$. The occurrences of $P$ in $T$ are at
+  positions $2$ and $4$.
+\end{example}
+
+\section{Naive approach}
+% ── Figure: naive matching ────────────────────────────────
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[
+  % base cell style
+  cell/.style={
+    minimum width=7mm, minimum height=7mm,
+    font=\ttfamily\small, inner sep=0pt,
+    text centered, rounded corners=2pt,
+  },
+  % T row
+  Tcell/.style={cell, draw=blue!50!black, fill=blue!8},
+  % matched character of P
+  MC/.style={cell, draw=green!55!black, fill=green!18, text=green!30!black},
+  % mismatched character of P (algorithm stops here)
+  XC/.style={cell, draw=red!65!black,   fill=red!12,   text=red!50!black},
+  % not yet compared (shown dimmed)
+  NC/.style={cell, draw=gray!35,        fill=gray!6,   text=gray!50},
+  % full-match cell (distinct shade)
+  FM/.style={cell, draw=green!55!black, fill=green!30, text=green!20!black},
+]
+
+\def\cw{0.82}   % horizontal cell step (cm)
+\def\rh{0.82}   % vertical row step (cm)
+
+% ── position indices ─────────────────────────────────────
+\foreach \i in {0,...,6}
+  \node[font=\tiny\sffamily, text=gray!70] at (\i*\cw, 1.9) {\i};
+
+% ── T row ────────────────────────────────────────────────
+\node[font=\small\ttfamily, anchor=east] at (-0.15, 1.2) {$T$};
+\foreach \i/\c in {0/a, 1/b, 2/a, 3/b, 4/b, 5/a, 6/b}
+  \node[Tcell] at (\i*\cw, 1.2) {\c};
+
+% ── shift s = 0 : a✓ b✓ b✗ ──────────────────────────────
+\node[font=\tiny\sffamily, text=gray] at (-0.55, 0.4) {$s=0$};
+\node[MC] at (0*\cw, 0.4) {a};
+\node[MC] at (1*\cw, 0.4) {b};
+\node[XC] at (2*\cw, 0.4) {b};   % P[2]=b vs T[2]=a
+
+% ── shift s = 1 : a✗ ────────────────────────────────────
+\node[font=\tiny\sffamily, text=gray] at (-0.55, -0.4) {$s=1$};
+\node[XC] at (1*\cw, -0.4) {a};  % P[0]=a vs T[1]=b
+\node[NC] at (2*\cw, -0.4) {b};
+\node[NC] at (3*\cw, -0.4) {b};
+
+% ── shift s = 2 : a✓ b✓ b✓  →  MATCH ───────────────────
+\node[font=\tiny\sffamily, text=gray] at (-0.55, -1.2) {$s=2$};
+\node[FM] (ma) at (2*\cw, -1.2) {a};
+\node[FM] (mb) at (3*\cw, -1.2) {b};
+\node[FM] (mc) at (4*\cw, -1.2) {b};
+% bounding box around the full match
+\draw[green!55!black, thick, rounded corners=4pt]
+  ([xshift=-4pt, yshift=-4pt] ma.south west)
+  rectangle
+  ([xshift= 4pt, yshift= 4pt] mc.north east);
+\node[font=\tiny\bfseries\sffamily, text=green!45!black]
+  at (3*\cw, -1.72) {match};
+
+% ── shift s = 3 : a✗ ────────────────────────────────────
+\node[font=\tiny\sffamily, text=gray] at (-0.55, -2.1) {$s=3$};
+\node[XC] at (3*\cw, -2.1) {a};  % P[0]=a vs T[3]=b
+\node[NC] at (4*\cw, -2.1) {b};
+\node[NC] at (5*\cw, -2.1) {b};
+
+% ── shift s = 4 : a✗ ────────────────────────────────────
+\node[font=\tiny\sffamily, text=gray] at (-0.55, -2.9) {$s=4$};
+\node[XC] at (4*\cw, -2.9) {a};  % P[0]=a vs T[4]=b
+\node[NC] at (5*\cw, -2.9) {b};
+\node[NC] at (6*\cw, -2.9) {b};
+
+\end{tikzpicture}
+\caption{%
+  Naive exact pattern matching of $P = \texttt{abb}$ in $T = \texttt{ababbab}$ (0-indexed).
+  Each row corresponds to one shift $s$; the pattern $P$ is aligned starting at $T[s]$.
+  \textcolor{green!45!black}{\textbf{Green}} = character matched,
+  \textcolor{red!60!black}{\textbf{red}} = first mismatch (algorithm skips to next shift),
+  \textcolor{gray}{gray} = not compared.
+}
+\label{fig:naive-matching}
+\end{figure}
+
+
+What the Figure \ref{fig:naive-matching} illustrates is one basic naive approach. In this approach we nest two loops: the outer loop iterates over all possible "first positions" $s$ in $T$ where the pattern $P$ could potentially match, and the inner loop checks character by character if $P$ matches $T$ starting from position $s$. 
+For example the first row of the figure corresponds to starting the search from index $s=0$ of $T$. Given $s$ we then loop one by one each character of $P$, moving along $T$ as well, and check if all the characters match. In this case we find a mismatch at the third character of $P$ (which is 'b', whereas the corresponding character in $T$ is 'a'). When this happens, we break this inner loop and move to the next shift $s=1$. 
+If the lenght of the pattern was $m$ and the length of the text was $n$, the first outer iterations could take up to $O(m)$ time, and we could have up to $O(n)$ such iterations, leading to a worst-case time complexity of $O(nm)$ for this naive approach.
+
+% ── Figure: worst-case input ─────────────────────────────
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[
+  cell/.style={
+    minimum width=7mm, minimum height=7mm,
+    font=\ttfamily\small, inner sep=0pt,
+    text centered, rounded corners=2pt,
+  },
+  Tcell/.style={cell, draw=blue!50!black, fill=blue!8},
+  MC/.style={cell, draw=green!55!black, fill=green!18, text=green!30!black},
+  XC/.style={cell, draw=red!65!black,   fill=red!12,   text=red!50!black},
+]
+
+% T = aaaaaaa (n=7),  P = aaab (m=4)
+% every shift does m-1 = 3 matches before hitting b vs a
+
+\def\cw{0.82}
+
+% position indices
+\foreach \i in {0,...,6}
+  \node[font=\tiny\sffamily, text=gray!70] at (\i*\cw, 1.9) {\i};
+
+% T row
+\node[font=\small\ttfamily, anchor=east] at (-0.15, 1.2) {$T$};
+\foreach \i in {0,...,6}
+  \node[Tcell] at (\i*\cw, 1.2) {a};
+
+% s=0 : a✓ a✓ a✓ b✗
+\node[font=\tiny\sffamily, text=gray] at (-0.55,  0.4) {$s=0$};
+\node[MC] at (0*\cw,  0.4) {a};
+\node[MC] at (1*\cw,  0.4) {a};
+\node[MC] at (2*\cw,  0.4) {a};
+\node[XC] at (3*\cw,  0.4) {b};
+
+% s=1 : a✓ a✓ a✓ b✗
+\node[font=\tiny\sffamily, text=gray] at (-0.55, -0.4) {$s=1$};
+\node[MC] at (1*\cw, -0.4) {a};
+\node[MC] at (2*\cw, -0.4) {a};
+\node[MC] at (3*\cw, -0.4) {a};
+\node[XC] at (4*\cw, -0.4) {b};
+
+% s=2 : a✓ a✓ a✓ b✗
+\node[font=\tiny\sffamily, text=gray] at (-0.55, -1.2) {$s=2$};
+\node[MC] at (2*\cw, -1.2) {a};
+\node[MC] at (3*\cw, -1.2) {a};
+\node[MC] at (4*\cw, -1.2) {a};
+\node[XC] at (5*\cw, -1.2) {b};
+
+% s=3 : a✓ a✓ a✓ b✗
+\node[font=\tiny\sffamily, text=gray] at (-0.55, -2.0) {$s=3$};
+\node[MC] at (3*\cw, -2.0) {a};
+\node[MC] at (4*\cw, -2.0) {a};
+\node[MC] at (5*\cw, -2.0) {a};
+\node[XC] at (6*\cw, -2.0) {b};
+
+\end{tikzpicture}
+\caption{%
+  Worst-case input for the naive algorithm: $T = \texttt{aaaaaaa}$ ($n=7$) and
+  $P = \texttt{aaab}$ ($m=4$).
+  Every shift $s$ performs $m-1$ successful comparisons before the inevitable
+  mismatch on $P[m-1] = \texttt{b}$, giving $(n-m+1)(m-1) = \Th{nm}$ total comparisons.
+}
+\label{fig:naive-worst-case}
+\end{figure}
+In figure \ref{fig:naive-worst-case} we see an example of a worst-case input for the naive algorithm. 
+In this case the text $T$ consists of $n$ 'a' characters, and the pattern $P$ consists of $m-1$ 'a' characters followed by a 'b'.
+There are $n-m+1$ possible shifts $s$ where the pattern could potentially match, and for each of these shifts the algorithm will successfully match the first $m-1$ characters of $P$. In the example of the figure we have $n=7$ and $m=4$, so there are $7-4+1=4$ shifts to check, and for each shift we make $m$ checks, of which $m-1=3$ are successful matches before we encounter the mismatch at the last character of $P$. 
+This results in a total of $(n-m+1)(m-1)$ comparisons, which is $\Theta(nm)$ in the worst case.
+
+This naive approach basically starts over from scratch at each shift, without leveraging precious information from previous comparisons. 
+
+\section{Knuth-Morris-Pratt (KMP) algorithm}
+
+What if we could somehow "remember" the information from a previous comparison, and use it to skip some of the checks at the next shift?
+Let's introduce the intuition behind the Knuth-Morris-Pratt (KMP) algorithm, with an example.
+
+\begin{example}
+  \label{ex:kmp-intro}
+  Let $P = \texttt{abcdeabdef}$ and suppose we are running the naive algorithm at shift $s=2$
+  over some text $T$ whose characters at positions $2$--$8$ are \texttt{abcdeab}.
+  We match $P[0\ldots6]$ successfully, then hit a mismatch at $P[7] = \texttt{d}$ vs $T[9] = \texttt{x}$.
+\end{example}
+
+As shown in Figure~\ref{fig:kmp-shift}, at this point the naive algorithm would discard everything
+and try shift $s=3$. But notice that the matched portion $\texttt{abcdeab}$ starts \emph{and} ends
+with $\alpha = \texttt{ab}$: the prefix $P[0\ldots1]$ and the suffix $P[5\ldots6]$ of the matched
+region are identical. This means that when we slide $P$ forward, the $\alpha$ that was at the end
+of the match is now perfectly aligned with the $\alpha$ at the start of $P$ --- we can jump
+directly to shift $s=7$ and resume comparing from $P[2]$, skipping five shifts entirely.
+
+% ── Figure: KMP skip intuition ───────────────────────────
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[
+  cell/.style={
+    minimum width=6.8mm, minimum height=6.8mm,
+    font=\ttfamily\small, inner sep=0pt,
+    text centered, rounded corners=2pt,
+  },
+  % T cells
+  Tdim/.style ={cell, draw=blue!25,         fill=blue!5,    text=gray!50},
+  Tmatch/.style={cell, draw=blue!50!black,  fill=blue!10},
+  Txc/.style  ={cell, draw=red!65!black,    fill=red!10,    text=red!60!black},
+  % P cells
+  Alpha/.style={cell, draw=violet!70!black, fill=violet!25, text=violet!30!black},
+  MC/.style   ={cell, draw=green!50!black,  fill=green!12,  text=green!30!black},
+  XC/.style   ={cell, draw=red!65!black,    fill=red!12,    text=red!50!black},
+  NC/.style   ={cell, draw=gray!30,         fill=gray!5,    text=gray!50},
+  % new-shift P cells
+  AlphaNew/.style={cell, draw=violet!70!black, fill=violet!25, text=violet!30!black},
+  NewP/.style ={cell, draw=pink!60!black,   fill=pink!8,    text=gray!60},
+]
+
+\def\cw{0.72}   % cell width (cm)
+
+% ── position indices ─────────────────────────────────────
+\foreach \i in {0,...,12}
+  \node[font=\tiny\sffamily, text=gray!55] at (\i*\cw, 2.85) {\i};
+
+% ── T row (y = 2.2) ──────────────────────────────────────
+% T: ··abcdeabx··  (· = unimportant char)
+\node[font=\small\ttfamily, anchor=east] at (-0.15, 2.2) {$T$};
+\foreach \i/\c/\sty in {
+    0/{\cdot}/Tdim,  1/{\cdot}/Tdim,
+    2/a/Tmatch, 3/b/Tmatch, 4/c/Tmatch,
+    5/d/Tmatch, 6/e/Tmatch, 7/a/Tmatch, 8/b/Tmatch,
+    9/x/Txc,
+   10/{\cdot}/Tdim, 11/{\cdot}/Tdim, 12/{\cdot}/Tdim}
+  \node[\sty] at (\i*\cw, 2.2) {$\c$};
+\node[font=\ttfamily\small, text=gray!50] at (13*\cw, 2.2) {$\cdots$};
+
+% mismatch vertical line (T ↔ P)
+\draw[red!60!black, thick]
+  (9*\cw, 0.6+0.38) -- (9*\cw, 2.2-0.38);
+
+% T[i] label above
+\node[font=\tiny\sffamily, text=red!60!black, above=2pt]
+  at (9*\cw, 2.2+0.38) {$T[9]$};
+
+% ── P at s=2  (y = 0.6) ──────────────────────────────────
+% P = a b c d e a b d e f
+%     0 1 2 3 4 5 6 7 8 9   (T-positions: 2..11)
+\node[font=\small\ttfamily, anchor=east] at (-0.15, 0.6)
+  {$P$\,{\tiny$(s{=}2)$}};
+
+% α prefix  P[0..1] → T[2..3]
+\node[Alpha] (pa0) at (2*\cw, 0.6) {a};
+\node[Alpha] (pa1) at (3*\cw, 0.6) {b};
+% middle matched  P[2..4] → T[4..6]
+\node[MC] at (4*\cw, 0.6) {c};
+\node[MC] at (5*\cw, 0.6) {d};
+\node[MC] at (6*\cw, 0.6) {e};
+% α suffix  P[5..6] → T[7..8]
+\node[Alpha] (pa5) at (7*\cw, 0.6) {a};
+\node[Alpha] (pa6) at (8*\cw, 0.6) {b};
+% mismatch  P[7] → T[9]
+\node[XC]   at (9*\cw, 0.6) {d};
+% not compared  P[8..9] → T[10..11]
+\node[NC]   at (10*\cw, 0.6) {e};
+\node[NC]   at (11*\cw, 0.6) {f};
+
+% P[j] label below mismatch
+\node[font=\tiny\sffamily, text=red!60!black, below=2pt]
+  at (9*\cw, 0.6-0.38) {$P[7]$};
+
+% α labels below the two violet segments
+\node[font=\tiny\sffamily, text=violet!70!black, below=8pt]
+  at (2.5*\cw, 0.6) {$\alpha$};
+\node[font=\tiny\sffamily, text=violet!70!black, below=8pt]
+  at (7.5*\cw, 0.6) {$\alpha$};
+
+% curved arrow linking the two α segments (above the P row)
+\draw[violet!60!black, thick, ->, bend left=30,
+      shorten >=3pt, shorten <=3pt]
+  (pa1.north east) to node[above, font=\tiny\sffamily,
+                             text=violet!60!black] {same prefix}
+  (pa5.north west);
+
+% ── shift annotation ─────────────────────────────────────
+% squiggly arrow on the left
+\draw[->, magenta!70, very thick, decorate,
+      decoration={snake, amplitude=1.5pt, segment length=5pt,
+                  post length=4pt}]
+  (-1.0*\cw, -0.25) -- (-1.0*\cw, -0.95)
+  node[right=3pt, font=\small\sffamily, text=magenta!70,
+       pos=0.5] {shift $+5$};
+
+% horizontal arrow showing shift distance
+\draw[gray!50, thick, <->]
+  (2*\cw, -0.45) -- (7*\cw, -0.45)
+  node[midway, below, font=\tiny\sffamily, text=gray!60] {skip 5};
+
+% ── P at s=7  (y = −1.3) ─────────────────────────────────
+\node[font=\small\ttfamily, anchor=east] at (-0.15, -1.3)
+  {$P$\,{\tiny$(s{=}7)$}};
+
+% α prefix now aligns with the former α suffix
+\node[AlphaNew] at (7*\cw, -1.3) {a};
+\node[AlphaNew] at (8*\cw, -1.3) {b};
+% rest of P
+\foreach \i/\c in {9/c, 10/d, 11/e, 12/a}
+  \node[NewP] at (\i*\cw, -1.3) {\c};
+\node[font=\ttfamily\small, text=gray!50] at (13*\cw, -1.3) {$\cdots$};
+
+% α label
+\node[font=\tiny\sffamily, text=violet!70!black, below=8pt]
+  at (7.5*\cw, -1.3) {$\alpha$};
+
+\end{tikzpicture}
+\caption{%
+  KMP shift intuition with $P = \texttt{abcdeabdef}$.
+  At shift $s=2$, the algorithm matches $P[0\ldots6] = \texttt{abcdeab}$
+  then hits a mismatch at $P[7]$.
+  The matched prefix ends with $\alpha = \texttt{ab}$, which also appears
+  at the very start of $P$ --- so instead of shifting by $1$, we jump
+  directly to $s=7$, re-aligning $\alpha$ and resuming from $P[2]$.
+}
+\label{fig:kmp-shift}
+\end{figure}
+
+\aside{Important: when we say suffix we mean suffix of the \textbf{matched} portion of $P$, not necessarily a suffix of the whole pattern. In the example, $\alpha$ is a suffix of $P[0\ldots6]$ but not of $P$ itself.}
+Basically what the example shows is that if we take the longest prefix of $P$ that is also a suffix of the \textbf{matched} portion of $P$, we can shift the pattern so that this prefix is now aligned with the suffix --- and we can resume the search from the character right after this prefix, since we know it must match (otherwise we would have had a mismatch earlier). In other words we have saved some works (namely, three shift indexes) by leveraging the information from the previous comparisons, instead of starting over from scratch, from the very next shift.
+
+But is this correct? Or do we miss some potential matches by jumping directly to $s=7$?
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.38\textwidth]{images/michael-scott.png}
+  \caption*{\small ``You miss 100\% of the shots you don't take.'' --- Michael Scott}
+\end{figure}
+
+Well, it turns out that this is indeed correct, and we won't miss any matches by doing this. The KMP algorithm is based on this very idea, and it guarantees that we will find all occurrences of $P$ in $T$ without missing any, while also achieving a much better time complexity than the naive approach.
+
+\subsection{Computing the failure function}
+
+To exploit this idea, we need to precompute for every prefix $P[0\ldots j]$ its
+\emph{longest proper prefix that is also a suffix}, written $\pi[j]$.
+This table is known as the \textbf{failure function} (or prefix function) of $P$.
+
+\begin{definition}[Failure function]
+  Let $P$ be a pattern of length $m$. The failure function $\pi : \{0,\ldots,m-1\} \to \{0,\ldots,m-1\}$
+  is defined as
+  \[
+    \pi[j] \;=\; \max\bigl\{\, k < j+1 \mid P[0\ldots k-1] = P[j-k+1\ldots j] \,\bigr\},
+  \]
+  i.e.\ the length of the longest proper prefix of $P[0\ldots j]$ that is also a suffix of $P[0\ldots j]$.
+\end{definition}
+
+The key observation is that $\pi[j]$ can be computed recursively from $\pi[j-1]$,
+giving an efficient $\Oh{m}$ preprocessing algorithm. There are two cases:
+
+\begin{enumerate}
+  \item \textbf{Extension is possible.} If $P[\pi[j-1]] = P[j]$, then the longest
+        prefix-suffix of $P[0\ldots j]$ is simply one character longer than that of
+        $P[0\ldots j-1]$, so $\pi[j] = \pi[j-1] + 1$.
+
+  \item \textbf{Extension is not possible.} If $P[\pi[j-1]] \neq P[j]$, we cannot
+        extend the current prefix-suffix. We then ask: what is the longest
+        prefix-suffix of the prefix-suffix itself? In other words, we fall back to
+        $\pi[\pi[j-1]-1]$ and try to extend that instead. We repeat this process
+        until either a match is found or we reach length $0$, in which case $\pi[j] = 0$.
+\end{enumerate}
+
+% ── Figure: computing π[j] from π[j-1] ──────────────────
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[
+  cell/.style={
+    minimum width=6.8mm, minimum height=6.8mm,
+    font=\ttfamily\small, inner sep=0pt,
+    text centered, rounded corners=2pt,
+  },
+  Alpha/.style={cell, draw=violet!70!black, fill=violet!25, text=violet!20!black},
+  Cmp/.style  ={cell, draw=orange!80!black, fill=orange!20, text=orange!30!black},
+  NC/.style   ={cell, draw=gray!30,         fill=gray!5,    text=gray!55},
+]
+
+\def\cw{0.82}
+
+% position indices
+\foreach \i in {0,...,9}
+  \node[font=\tiny\sffamily, text=gray!55] at (\i*\cw, 0.75) {\i};
+
+% P = a b c d e a b d e f
+\node[font=\small\ttfamily, anchor=east] at (-0.15, 0) {$P$};
+
+% P[0] : α prefix (length k = π[j-1] = 1)
+\node[Alpha] (p0) at (0*\cw, 0) {a};
+% P[1] : next char after prefix  →  P[k], the one to compare
+\node[Cmp]   (p1) at (1*\cw, 0) {b};
+% P[2..4] : middle, unimportant
+\node[NC] at (2*\cw, 0) {c};
+\node[NC] at (3*\cw, 0) {d};
+\node[NC] at (4*\cw, 0) {e};
+% P[5] : α suffix of P[0..j-1]  (j-k = 5)
+\node[Alpha] (p5) at (5*\cw, 0) {a};
+% P[6] : current j  →  P[j], the one to compare
+\node[Cmp]   (p6) at (6*\cw, 0) {b};
+% P[7..9] : not yet processed
+\node[NC] at (7*\cw, 0) {d};
+\node[NC] at (8*\cw, 0) {e};
+\node[NC] at (9*\cw, 0) {f};
+
+% labels: P[k] and P[j] above
+\node[font=\tiny\sffamily, text=orange!70!black, above=18pt] at (p1.north) {$P[k]$};
+\node[font=\tiny\sffamily, text=orange!70!black, above=18pt] at (p6.north) {$P[j]$};
+
+% α labels below
+\node[font=\tiny\sffamily, text=violet!70!black, below=6pt] at (p0.south) {$\alpha$};
+\node[font=\tiny\sffamily, text=violet!70!black, below=6pt] at (p5.south) {$\alpha$};
+
+% brace under α prefix
+\draw[violet!60!black, decorate,
+      decoration={brace, mirror, raise=14pt}]
+  (p0.south west) -- (p0.south east)
+  node[midway, below=18pt, font=\tiny\sffamily,
+       text=violet!60!black] {$k = \pi[j{-}1] = 1$};
+
+% "= ?" annotation between the two comparison cells
+\draw[orange!70!black, thick, <->]
+  ([yshift=18pt]p1.north) -- ([yshift=18pt]p6.north)
+  node[midway, above, font=\small, text=orange!70!black, yshift=10pt]
+    {$P[k] \stackrel{?}{=} P[j]$};
+
+% outcome label
+\node[font=\small\sffamily, text=green!45!black, below=20pt]
+  at (5*\cw, 0)
+  {\checkmark\; match $\Rightarrow \pi[6] = k+1 = 2$};
+
+\end{tikzpicture}
+\caption{%
+  Computing $\pi[6]$ for $P = \texttt{abcdeabdef}$.
+  We know $k = \pi[5] = 1$: the suffix of $P[0\ldots5]$ that matches a prefix of $P$
+  has length $1$ (namely $\alpha = \texttt{a}$, \textcolor{violet!70!black}{violet}).
+  We then compare $P[k] = P[1] = \texttt{b}$ against $P[j] = P[6] = \texttt{b}$
+  (\textcolor{orange!70!black}{orange}): they match, so we extend and set $\pi[6] = 2$.
+}
+\label{fig:failure-function}
+\end{figure}
+
+The resulting algorithm is the following:
+
+\begin{algorithm}[H]
+  \caption{KMP failure function}
+  \KwIn{Pattern $P[0\ldots m-1]$}
+  \KwOut{Failure function $\pi[0\ldots m-1]$}
+  $\pi[0] \gets 0$ \;
+  $k \gets 0$ \tcp*{length of current candidate prefix-suffix}
+  \For{$j \gets 1$ \KwTo $m-1$}{
+    \While{$k > 0$ \textbf{and} $P[k] \neq P[j]$}{
+      $k \gets \pi[k-1]$ \tcp*{fall back}
+    }
+    \If{$P[k] = P[j]$}{
+      $k \gets k + 1$ \;
+    }
+    $\pi[j] \gets k$ \;
+  }
+  \Return $\pi$
+\end{algorithm}
+
+\aside{This ``fall back to the prefix-suffix of the prefix-suffix'' is the recursive
+heart of KMP --- the same shift logic used during search is used during preprocessing.}
