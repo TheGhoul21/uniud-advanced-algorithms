@@ -191,58 +191,55 @@ This results in a total of $(n-m+1)(m-1)$ comparisons, which is $\Theta(nm)$ in 
 
 \subsubsection{Correctness}
 
-For the formal correctness argument it is convenient to define, for any position $i$ in $T$,
+To pin down what ``the inner loop does'' precisely, let's give a name to the obvious quantity: for any position $i$ in $T$, write
 \[
-  \mathrm{common}(i) \;=\; \max\bigl\{\, k \geq 0 \mid T[i, i+k-1] = P[1,k] \,\bigr\},
+  \mathrm{common}(i) \;=\; \max\bigl\{\, k \geq 0 \mid T[i, i+k-1] = P[1,k] \,\bigr\}
 \]
-i.e.\ the length of the longest common prefix of $T[i{,}]$ and $P$.
+for the length of the longest common prefix of $T[i{,}]$ and $P$ — basically, how many characters of $P$ would match if you aligned it at position $i$.
 
 \begin{lemma}
   \label{lem:naive-inner}
-  When the outer loop runs at shift $s$, the inner \textbf{while} loop terminates
-  with $j = \mathrm{common}(s) + 1$.
+  At shift $s$, the inner loop exits with $j = \mathrm{common}(s) + 1$.
 \end{lemma}
 \begin{proof}
-  The loop invariant is: at the start of each iteration, $T[s, s+j-2] = P[1, j-1]$,
-  i.e.\ the first $j-1$ characters of $P$ have been successfully matched starting
-  at position $s$ in $T$.  The loop continues while $T[s+j-1] = P[j]$ and stops as
-  soon as this fails or $j > m$.  By the definition of $\mathrm{common}(s)$, the
-  first $\mathrm{common}(s)$ characters match and the $(\mathrm{common}(s)+1)$-th
-  does not (or $\mathrm{common}(s) = m$), so the loop exits with
-  $j = \mathrm{common}(s)+1$.
+  Track the invariant: entering each iteration, we have $T[s, s+j-2] = P[1, j-1]$
+  (the first $j-1$ characters already matched).  The loop keeps going as long as
+  the next character also matches; it stops the moment it doesn't, or when $j$
+  runs past $m$.  Since $\mathrm{common}(s)$ is exactly how many consecutive
+  characters agree, the loop stops right at $j = \mathrm{common}(s)+1$.
 \end{proof}
 
 \begin{theorem}
-  The naive algorithm correctly finds all occurrences of $P$ in $T$.
+  The naive algorithm finds every occurrence of $P$ in $T$, and nothing more.
 \end{theorem}
 \begin{proof}
-  The outer loop ranges over every shift $s \in \{1, \ldots, n-m+1\}$, so no
-  starting position is skipped.  By Lemma~\ref{lem:naive-inner}, after the inner
-  loop, $j = \mathrm{common}(s)+1$.  The algorithm outputs $s$ if and only if
-  $j > m$, i.e.\ $\mathrm{common}(s) \geq m$, i.e.\ $T[s, s+m-1] = P[1,m] = P$.
-  Hence the output is exactly the set of all occurrences of $P$ in $T$.
+  The outer loop visits every shift $s \in \{1, \ldots, n-m+1\}$, so no candidate
+  starting position is ever skipped.  By Lemma~\ref{lem:naive-inner}, after the
+  inner loop we have $j = \mathrm{common}(s)+1$; the algorithm outputs $s$
+  exactly when $j > m$, i.e.\ $\mathrm{common}(s) \geq m$, i.e.\
+  $T[s, s+m-1] = P$ — which is precisely the definition of an occurrence.
 \end{proof}
 
 \subsubsection{Lower bound}
 
 \begin{theorem}
-  Any algorithm for exact pattern matching requires $\Omega(n + m)$ character
+  Any algorithm for exact pattern matching must make $\Omega(n + m)$ character
   comparisons in the worst case.
 \end{theorem}
 \begin{proof}
-  Two separate arguments establish each term.
+  Two independent arguments, one for each term.
   \begin{itemize}
-    \item \textbf{Must read all of $P$} ($\Omega(m)$). Suppose an algorithm never
-          reads $P[q]$ for some $q$. An adversary can produce two patterns $P$ and
-          $P'$ that agree everywhere except at position $q$. Since the algorithm
-          behaves identically on both, it cannot distinguish them, and will give the
-          wrong answer on at least one of them.
-    \item \textbf{Must read all of $T$} ($\Omega(n)$). Suppose position $T[i]$ is
-          never read. Setting $T[i]$ differently can create or destroy an occurrence
-          of $P$ starting near $i$, and the algorithm, having not read $T[i]$,
-          cannot detect the change.
+    \item \textbf{You have to read all of $P$} ($\Omega(m)$). Suppose the algorithm
+          skips position $P[q]$. An adversary flips just that character, producing
+          a different pattern $P'$. The algorithm sees the same comparisons on both
+          inputs and therefore gives the same output — which can't be correct for
+          both $P$ and $P'$.
+    \item \textbf{You have to read all of $T$} ($\Omega(n)$). Suppose position
+          $T[i]$ is never read. The adversary flips that character, potentially
+          creating or destroying a match right around position $i$. Since the
+          algorithm never looked at $T[i]$, it has no way to tell the difference.
   \end{itemize}
-  Together, $\Omega(n) + \Omega(m) = \Omega(n + m)$ comparisons are necessary.
+  The two bounds add up: $\Omega(m) + \Omega(n) = \Omega(n + m)$.
 \end{proof}
 
 The naive algorithm achieves $\Oh{nm}$ in the worst case, which is far from this
