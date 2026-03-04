@@ -338,6 +338,7 @@ Well, it turns out that this is indeed correct, and we won't miss any matches by
 
 \subsection{Computing the failure function}
 
+\aside{A \emph{proper} prefix/suffix excludes the whole string itself.}
 To exploit this idea, we need to precompute for every prefix $P[0\ldots j]$ its
 \emph{longest proper prefix that is also a suffix}, written $\pi[j]$.
 This table is known as the \textbf{failure function} (or prefix function) of $P$.
@@ -359,11 +360,22 @@ giving an efficient $\Oh{m}$ preprocessing algorithm. There are two cases:
         prefix-suffix of $P[0\ldots j]$ is simply one character longer than that of
         $P[0\ldots j-1]$, so $\pi[j] = \pi[j-1] + 1$.
 
+        \textit{Example:} with $P = \texttt{abcdeabdef}$ at $j=6$, we have $\pi[5]=1$
+        (prefix-suffix of \texttt{abcdea} is \texttt{a}). We check $P[1] = \texttt{b}$
+        against $P[6] = \texttt{b}$: they match, so $\pi[6] = 2$.
+
   \item \textbf{Extension is not possible.} If $P[\pi[j-1]] \neq P[j]$, we cannot
         extend the current prefix-suffix. We then ask: what is the longest
         prefix-suffix of the prefix-suffix itself? In other words, we fall back to
         $\pi[\pi[j-1]-1]$ and try to extend that instead. We repeat this process
         until either a match is found or we reach length $0$, in which case $\pi[j] = 0$.
+
+        \textit{Example:} still with $P = \texttt{abcdeabdef}$ at $j=7$, we have
+        $\pi[6]=2$ (prefix-suffix of \texttt{abcdeab} is \texttt{ab}). We check
+        $P[2] = \texttt{c}$ against $P[7] = \texttt{d}$: no match. We fall back to
+        $\pi[1] = 0$, so we try extending a prefix-suffix of length $0$: we check
+        $P[0] = \texttt{a}$ against $P[7] = \texttt{d}$, still no match. We have
+        reached length $0$, so $\pi[7] = 0$.
 \end{enumerate}
 
 % ── Figure: computing π[j] from π[j-1] ──────────────────
@@ -463,5 +475,26 @@ The resulting algorithm is the following:
   \Return $\pi$
 \end{algorithm}
 
-\aside{This ``fall back to the prefix-suffix of the prefix-suffix'' is the recursive
-heart of KMP --- the same shift logic used during search is used during preprocessing.}
+\begin{remark}
+  The ``fall back to the prefix-suffix of the prefix-suffix'' is the recursive
+  heart of KMP: the same shift logic used during the search phase is also used
+  during preprocessing.
+\end{remark}
+
+\begin{exercise}
+  Design an algorithm that, given a pattern $P$ of length $m$, computes
+  $\pi[i]$ for every $i \in \{0, \ldots, m-1\}$ in $\Oh{m}$ time.
+
+  \medskip
+  \textit{Hints:}
+  \begin{enumerate}
+    \item Try to express $\pi[i]$ in terms of $\pi[i-1]$.
+          What is the relationship between the longest prefix-suffix of
+          $P[0\ldots i]$ and that of $P[0\ldots i-1]$?
+    \item There are two cases depending on whether $P[\pi[i-1]]$ equals
+          $P[i]$ or not. What can you do in each case?
+    \item For the harder case, think recursively: if you cannot extend
+          a prefix-suffix of length $k$, which shorter candidate should
+          you try next?
+  \end{enumerate}
+\end{exercise}
