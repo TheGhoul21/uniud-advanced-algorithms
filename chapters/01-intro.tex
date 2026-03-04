@@ -1,72 +1,74 @@
-\chapter{Introduction \& Exact Pattern Matching}
+\section{Introduction \& Exact Pattern Matching}
 
 % ── Section ──────────────────────────────────────────────
-\section{Definition}
+\subsection{Definition}
 
 The exact pattern matching problem is defined as follows:
 \begin{problem}[Exact pattern matching]
   Given an alphabet $\Sigma$, and two strings $T$, $P$ $\in \Sigma^*$, for which $|T| = n$ and $|P| = m$, find all
-  occurrences of $P$ in $T$.
+  occurrences of $P$ in $T$, i.e.\ compute $\{\, i \mid T[i,\, i+m-1] = P \,\}$.
 \end{problem}
 
+\subsubsection*{Notation}
+
+Throughout these notes, $\Sigma$ denotes a finite alphabet of constant size ($|\Sigma| \in \Oh{1}$). For a string $S$ of length $|S|$:
+\begin{itemize}[nosep]
+  \item $S[i]$ denotes the $i$-th character of $S$ (1-based indexing).
+  \item $S[i,j]$ denotes the substring $S[i]\,S[i+1]\cdots S[j]$ (empty string if $i > j$).
+  \item $S[{,}j] = S[1,j]$ is the prefix of length $j$; $S[i{,}] = S[i,|S|]$ is the suffix starting at $i$.
+\end{itemize}
+A \emph{proper} prefix (resp.\ suffix) of $S$ is any prefix (resp.\ suffix) strictly shorter than $S$ itself.
+
 \begin{example}
-  Let $\Sigma = \{a, b\}$, $T = \texttt{ababbab}$ and $P = \texttt{abb}$. The occurrences of $P$ in $T$ are at
-  positions $2$ and $4$.
+  Let $\Sigma = \{a, b\}$, $T = \texttt{ababbab}$ and $P = \texttt{abb}$. The only occurrence of $P$ in $T$ is at
+  position $3$.
 \end{example}
 
-\section{Naive approach}
+\subsection{Naive approach}
 % ── Figure: naive matching ────────────────────────────────
 \begin{figure}[H]
 \centering
 \begin{tikzpicture}[
-  % base cell style
   cell/.style={
     minimum width=7mm, minimum height=7mm,
     font=\ttfamily\small, inner sep=0pt,
     text centered, rounded corners=2pt,
   },
-  % T row
   Tcell/.style={cell, draw=blue!50!black, fill=blue!8},
-  % matched character of P
   MC/.style={cell, draw=green!55!black, fill=green!18, text=green!30!black},
-  % mismatched character of P (algorithm stops here)
   XC/.style={cell, draw=red!65!black,   fill=red!12,   text=red!50!black},
-  % not yet compared (shown dimmed)
   NC/.style={cell, draw=gray!35,        fill=gray!6,   text=gray!50},
-  % full-match cell (distinct shade)
   FM/.style={cell, draw=green!55!black, fill=green!30, text=green!20!black},
 ]
 
-\def\cw{0.82}   % horizontal cell step (cm)
-\def\rh{0.82}   % vertical row step (cm)
+\def\cw{0.82}
 
-% ── position indices ─────────────────────────────────────
-\foreach \i in {0,...,6}
-  \node[font=\tiny\sffamily, text=gray!70] at (\i*\cw, 1.9) {\i};
+% ── position indices (1-based) ───────────────────────────
+\foreach \i in {1,...,7}
+  \node[font=\tiny\sffamily, text=gray!70] at ({(\i-1)*\cw}, 1.9) {\i};
 
 % ── T row ────────────────────────────────────────────────
 \node[font=\small\ttfamily, anchor=east] at (-0.15, 1.2) {$T$};
-\foreach \i/\c in {0/a, 1/b, 2/a, 3/b, 4/b, 5/a, 6/b}
-  \node[Tcell] at (\i*\cw, 1.2) {\c};
+\foreach \i/\c in {1/a, 2/b, 3/a, 4/b, 5/b, 6/a, 7/b}
+  \node[Tcell] at ({(\i-1)*\cw}, 1.2) {\c};
 
-% ── shift s = 0 : a✓ b✓ b✗ ──────────────────────────────
-\node[font=\tiny\sffamily, text=gray] at (-0.55, 0.4) {$s=0$};
+% ── shift s=1 : P[1]=a✓ P[2]=b✓ P[3]=b✗ ────────────────
+\node[font=\tiny\sffamily, text=gray] at (-0.55, 0.4) {$s=1$};
 \node[MC] at (0*\cw, 0.4) {a};
 \node[MC] at (1*\cw, 0.4) {b};
-\node[XC] at (2*\cw, 0.4) {b};   % P[2]=b vs T[2]=a
+\node[XC] at (2*\cw, 0.4) {b};   % P[3]=b vs T[3]=a
 
-% ── shift s = 1 : a✗ ────────────────────────────────────
-\node[font=\tiny\sffamily, text=gray] at (-0.55, -0.4) {$s=1$};
-\node[XC] at (1*\cw, -0.4) {a};  % P[0]=a vs T[1]=b
+% ── shift s=2 : P[1]=a✗ ─────────────────────────────────
+\node[font=\tiny\sffamily, text=gray] at (-0.55, -0.4) {$s=2$};
+\node[XC] at (1*\cw, -0.4) {a};  % P[1]=a vs T[2]=b
 \node[NC] at (2*\cw, -0.4) {b};
 \node[NC] at (3*\cw, -0.4) {b};
 
-% ── shift s = 2 : a✓ b✓ b✓  →  MATCH ───────────────────
-\node[font=\tiny\sffamily, text=gray] at (-0.55, -1.2) {$s=2$};
+% ── shift s=3 : P[1]=a✓ P[2]=b✓ P[3]=b✓  →  MATCH ─────
+\node[font=\tiny\sffamily, text=gray] at (-0.55, -1.2) {$s=3$};
 \node[FM] (ma) at (2*\cw, -1.2) {a};
 \node[FM] (mb) at (3*\cw, -1.2) {b};
 \node[FM] (mc) at (4*\cw, -1.2) {b};
-% bounding box around the full match
 \draw[green!55!black, thick, rounded corners=4pt]
   ([xshift=-4pt, yshift=-4pt] ma.south west)
   rectangle
@@ -74,21 +76,21 @@ The exact pattern matching problem is defined as follows:
 \node[font=\tiny\bfseries\sffamily, text=green!45!black]
   at (3*\cw, -1.72) {match};
 
-% ── shift s = 3 : a✗ ────────────────────────────────────
-\node[font=\tiny\sffamily, text=gray] at (-0.55, -2.1) {$s=3$};
-\node[XC] at (3*\cw, -2.1) {a};  % P[0]=a vs T[3]=b
+% ── shift s=4 : P[1]=a✗ ─────────────────────────────────
+\node[font=\tiny\sffamily, text=gray] at (-0.55, -2.1) {$s=4$};
+\node[XC] at (3*\cw, -2.1) {a};  % P[1]=a vs T[4]=b
 \node[NC] at (4*\cw, -2.1) {b};
 \node[NC] at (5*\cw, -2.1) {b};
 
-% ── shift s = 4 : a✗ ────────────────────────────────────
-\node[font=\tiny\sffamily, text=gray] at (-0.55, -2.9) {$s=4$};
-\node[XC] at (4*\cw, -2.9) {a};  % P[0]=a vs T[4]=b
+% ── shift s=5 : P[1]=a✗ ─────────────────────────────────
+\node[font=\tiny\sffamily, text=gray] at (-0.55, -2.9) {$s=5$};
+\node[XC] at (4*\cw, -2.9) {a};  % P[1]=a vs T[5]=b
 \node[NC] at (5*\cw, -2.9) {b};
 \node[NC] at (6*\cw, -2.9) {b};
 
 \end{tikzpicture}
 \caption{%
-  Naive exact pattern matching of $P = \texttt{abb}$ in $T = \texttt{ababbab}$ (0-indexed).
+  Naive exact pattern matching of $P = \texttt{abb}$ in $T = \texttt{ababbab}$ (1-indexed).
   Each row corresponds to one shift $s$; the pattern $P$ is aligned starting at $T[s]$.
   \textcolor{green!45!black}{\textbf{Green}} = character matched,
   \textcolor{red!60!black}{\textbf{red}} = first mismatch (algorithm skips to next shift),
@@ -98,9 +100,9 @@ The exact pattern matching problem is defined as follows:
 \end{figure}
 
 
-What the Figure \ref{fig:naive-matching} illustrates is one basic naive approach. In this approach we nest two loops: the outer loop iterates over all possible "first positions" $s$ in $T$ where the pattern $P$ could potentially match, and the inner loop checks character by character if $P$ matches $T$ starting from position $s$. 
-For example the first row of the figure corresponds to starting the search from index $s=0$ of $T$. Given $s$ we then loop one by one each character of $P$, moving along $T$ as well, and check if all the characters match. In this case we find a mismatch at the third character of $P$ (which is 'b', whereas the corresponding character in $T$ is 'a'). When this happens, we break this inner loop and move to the next shift $s=1$. 
-If the lenght of the pattern was $m$ and the length of the text was $n$, the first outer iterations could take up to $O(m)$ time, and we could have up to $O(n)$ such iterations, leading to a worst-case time complexity of $O(nm)$ for this naive approach.
+What the Figure \ref{fig:naive-matching} illustrates is one basic naive approach. In this approach we nest two loops: the outer loop iterates over all possible "first positions" $s$ in $T$ where the pattern $P$ could potentially match, and the inner loop checks character by character if $P$ matches $T$ starting from position $s$.
+For example the first row of the figure corresponds to starting the search from index $s=1$ of $T$. Given $s$ we then loop one by one each character of $P$, moving along $T$ as well, and check if all the characters match. In this case we find a mismatch at the third character of $P$ (which is \texttt{b}, whereas the corresponding character in $T$ is \texttt{a}). When this happens, we break this inner loop and move to the next shift $s=2$.
+If the length of the pattern was $m$ and the length of the text was $n$, the outer loop could have up to $\Oh{n}$ iterations, and each inner iteration could take up to $\Oh{m}$ time, leading to a worst-case time complexity of $\Oh{nm}$ for this naive approach.
 
 % ── Figure: worst-case input ─────────────────────────────
 \begin{figure}[H]
@@ -121,38 +123,38 @@ If the lenght of the pattern was $m$ and the length of the text was $n$, the fir
 
 \def\cw{0.82}
 
-% position indices
-\foreach \i in {0,...,6}
-  \node[font=\tiny\sffamily, text=gray!70] at (\i*\cw, 1.9) {\i};
+% position indices (1-based)
+\foreach \i in {1,...,7}
+  \node[font=\tiny\sffamily, text=gray!70] at ({(\i-1)*\cw}, 1.9) {\i};
 
 % T row
 \node[font=\small\ttfamily, anchor=east] at (-0.15, 1.2) {$T$};
-\foreach \i in {0,...,6}
-  \node[Tcell] at (\i*\cw, 1.2) {a};
+\foreach \i in {1,...,7}
+  \node[Tcell] at ({(\i-1)*\cw}, 1.2) {a};
 
-% s=0 : a✓ a✓ a✓ b✗
-\node[font=\tiny\sffamily, text=gray] at (-0.55,  0.4) {$s=0$};
+% s=1 : a✓ a✓ a✓ b✗
+\node[font=\tiny\sffamily, text=gray] at (-0.55,  0.4) {$s=1$};
 \node[MC] at (0*\cw,  0.4) {a};
 \node[MC] at (1*\cw,  0.4) {a};
 \node[MC] at (2*\cw,  0.4) {a};
 \node[XC] at (3*\cw,  0.4) {b};
 
-% s=1 : a✓ a✓ a✓ b✗
-\node[font=\tiny\sffamily, text=gray] at (-0.55, -0.4) {$s=1$};
+% s=2 : a✓ a✓ a✓ b✗
+\node[font=\tiny\sffamily, text=gray] at (-0.55, -0.4) {$s=2$};
 \node[MC] at (1*\cw, -0.4) {a};
 \node[MC] at (2*\cw, -0.4) {a};
 \node[MC] at (3*\cw, -0.4) {a};
 \node[XC] at (4*\cw, -0.4) {b};
 
-% s=2 : a✓ a✓ a✓ b✗
-\node[font=\tiny\sffamily, text=gray] at (-0.55, -1.2) {$s=2$};
+% s=3 : a✓ a✓ a✓ b✗
+\node[font=\tiny\sffamily, text=gray] at (-0.55, -1.2) {$s=3$};
 \node[MC] at (2*\cw, -1.2) {a};
 \node[MC] at (3*\cw, -1.2) {a};
 \node[MC] at (4*\cw, -1.2) {a};
 \node[XC] at (5*\cw, -1.2) {b};
 
-% s=3 : a✓ a✓ a✓ b✗
-\node[font=\tiny\sffamily, text=gray] at (-0.55, -2.0) {$s=3$};
+% s=4 : a✓ a✓ a✓ b✗
+\node[font=\tiny\sffamily, text=gray] at (-0.55, -2.0) {$s=4$};
 \node[MC] at (3*\cw, -2.0) {a};
 \node[MC] at (4*\cw, -2.0) {a};
 \node[MC] at (5*\cw, -2.0) {a};
@@ -163,35 +165,149 @@ If the lenght of the pattern was $m$ and the length of the text was $n$, the fir
   Worst-case input for the naive algorithm: $T = \texttt{aaaaaaa}$ ($n=7$) and
   $P = \texttt{aaab}$ ($m=4$).
   Every shift $s$ performs $m-1$ successful comparisons before the inevitable
-  mismatch on $P[m-1] = \texttt{b}$, giving $(n-m+1)(m-1) = \Th{nm}$ total comparisons.
+  mismatch on $P[m] = \texttt{b}$, giving $(n-m+1)(m-1) = \Th{nm}$ total comparisons.
 }
 \label{fig:naive-worst-case}
 \end{figure}
-In figure \ref{fig:naive-worst-case} we see an example of a worst-case input for the naive algorithm. 
-In this case the text $T$ consists of $n$ 'a' characters, and the pattern $P$ consists of $m-1$ 'a' characters followed by a 'b'.
-There are $n-m+1$ possible shifts $s$ where the pattern could potentially match, and for each of these shifts the algorithm will successfully match the first $m-1$ characters of $P$. In the example of the figure we have $n=7$ and $m=4$, so there are $7-4+1=4$ shifts to check, and for each shift we make $m$ checks, of which $m-1=3$ are successful matches before we encounter the mismatch at the last character of $P$. 
+In figure \ref{fig:naive-worst-case} we see an example of a worst-case input for the naive algorithm.
+In this case the text $T$ consists of $n$ \texttt{a} characters, and the pattern $P$ consists of $m-1$ \texttt{a} characters followed by a \texttt{b}.
+There are $n-m+1$ possible shifts $s$ where the pattern could potentially match, and for each of these shifts the algorithm will successfully match the first $m-1$ characters of $P$. In the example of the figure we have $n=7$ and $m=4$, so there are $7-4+1=4$ shifts to check, and for each shift we make $m$ checks, of which $m-1=3$ are successful matches before we encounter the mismatch at the last character of $P$.
 This results in a total of $(n-m+1)(m-1)$ comparisons, which is $\Theta(nm)$ in the worst case.
 
-This naive approach basically starts over from scratch at each shift, without leveraging precious information from previous comparisons. 
+\begin{algorithm}[H]
+  \caption{Naive exact pattern matching}
+  \KwIn{Text $T[1\ldots n]$, Pattern $P[1\ldots m]$}
+  \KwOut{All positions $s$ such that $T[s,s+m-1] = P$}
+  \For{$s \gets 1$ \KwTo $n - m + 1$}{
+    $j \gets 1$ \;
+    \While{$j \leq m$ \textbf{and} $T[s+j-1] = P[j]$}{
+      $j \gets j + 1$ \;
+    }
+    \If{$j > m$}{
+      \textbf{output} $s$ \;
+    }
+  }
+\end{algorithm}
 
-\section{Knuth-Morris-Pratt (KMP) algorithm}
+\subsubsection{Correctness}
+
+For the formal correctness argument it is convenient to define, for any position $i$ in $T$,
+\[
+  \mathrm{common}(i) \;=\; \max\bigl\{\, k \geq 0 \mid T[i, i+k-1] = P[1,k] \,\bigr\},
+\]
+i.e.\ the length of the longest common prefix of $T[i{,}]$ and $P$.
+
+\begin{lemma}
+  \label{lem:naive-inner}
+  When the outer loop runs at shift $s$, the inner \textbf{while} loop terminates
+  with $j = \mathrm{common}(s) + 1$.
+\end{lemma}
+\begin{proof}
+  The loop invariant is: at the start of each iteration, $T[s, s+j-2] = P[1, j-1]$,
+  i.e.\ the first $j-1$ characters of $P$ have been successfully matched starting
+  at position $s$ in $T$.  The loop continues while $T[s+j-1] = P[j]$ and stops as
+  soon as this fails or $j > m$.  By the definition of $\mathrm{common}(s)$, the
+  first $\mathrm{common}(s)$ characters match and the $(\mathrm{common}(s)+1)$-th
+  does not (or $\mathrm{common}(s) = m$), so the loop exits with
+  $j = \mathrm{common}(s)+1$.
+\end{proof}
+
+\begin{theorem}
+  The naive algorithm correctly finds all occurrences of $P$ in $T$.
+\end{theorem}
+\begin{proof}
+  The outer loop ranges over every shift $s \in \{1, \ldots, n-m+1\}$, so no
+  starting position is skipped.  By Lemma~\ref{lem:naive-inner}, after the inner
+  loop, $j = \mathrm{common}(s)+1$.  The algorithm outputs $s$ if and only if
+  $j > m$, i.e.\ $\mathrm{common}(s) \geq m$, i.e.\ $T[s, s+m-1] = P[1,m] = P$.
+  Hence the output is exactly the set of all occurrences of $P$ in $T$.
+\end{proof}
+
+\subsubsection{Lower bound}
+
+\begin{theorem}
+  Any algorithm for exact pattern matching requires $\Omega(n + m)$ character
+  comparisons in the worst case.
+\end{theorem}
+\begin{proof}
+  Two separate arguments establish each term.
+  \begin{itemize}
+    \item \textbf{Must read all of $P$} ($\Omega(m)$). Suppose an algorithm never
+          reads $P[q]$ for some $q$. An adversary can produce two patterns $P$ and
+          $P'$ that agree everywhere except at position $q$. Since the algorithm
+          behaves identically on both, it cannot distinguish them, and will give the
+          wrong answer on at least one of them.
+    \item \textbf{Must read all of $T$} ($\Omega(n)$). Suppose position $T[i]$ is
+          never read. Setting $T[i]$ differently can create or destroy an occurrence
+          of $P$ starting near $i$, and the algorithm, having not read $T[i]$,
+          cannot detect the change.
+  \end{itemize}
+  Together, $\Omega(n) + \Omega(m) = \Omega(n + m)$ comparisons are necessary.
+\end{proof}
+
+The naive algorithm achieves $\Oh{nm}$ in the worst case, which is far from this
+lower bound.\aside{This $\Omega(n+m)$ lower bound applies to \emph{any} algorithm, not just naive.} KMP will close the gap, achieving $\Theta(n + m)$.
+
+\subsubsection{Properties}
+
+We evaluate string matching algorithms along four axes:
+
+\begin{description}
+  \item[Online.] The algorithm processes $T$ strictly left-to-right, one character
+        at a time, and can emit results before reading future characters of $T$.
+        Useful when $T$ arrives as a stream.
+
+  \item[Real-time.] A stronger requirement: each new character of $T$ is fully
+        processed in $\Oh{1}$ \emph{worst-case} time before the next one is read.
+
+  \item[Blind (no backtracking).] The algorithm never re-reads a position of $T$:
+        each character of $T$ is accessed at most once. A blind algorithm is
+        necessarily online; the converse is false (the naive algorithm is online
+        but not blind).
+
+  \item[Succinct.] The algorithm uses only $\Oh{1}$ extra space beyond storing $P$
+        and $T$ (no large auxiliary data structures).
+\end{description}
+
+\begin{center}
+\begin{tabular}{lcccc}
+  \toprule
+  Algorithm & Online & Real-time & Blind & Succinct \\
+  \midrule
+  Naive     & \checkmark & $\times$ & $\times$ & \checkmark \\
+  KMP       & \checkmark & $\times$ & \checkmark & $\times$ \\
+  KMP (sp') & \checkmark & \checkmark & \checkmark & $\times$ \\
+  \bottomrule
+\end{tabular}
+\end{center}
+
+The naive algorithm is \textbf{online}\aside{The naive algorithm backtracks in $T$: at each new shift $s$ it re-reads characters already compared at shift $s-1$.} (it reads $T$ left-to-right) but not
+\textbf{blind}: at each new shift it backtracks and re-compares characters of $T$
+that were already seen. It is also not \textbf{real-time}: a single character
+of $T$ can trigger up to $\Oh{m}$ comparisons.
+
+This naive approach basically starts over from scratch at each shift, without leveraging precious information from previous comparisons.
+
+\subsection{Knuth-Morris-Pratt (KMP) algorithm}
+
+\subsubsection{Intuition}
 
 What if we could somehow "remember" the information from a previous comparison, and use it to skip some of the checks at the next shift?
 Let's introduce the intuition behind the Knuth-Morris-Pratt (KMP) algorithm, with an example.
 
 \begin{example}
   \label{ex:kmp-intro}
-  Let $P = \texttt{abcdeabdef}$ and suppose we are running the naive algorithm at shift $s=2$
-  over some text $T$ whose characters at positions $2$--$8$ are \texttt{abcdeab}.
-  We match $P[0\ldots6]$ successfully, then hit a mismatch at $P[7] = \texttt{d}$ vs $T[9] = \texttt{x}$.
+  Let $P = \texttt{abcdeabdef}$ and suppose we are running the naive algorithm at shift $s=3$
+  over some text $T$ whose characters at positions $3$--$9$ are \texttt{abcdeab}.
+  We match $P[1\ldots7]$ successfully, then hit a mismatch at $P[8] = \texttt{d}$ vs $T[10] = \texttt{x}$.
 \end{example}
 
 As shown in Figure~\ref{fig:kmp-shift}, at this point the naive algorithm would discard everything
-and try shift $s=3$. But notice that the matched portion $\texttt{abcdeab}$ starts \emph{and} ends
-with $\alpha = \texttt{ab}$: the prefix $P[0\ldots1]$ and the suffix $P[5\ldots6]$ of the matched
+and try shift $s=4$. But notice that the matched portion $\texttt{abcdeab}$ starts \emph{and} ends
+with $\alpha = \texttt{ab}$: the prefix $P[1\ldots2]$ and the suffix $P[6\ldots7]$ of the matched
 region are identical. This means that when we slide $P$ forward, the $\alpha$ that was at the end
 of the match is now perfectly aligned with the $\alpha$ at the start of $P$ --- we can jump
-directly to shift $s=7$ and resume comparing from $P[2]$, skipping five shifts entirely.
+directly to shift $s=8$ and resume comparing from $P[3]$, skipping five shifts entirely.
 
 % ── Figure: KMP skip intuition ───────────────────────────
 \begin{figure}[H]
@@ -202,87 +318,83 @@ directly to shift $s=7$ and resume comparing from $P[2]$, skipping five shifts e
     font=\ttfamily\small, inner sep=0pt,
     text centered, rounded corners=2pt,
   },
-  % T cells
-  Tdim/.style ={cell, draw=blue!25,         fill=blue!5,    text=gray!50},
+  Tdim/.style  ={cell, draw=blue!25,        fill=blue!5,    text=gray!50},
   Tmatch/.style={cell, draw=blue!50!black,  fill=blue!10},
-  Txc/.style  ={cell, draw=red!65!black,    fill=red!10,    text=red!60!black},
-  % P cells
-  Alpha/.style={cell, draw=violet!70!black, fill=violet!25, text=violet!30!black},
-  MC/.style   ={cell, draw=green!50!black,  fill=green!12,  text=green!30!black},
-  XC/.style   ={cell, draw=red!65!black,    fill=red!12,    text=red!50!black},
-  NC/.style   ={cell, draw=gray!30,         fill=gray!5,    text=gray!50},
-  % new-shift P cells
+  Txc/.style   ={cell, draw=red!65!black,   fill=red!10,    text=red!60!black},
+  Alpha/.style ={cell, draw=violet!70!black,fill=violet!25, text=violet!30!black},
+  MC/.style    ={cell, draw=green!50!black, fill=green!12,  text=green!30!black},
+  XC/.style    ={cell, draw=red!65!black,   fill=red!12,    text=red!50!black},
+  NC/.style    ={cell, draw=gray!30,        fill=gray!5,    text=gray!50},
   AlphaNew/.style={cell, draw=violet!70!black, fill=violet!25, text=violet!30!black},
-  NewP/.style ={cell, draw=pink!60!black,   fill=pink!8,    text=gray!60},
+  NewP/.style  ={cell, draw=pink!60!black,  fill=pink!8,    text=gray!60},
 ]
 
-\def\cw{0.72}   % cell width (cm)
+\def\cw{0.72}
 
-% ── position indices ─────────────────────────────────────
-\foreach \i in {0,...,12}
-  \node[font=\tiny\sffamily, text=gray!55] at (\i*\cw, 2.85) {\i};
+% ── position indices (1-based) ───────────────────────────
+\foreach \i in {1,...,13}
+  \node[font=\tiny\sffamily, text=gray!55] at ({(\i-1)*\cw}, 2.85) {\i};
 
-% ── T row (y = 2.2) ──────────────────────────────────────
-% T: ··abcdeabx··  (· = unimportant char)
+% ── T row ────────────────────────────────────────────────
+% T: ··abcdeabx··  (· = unimportant char, 1-based positions)
 \node[font=\small\ttfamily, anchor=east] at (-0.15, 2.2) {$T$};
 \foreach \i/\c/\sty in {
-    0/{\cdot}/Tdim,  1/{\cdot}/Tdim,
-    2/a/Tmatch, 3/b/Tmatch, 4/c/Tmatch,
-    5/d/Tmatch, 6/e/Tmatch, 7/a/Tmatch, 8/b/Tmatch,
-    9/x/Txc,
-   10/{\cdot}/Tdim, 11/{\cdot}/Tdim, 12/{\cdot}/Tdim}
-  \node[\sty] at (\i*\cw, 2.2) {$\c$};
+     1/{\cdot}/Tdim,  2/{\cdot}/Tdim,
+     3/a/Tmatch, 4/b/Tmatch, 5/c/Tmatch,
+     6/d/Tmatch, 7/e/Tmatch, 8/a/Tmatch, 9/b/Tmatch,
+    10/x/Txc,
+    11/{\cdot}/Tdim, 12/{\cdot}/Tdim, 13/{\cdot}/Tdim}
+  \node[\sty] at ({(\i-1)*\cw}, 2.2) {$\c$};
 \node[font=\ttfamily\small, text=gray!50] at (13*\cw, 2.2) {$\cdots$};
 
-% mismatch vertical line (T ↔ P)
+% mismatch vertical line
 \draw[red!60!black, thick]
   (9*\cw, 0.6+0.38) -- (9*\cw, 2.2-0.38);
 
-% T[i] label above
+% T[10] label above
 \node[font=\tiny\sffamily, text=red!60!black, above=2pt]
-  at (9*\cw, 2.2+0.38) {$T[9]$};
+  at (9*\cw, 2.2+0.38) {$T[10]$};
 
-% ── P at s=2  (y = 0.6) ──────────────────────────────────
-% P = a b c d e a b d e f
-%     0 1 2 3 4 5 6 7 8 9   (T-positions: 2..11)
+% ── P at s=3  (y = 0.6) ──────────────────────────────────
+% P = a  b  c  d  e  a  b  d  e  f
+%     1  2  3  4  5  6  7  8  9  10   (T-positions: 3..12)
 \node[font=\small\ttfamily, anchor=east] at (-0.15, 0.6)
-  {$P$\,{\tiny$(s{=}2)$}};
+  {$P$\,{\tiny$(s{=}3)$}};
 
-% α prefix  P[0..1] → T[2..3]
-\node[Alpha] (pa0) at (2*\cw, 0.6) {a};
-\node[Alpha] (pa1) at (3*\cw, 0.6) {b};
-% middle matched  P[2..4] → T[4..6]
+% α prefix  P[1..2] → T[3..4]
+\node[Alpha] (pa1) at (2*\cw, 0.6) {a};
+\node[Alpha] (pa2) at (3*\cw, 0.6) {b};
+% middle matched  P[3..5] → T[5..7]
 \node[MC] at (4*\cw, 0.6) {c};
 \node[MC] at (5*\cw, 0.6) {d};
 \node[MC] at (6*\cw, 0.6) {e};
-% α suffix  P[5..6] → T[7..8]
-\node[Alpha] (pa5) at (7*\cw, 0.6) {a};
-\node[Alpha] (pa6) at (8*\cw, 0.6) {b};
-% mismatch  P[7] → T[9]
+% α suffix  P[6..7] → T[8..9]
+\node[Alpha] (pa6) at (7*\cw, 0.6) {a};
+\node[Alpha] (pa7) at (8*\cw, 0.6) {b};
+% mismatch  P[8] → T[10]
 \node[XC]   at (9*\cw, 0.6) {d};
-% not compared  P[8..9] → T[10..11]
+% not compared  P[9..10] → T[11..12]
 \node[NC]   at (10*\cw, 0.6) {e};
 \node[NC]   at (11*\cw, 0.6) {f};
 
-% P[j] label below mismatch
+% P[8] label below mismatch
 \node[font=\tiny\sffamily, text=red!60!black, below=2pt]
-  at (9*\cw, 0.6-0.38) {$P[7]$};
+  at (9*\cw, 0.6-0.38) {$P[8]$};
 
-% α labels below the two violet segments
+% α labels
 \node[font=\tiny\sffamily, text=violet!70!black, below=8pt]
   at (2.5*\cw, 0.6) {$\alpha$};
 \node[font=\tiny\sffamily, text=violet!70!black, below=8pt]
   at (7.5*\cw, 0.6) {$\alpha$};
 
-% curved arrow linking the two α segments (above the P row)
+% curved arrow linking the two α segments
 \draw[violet!60!black, thick, ->, bend left=30,
       shorten >=3pt, shorten <=3pt]
-  (pa1.north east) to node[above, font=\tiny\sffamily,
+  (pa2.north east) to node[above, font=\tiny\sffamily,
                              text=violet!60!black] {same prefix}
-  (pa5.north west);
+  (pa6.north west);
 
 % ── shift annotation ─────────────────────────────────────
-% squiggly arrow on the left
 \draw[->, magenta!70, very thick, decorate,
       decoration={snake, amplitude=1.5pt, segment length=5pt,
                   post length=4pt}]
@@ -290,14 +402,13 @@ directly to shift $s=7$ and resume comparing from $P[2]$, skipping five shifts e
   node[right=3pt, font=\small\sffamily, text=magenta!70,
        pos=0.5] {shift $+5$};
 
-% horizontal arrow showing shift distance
 \draw[gray!50, thick, <->]
   (2*\cw, -0.45) -- (7*\cw, -0.45)
   node[midway, below, font=\tiny\sffamily, text=gray!60] {skip 5};
 
-% ── P at s=7  (y = −1.3) ─────────────────────────────────
+% ── P at s=8  (y = −1.3) ─────────────────────────────────
 \node[font=\small\ttfamily, anchor=east] at (-0.15, -1.3)
-  {$P$\,{\tiny$(s{=}7)$}};
+  {$P$\,{\tiny$(s{=}8)$}};
 
 % α prefix now aligns with the former α suffix
 \node[AlphaNew] at (7*\cw, -1.3) {a};
@@ -314,19 +425,18 @@ directly to shift $s=7$ and resume comparing from $P[2]$, skipping five shifts e
 \end{tikzpicture}
 \caption{%
   KMP shift intuition with $P = \texttt{abcdeabdef}$.
-  At shift $s=2$, the algorithm matches $P[0\ldots6] = \texttt{abcdeab}$
-  then hits a mismatch at $P[7]$.
-  The matched prefix ends with $\alpha = \texttt{ab}$, which also appears
+  At shift $s=3$, the algorithm matches $P[1\ldots7] = \texttt{abcdeab}$
+  then hits a mismatch at $P[8]$.
+  The matched portion ends with $\alpha = \texttt{ab}$, which also appears
   at the very start of $P$ --- so instead of shifting by $1$, we jump
-  directly to $s=7$, re-aligning $\alpha$ and resuming from $P[2]$.
+  directly to $s=8$, re-aligning $\alpha$ and resuming from $P[3]$.
 }
 \label{fig:kmp-shift}
 \end{figure}
 
-\aside{Important: when we say suffix we mean suffix of the \textbf{matched} portion of $P$, not necessarily a suffix of the whole pattern. In the example, $\alpha$ is a suffix of $P[0\ldots6]$ but not of $P$ itself.}
-Basically what the example shows is that if we take the longest prefix of $P$ that is also a suffix of the \textbf{matched} portion of $P$, we can shift the pattern so that this prefix is now aligned with the suffix --- and we can resume the search from the character right after this prefix, since we know it must match (otherwise we would have had a mismatch earlier). In other words we have saved some works (namely, three shift indexes) by leveraging the information from the previous comparisons, instead of starting over from scratch, from the very next shift.
+Basically what the example shows is that if we take the longest prefix\aside{When we say suffix here we mean suffix of the \textbf{matched} portion of $P$, not of $P$ itself. In the example, $\alpha$ is a suffix of $P[1\ldots7]$ but not of the whole $P$.} of $P$ that is also a suffix of the \textbf{matched} portion of $P$, we can shift the pattern so that this prefix is now aligned with the suffix --- and we can resume the search from the character right after this prefix, since we know it must match (otherwise we would have had a mismatch earlier). In other words we have saved some work (namely, five shift indexes) by leveraging the information from the previous comparisons, instead of starting over from scratch, from the very next shift.
 
-But is this correct? Or do we miss some potential matches by jumping directly to $s=7$?
+But is this correct? Or do we miss some potential matches by jumping directly to $s=8$?
 
 \begin{figure}[H]
   \centering
@@ -336,49 +446,45 @@ But is this correct? Or do we miss some potential matches by jumping directly to
 
 Well, it turns out that this is indeed correct, and we won't miss any matches by doing this. The KMP algorithm is based on this very idea, and it guarantees that we will find all occurrences of $P$ in $T$ without missing any, while also achieving a much better time complexity than the naive approach.
 
-\subsection{Computing the failure function}
+\subsubsection{Preprocessing: computing $sp$ values}
 
-\aside{A \emph{proper} prefix/suffix excludes the whole string itself.}
-To exploit this idea, we need to precompute for every prefix $P[0\ldots j]$ its
-\emph{longest proper prefix that is also a suffix}, written $\pi[j]$.
-This table is known as the \textbf{failure function} (or prefix function) of $P$.
+To exploit this idea, we need to precompute for every prefix $P[1\ldots i]$ its
+\emph{longest proper prefix that is also a suffix}\aside{A \emph{proper} prefix/suffix excludes the string itself.}. We write this length as $\spi{i}$.
 
-\begin{definition}[Failure function]
-  Let $P$ be a pattern of length $m$. The failure function $\pi : \{0,\ldots,m-1\} \to \{0,\ldots,m-1\}$
-  is defined as
+\begin{definition}[$sp$ values]
+  Let $P$ be a pattern of length $m$. For each $i \in \{1,\ldots,m\}$, define
   \[
-    \pi[j] \;=\; \max\bigl\{\, k < j+1 \mid P[0\ldots k-1] = P[j-k+1\ldots j] \,\bigr\},
+    \spi{i} \;=\; \max\bigl\{\, k < i \mid P[1\ldots k] = P[i-k+1\ldots i] \,\bigr\},
   \]
-  i.e.\ the length of the longest proper prefix of $P[0\ldots j]$ that is also a suffix of $P[0\ldots j]$.
+  i.e.\ the length of the longest proper prefix of $P[1\ldots i]$ that is also a suffix of $P[1\ldots i]$.
 \end{definition}
 
-The key observation is that $\pi[j]$ can be computed recursively from $\pi[j-1]$,
+The key observation is that $\spi{i}$ can be computed recursively from $\spi{i-1}$,
 giving an efficient $\Oh{m}$ preprocessing algorithm. There are two cases:
 
 \begin{enumerate}
-  \item \textbf{Extension is possible.} If $P[\pi[j-1]] = P[j]$, then the longest
-        prefix-suffix of $P[0\ldots j]$ is simply one character longer than that of
-        $P[0\ldots j-1]$, so $\pi[j] = \pi[j-1] + 1$.
+  \item \textbf{Extension is possible.} Let $k = \spi{i-1}$. If $P[k+1] = P[i]$,
+        then the longest prefix-suffix of $P[1\ldots i]$ is simply one character longer
+        than that of $P[1\ldots i-1]$, so $\spi{i} = k + 1$.
 
-        \textit{Example:} with $P = \texttt{abcdeabdef}$ at $j=6$, we have $\pi[5]=1$
-        (prefix-suffix of \texttt{abcdea} is \texttt{a}). We check $P[1] = \texttt{b}$
-        against $P[6] = \texttt{b}$: they match, so $\pi[6] = 2$.
+        \textit{Example:} with $P = \texttt{abcdeabdef}$ at $i=7$, we have $\spi{6}=1$
+        (the prefix-suffix of $\texttt{abcdea}$ is $\texttt{a}$, length $1$). We check
+        $P[2] = \texttt{b}$ against $P[7] = \texttt{b}$: they match, so $\spi{7} = 2$.
 
-  \item \textbf{Extension is not possible.} If $P[\pi[j-1]] \neq P[j]$, we cannot
+  \item \textbf{Extension is not possible.} If $P[k+1] \neq P[i]$, we cannot
         extend the current prefix-suffix. We then ask: what is the longest
         prefix-suffix of the prefix-suffix itself? In other words, we fall back to
-        $\pi[\pi[j-1]-1]$ and try to extend that instead. We repeat this process
-        until either a match is found or we reach length $0$, in which case $\pi[j] = 0$.
+        $k \gets \spi{k}$ and try to extend that instead. We repeat this process
+        until either a match is found or we reach $k = 0$, in which case $\spi{i} = 0$.
 
-        \textit{Example:} still with $P = \texttt{abcdeabdef}$ at $j=7$, we have
-        $\pi[6]=2$ (prefix-suffix of \texttt{abcdeab} is \texttt{ab}). We check
-        $P[2] = \texttt{c}$ against $P[7] = \texttt{d}$: no match. We fall back to
-        $\pi[1] = 0$, so we try extending a prefix-suffix of length $0$: we check
-        $P[0] = \texttt{a}$ against $P[7] = \texttt{d}$, still no match. We have
-        reached length $0$, so $\pi[7] = 0$.
+        \textit{Example:} still with $P = \texttt{abcdeabdef}$ at $i=8$, we have
+        $\spi{7}=2$ (the prefix-suffix of $\texttt{abcdeab}$ is $\texttt{ab}$). We check
+        $P[3] = \texttt{c}$ against $P[8] = \texttt{d}$: no match. We fall back to
+        $k \gets \spi{2} = 0$, so we check $P[1] = \texttt{a}$ against $P[8] = \texttt{d}$,
+        still no match. We have reached $k = 0$, so $\spi{8} = 0$.
 \end{enumerate}
 
-% ── Figure: computing π[j] from π[j-1] ──────────────────
+% ── Figure: computing sp[i] from sp[i-1] ─────────────────
 \begin{figure}[H]
 \centering
 \begin{tikzpicture}[
@@ -394,107 +500,127 @@ giving an efficient $\Oh{m}$ preprocessing algorithm. There are two cases:
 
 \def\cw{0.82}
 
-% position indices
-\foreach \i in {0,...,9}
-  \node[font=\tiny\sffamily, text=gray!55] at (\i*\cw, 0.75) {\i};
+% position indices (1-based)
+\foreach \i in {1,...,10}
+  \node[font=\tiny\sffamily, text=gray!55] at ({(\i-1)*\cw}, 0.75) {\i};
 
-% P = a b c d e a b d e f
+% P = a  b  c  d  e  a  b  d  e  f
+%     1  2  3  4  5  6  7  8  9 10
 \node[font=\small\ttfamily, anchor=east] at (-0.15, 0) {$P$};
 
-% P[0] : α prefix (length k = π[j-1] = 1)
-\node[Alpha] (p0) at (0*\cw, 0) {a};
-% P[1] : next char after prefix  →  P[k], the one to compare
-\node[Cmp]   (p1) at (1*\cw, 0) {b};
-% P[2..4] : middle, unimportant
+% P[1] : α prefix (length k = sp_{i-1}(P) = 1)
+\node[Alpha] (p1) at (0*\cw, 0) {a};
+% P[2] : P[k+1], the comparison character
+\node[Cmp]   (p2) at (1*\cw, 0) {b};
+% P[3..5] : middle
 \node[NC] at (2*\cw, 0) {c};
 \node[NC] at (3*\cw, 0) {d};
 \node[NC] at (4*\cw, 0) {e};
-% P[5] : α suffix of P[0..j-1]  (j-k = 5)
-\node[Alpha] (p5) at (5*\cw, 0) {a};
-% P[6] : current j  →  P[j], the one to compare
-\node[Cmp]   (p6) at (6*\cw, 0) {b};
-% P[7..9] : not yet processed
+% P[6] : α suffix of P[1..i-1]  (i-k = 6)
+\node[Alpha] (p6) at (5*\cw, 0) {a};
+% P[7] : P[i], the current position
+\node[Cmp]   (p7) at (6*\cw, 0) {b};
+% P[8..10] : not yet processed
 \node[NC] at (7*\cw, 0) {d};
 \node[NC] at (8*\cw, 0) {e};
 \node[NC] at (9*\cw, 0) {f};
 
-% labels: P[k] and P[j] above
-\node[font=\tiny\sffamily, text=orange!70!black, above=18pt] at (p1.north) {$P[k]$};
-\node[font=\tiny\sffamily, text=orange!70!black, above=18pt] at (p6.north) {$P[j]$};
+% labels above
+\node[font=\tiny\sffamily, text=orange!70!black, above=18pt] at (p2.north) {$P[k{+}1]$};
+\node[font=\tiny\sffamily, text=orange!70!black, above=18pt] at (p7.north) {$P[i]$};
 
 % α labels below
-\node[font=\tiny\sffamily, text=violet!70!black, below=6pt] at (p0.south) {$\alpha$};
-\node[font=\tiny\sffamily, text=violet!70!black, below=6pt] at (p5.south) {$\alpha$};
+\node[font=\tiny\sffamily, text=violet!70!black, below=6pt] at (p1.south) {$\alpha$};
+\node[font=\tiny\sffamily, text=violet!70!black, below=6pt] at (p6.south) {$\alpha$};
 
 % brace under α prefix
 \draw[violet!60!black, decorate,
       decoration={brace, mirror, raise=14pt}]
-  (p0.south west) -- (p0.south east)
+  (p1.south west) -- (p1.south east)
   node[midway, below=18pt, font=\tiny\sffamily,
-       text=violet!60!black] {$k = \pi[j{-}1] = 1$};
+       text=violet!60!black] {$k = \spi{i-1} = 1$};
 
-% "= ?" annotation between the two comparison cells
+% comparison arrow
 \draw[orange!70!black, thick, <->]
-  ([yshift=18pt]p1.north) -- ([yshift=18pt]p6.north)
+  ([yshift=18pt]p2.north) -- ([yshift=18pt]p7.north)
   node[midway, above, font=\small, text=orange!70!black, yshift=10pt]
-    {$P[k] \stackrel{?}{=} P[j]$};
+    {$P[k{+}1] \stackrel{?}{=} P[i]$};
 
 % outcome label
 \node[font=\small\sffamily, text=green!45!black, below=20pt]
   at (5*\cw, 0)
-  {\checkmark\; match $\Rightarrow \pi[6] = k+1 = 2$};
+  {\checkmark\; match $\Rightarrow \spi{7} = k+1 = 2$};
 
 \end{tikzpicture}
 \caption{%
-  Computing $\pi[6]$ for $P = \texttt{abcdeabdef}$.
-  We know $k = \pi[5] = 1$: the suffix of $P[0\ldots5]$ that matches a prefix of $P$
+  Computing $\spi{7}$ for $P = \texttt{abcdeabdef}$.
+  We know $k = \spi{6} = 1$: the suffix of $P[1\ldots6]$ matching a prefix of $P$
   has length $1$ (namely $\alpha = \texttt{a}$, \textcolor{violet!70!black}{violet}).
-  We then compare $P[k] = P[1] = \texttt{b}$ against $P[j] = P[6] = \texttt{b}$
-  (\textcolor{orange!70!black}{orange}): they match, so we extend and set $\pi[6] = 2$.
+  We compare $P[k+1] = P[2] = \texttt{b}$ against $P[i] = P[7] = \texttt{b}$
+  (\textcolor{orange!70!black}{orange}): they match, so $\spi{7} = 2$.
 }
-\label{fig:failure-function}
+\label{fig:sp-computation}
 \end{figure}
 
 The resulting algorithm is the following:
 
 \begin{algorithm}[H]
-  \caption{KMP failure function}
-  \KwIn{Pattern $P[0\ldots m-1]$}
-  \KwOut{Failure function $\pi[0\ldots m-1]$}
-  $\pi[0] \gets 0$ \;
+  \caption{Computing $sp$ values}
+  \KwIn{Pattern $P[1\ldots m]$}
+  \KwOut{Array $sp[1\ldots m]$ where $sp[i] = \spi{i}$}
+  $sp[1] \gets 0$ \;
   $k \gets 0$ \tcp*{length of current candidate prefix-suffix}
-  \For{$j \gets 1$ \KwTo $m-1$}{
-    \While{$k > 0$ \textbf{and} $P[k] \neq P[j]$}{
-      $k \gets \pi[k-1]$ \tcp*{fall back}
+  \For{$i \gets 2$ \KwTo $m$}{
+    \While{$k > 0$ \textbf{and} $P[k+1] \neq P[i]$}{
+      $k \gets sp[k]$ \tcp*{fall back}
     }
-    \If{$P[k] = P[j]$}{
+    \If{$P[k+1] = P[i]$}{
       $k \gets k + 1$ \;
     }
-    $\pi[j] \gets k$ \;
+    $sp[i] \gets k$ \;
   }
-  \Return $\pi$
+  \Return $sp$
 \end{algorithm}
 
 \begin{remark}
-  The ``fall back to the prefix-suffix of the prefix-suffix'' is the recursive
+  The ``fall back to the $sp$ value of the current $sp$ value'' is the recursive
   heart of KMP: the same shift logic used during the search phase is also used
   during preprocessing.
 \end{remark}
 
 \begin{exercise}
   Design an algorithm that, given a pattern $P$ of length $m$, computes
-  $\pi[i]$ for every $i \in \{0, \ldots, m-1\}$ in $\Oh{m}$ time.
+  $\spi{i}$ for every $i \in \{1, \ldots, m\}$ in $\Oh{m}$ time.
 
   \medskip
   \textit{Hints:}
   \begin{enumerate}
-    \item Try to express $\pi[i]$ in terms of $\pi[i-1]$.
+    \item Try to express $\spi{i}$ in terms of $\spi{i-1}$.
           What is the relationship between the longest prefix-suffix of
-          $P[0\ldots i]$ and that of $P[0\ldots i-1]$?
-    \item There are two cases depending on whether $P[\pi[i-1]]$ equals
+          $P[1\ldots i]$ and that of $P[1\ldots i-1]$?
+    \item There are two cases depending on whether $P[\spi{i-1}+1]$ equals
           $P[i]$ or not. What can you do in each case?
     \item For the harder case, think recursively: if you cannot extend
           a prefix-suffix of length $k$, which shorter candidate should
           you try next?
+  \end{enumerate}
+\end{exercise}
+
+\begin{exercise}[Period of a string]
+  The \emph{period} of a string $S$ of length $n$ is the smallest integer $p \geq 1$
+  such that $S[i] = S[i+p]$ for all $1 \leq i \leq n - p$.
+  Equivalently, $p$ is the length of the shortest string $\Pi$ such that $S$ is a
+  prefix of $\Pi^{\infty} = \Pi\Pi\Pi\cdots$
+
+  Design an $\Oh{n}$-time algorithm that, given $S$, computes its period.
+
+  \medskip
+  \textit{Hints:}
+  \begin{enumerate}
+    \item Compute the $sp$ values of $S$.
+    \item What is the relationship between $sp_n(S)$ and the period of $S$?
+          In particular, is $n - sp_n(S)$ always a period?
+    \item Is it always the \emph{shortest} period?  What additional condition on
+          $sp_n(S)$ guarantees minimality?
   \end{enumerate}
 \end{exercise}
