@@ -466,7 +466,8 @@ giving an efficient $\Oh{m}$ preprocessing algorithm. There are two cases:
 
         \textit{Example:} with $P = \texttt{abcdeabdef}$ at $i=7$, we have $\spi{6}=1$
         (the prefix-suffix of $\texttt{abcdea}$ is $\texttt{a}$, length $1$). We check
-        $P[2] = \texttt{b}$ against $P[7] = \texttt{b}$: they match, so $\spi{7} = 2$.
+        $P[2] = \texttt{b}$ against $P[7] = \texttt{b}$: they match, so $\spi{7} = 2$
+        (see Figure~\ref{fig:sp-computation}).
 
   \item \textbf{Extension is not possible.} If $P[k+1] \neq P[i]$, we cannot
         extend the current prefix-suffix. We then ask: what is the longest
@@ -503,7 +504,7 @@ giving an efficient $\Oh{m}$ preprocessing algorithm. There are two cases:
 
 % P = a  b  c  d  e  a  b  d  e  f
 %     1  2  3  4  5  6  7  8  9 10
-\node[font=\small\ttfamily, anchor=east] at (-0.15, 0) {$P$};
+\node[font=\small\ttfamily, anchor=east] at (-0.45, 0) {$P$};
 
 % P[1] : α prefix (length k = sp_{i-1}(P) = 1)
 \node[Alpha] (p1) at (0*\cw, 0) {a};
@@ -532,9 +533,9 @@ giving an efficient $\Oh{m}$ preprocessing algorithm. There are two cases:
 
 % brace under α prefix
 \draw[violet!60!black, decorate,
-      decoration={brace, mirror, raise=14pt}]
+      decoration={brace, mirror, raise=18pt}]
   (p1.south west) -- (p1.south east)
-  node[midway, below=18pt, font=\tiny\sffamily,
+  node[midway, below=22pt, font=\tiny\sffamily,
        text=violet!60!black] {$k = \spi{i-1} = 1$};
 
 % comparison arrow
@@ -579,6 +580,95 @@ The resulting algorithm is the following:
   \Return $sp$
 \end{algorithm}
 
+\subsubsection*{Step-by-step: Computing $sp$ values}
+
+Let's trace the algorithm on $P = \texttt{ababaca}$.
+
+\begin{enumerate}
+  \item \textbf{$i=1$:} By definition $sp[1] = 0$. $k \gets 0$.
+  \item \textbf{$i=2$:} $k=0$, $P[1]=\texttt{a} \neq P[2]=\texttt{b}$. $sp[2] = 0$.
+  \item \textbf{$i=3$:} $k=0$, $P[1]=\texttt{a} = P[3]=\texttt{a}$. $k \gets k+1 = 1$. $sp[3] = 1$.
+  \item \textbf{$i=4$:} $k=1$, $P[2]=\texttt{b} = P[4]=\texttt{b}$. $k \gets k+1 = 2$. $sp[4] = 2$.
+  \item \textbf{$i=5$:} $k=2$, $P[3]=\texttt{a} = P[5]=\texttt{a}$. $k \gets k+1 = 3$. $sp[5] = 3$.
+  \item \textbf{$i=6$:} $k=3$, $P[4]=\texttt{b} \neq P[6]=\texttt{c}$.
+        The fallback chain is shown in Figure~\ref{fig:sp-fallback-trace}:
+        \begin{itemize}
+          \item Fallback: $k \gets sp[3] = 1$. $P[2]=\texttt{b} \neq P[6]=\texttt{c}$.
+          \item Fallback: $k \gets sp[1] = 0$. $P[1]=\texttt{a} \neq P[6]=\texttt{c}$.
+          \item Match fails, $k=0$. $sp[6] = 0$.
+        \end{itemize}
+
+% ── Figure: sp-fallback-trace ─────────────────────────────
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[
+  cell/.style={
+    minimum width=6.5mm, minimum height=6.5mm,
+    font=\ttfamily\small, inner sep=0pt,
+    text centered, rounded corners=2pt,
+  },
+  Alpha/.style={cell, draw=violet!70!black, fill=violet!25, text=violet!20!black},
+  Cmp/.style  ={cell, draw=red!65!black,   fill=red!10,    text=red!60!black},
+  NC/.style   ={cell, draw=gray!30,         fill=gray!5,    text=gray!55},
+  Pointer/.style={-Stealth, thick, red!70!black},
+]
+\def\cw{0.75}
+
+% P = a b a b a c a
+\foreach \i in {1,...,7}
+  \node[font=\tiny\sffamily, text=gray!55] at ({(\i-1)*\cw}, 1.2) {\i};
+
+\node[font=\small\ttfamily, anchor=east] at (-0.15, 0.6) {$P$};
+\foreach \i/\c in {1/a, 2/b, 3/a, 4/b, 5/a, 6/c, 7/a}
+  \node[NC] (p\i) at ({(\i-1)*\cw}, 0.6) {\c};
+
+% Step i=6 fallback
+\node[font=\tiny\sffamily, text=gray, anchor=east] at (-0.6*\cw, -0.6) {$i=6$};
+
+% Row 1: k=3, compare P[4] vs P[6]
+\node[Alpha] (r1c1) at (0*\cw, -0.6) {a};
+\node[Alpha] (r1c2) at (1*\cw, -0.6) {b};
+\node[Alpha] (r1c3) at (2*\cw, -0.6) {a};
+\node[Cmp]   (r1c4) at (3*\cw, -0.6) {b}; % P[4]
+\node[Cmp]   (r1c6) at (5*\cw, -0.6) {c}; % P[6]
+
+\node[font=\tiny\sffamily, text=red!70!black, below=3pt] at (r1c4.south) {$P[k{+}1]$};
+\node[font=\tiny\sffamily, text=red!70!black, below=3pt] at (r1c6.south) {$P[i]$};
+
+% Fallback Arrow 1
+\draw[Pointer] (3*\cw, -1.55) -- (1*\cw, -1.55)
+  node[midway, below=3pt, font=\tiny\sffamily, text=red!70!black] {mismatch! $k \gets sp[3]=1$};
+
+% Row 2: k=1, compare P[2] vs P[6]
+\node[Alpha] (r2c1) at (0*\cw, -2.4) {a};
+\node[Cmp]   (r2c2) at (1*\cw, -2.4) {b}; % P[2]
+\node[Cmp]   (r2c6) at (5*\cw, -2.4) {c}; % P[6] (repeated)
+
+\node[font=\tiny\sffamily, text=red!70!black, below=3pt] at (r2c2.south) {$P[k{+}1]$};
+
+% Fallback Arrow 2
+\draw[Pointer] (1*\cw, -3.35) -- (0*\cw, -3.35)
+  node[midway, below=3pt, font=\tiny\sffamily, text=red!70!black] {$k \gets sp[1]=0$};
+
+\end{tikzpicture}
+\caption{The fallback chain in step $i=6$ while computing $sp$ values for $P = \texttt{ababaca}$. The mismatched character $P[6]=\texttt{c}$ triggers recursive jumps through the border chain until $k=0$ is reached.}
+\label{fig:sp-fallback-trace}
+\end{figure}
+
+  \item \textbf{$i=7$:} $k=0$, $P[1]=\texttt{a} = P[7]=\texttt{a}$. $k \gets k+1 = 1$. $sp[7] = 1$.
+\end{enumerate}
+
+\begin{center}
+\begin{tabular}{rccccccc}
+  \toprule
+  $i$    & 1 & 2 & 3 & 4 & 5 & 6 & 7 \\
+  \midrule
+  $P[i]$ & \texttt{a} & \texttt{b} & \texttt{a} & \texttt{b} & \texttt{a} & \texttt{c} & \texttt{a} \\
+  $sp[i]$ & 0 & 0 & 1 & 2 & 3 & 0 & 1 \\
+  \bottomrule
+\end{tabular}
+\end{center}
+
 \begin{remark}
   The ``fall back to the $sp$ value of the current $sp$ value'' is the recursive
   heart of KMP: the same shift logic used during the search phase is also used
@@ -621,3 +711,588 @@ The resulting algorithm is the following:
           $sp_n(S)$ guarantees minimality?
   \end{enumerate}
 \end{exercise}
+
+\subsubsection{Amortized analysis of preprocessing}
+
+The $sp$-computation algorithm runs in $\Oh{m}$ total time despite the nested loops.
+The key observation is that the variable $k$ acts as a \emph{potential}:
+
+\begin{itemize}[nosep]
+  \item $k$ increases by at most $1$ per outer iteration (there are $m-1$ iterations, so $k$ grows at most $m-1$ times in total).
+  \item Each execution of the inner \textbf{while} body sets $k \gets sp[k] < k$, strictly decreasing $k$.
+  \item $k \geq 0$ always holds.
+\end{itemize}
+
+Since $k$ can decrease only as many times as it has previously increased, the inner loop runs
+$\Oh{m}$ times \emph{across all outer iterations}.
+Together with the $\Oh{m}$ overhead of the outer loop, the total preprocessing time is $\Oh{m}$.
+
+\begin{example}
+  Consider the pattern $P = \texttt{aaaaa}$ of length $5$. The $sp$ values are
+  $sp[1] = 0$, $sp[2] = 1$, $sp[3] = 2$, $sp[4] = 3$, $sp[5] = 4$.
+  The variable $k$ starts at $0$ and increases to $1$, then to $2$, then to $3$, then to $4$,
+  as we process each character of $P$. There are no decreases in this case, so the inner loop
+  runs only once per outer iteration, for a total of $\Oh{m}$ time.
+\end{example}
+
+\begin{remark}[Amortised analysis]
+  This argument is a standard \emph{amortised} one: charge each decrement of $k$ to the
+  increment that made it possible.
+  A useful analogy is a stack supporting \textsc{push} and \textsc{multi-pop}: if each
+  \textsc{push} costs $2$ (one real, one saved credit), the saved credit later pays for the
+  \textsc{pop} of the same element, bounding the total cost of any sequence of operations
+  by $\Oh{\text{number of pushes}}$.
+\end{remark}
+
+\subsubsection{The search phase}
+
+Once the $sp$ array is computed, we scan $T$ left-to-right, maintaining $j$: the number of
+characters of $P$ currently matched.
+
+\begin{algorithm}[H]
+  \caption{KMP search}
+  \KwIn{Text $T[1\ldots n]$, pattern $P[1\ldots m]$, precomputed $sp[1\ldots m]$}
+  \KwOut{All starting positions $s$ where $P$ occurs in $T$}
+  $j \gets 0$ \tcp*{characters of $P$ matched so far}
+  \For{$i \gets 1$ \KwTo $n$}{
+    \While{$j > 0$ \textbf{and} $P[j+1] \neq T[i]$}{
+      $j \gets sp[j]$ \tcp*{fall back along the border chain}
+    }
+    \If{$P[j+1] = T[i]$}{
+      $j \gets j + 1$ \;
+    }
+    \If{$j = m$}{
+      \textbf{output} $i - m + 1$ \tcp*{occurrence starting here}
+      $j \gets sp[j]$ \tcp*{continue searching}
+    }
+  }
+\end{algorithm}
+
+The same amortised argument applies: $j$ increases by at most $1$ per outer step and each
+inner fallback strictly decreases $j \geq 0$, so the inner loop runs $\Oh{n}$ times in total.
+
+\begin{theorem}
+  The KMP algorithm finds all occurrences of $P$ in $T$ in $\Oh{n + m}$ time.
+\end{theorem}
+
+% ══════════════════════════════════════════════════════════════════
+\subsection{Z-Algorithm}
+% ══════════════════════════════════════════════════════════════════
+
+\subsubsection{Definition}
+
+The Z-algorithm is a second linear-time preprocessing approach.
+Where $\spi{i}$ looks \emph{backward} (longest prefix that is also a suffix of $P[1\ldots i]$),
+the Z-value $Z_i$ looks \emph{forward} from position $i$.
+
+\begin{definition}[Z values]
+  Let $A$ be a string of length $n$. For $i \geq 2$, define
+  \[
+    Z_i(A) \;=\;
+    \begin{cases}
+      0 & \text{if } A[i] \neq A[1],\\[2pt]
+      \max\bigl\{\, \ell > 0 \mid A[1,\ell] = A[i,\,i+\ell-1] \,\bigr\} & \text{otherwise.}
+    \end{cases}
+  \]
+  In words, $Z_i(A)$ is the length of the longest prefix of $A$ that matches $A$ starting
+  at position $i$, as shown in Figure~\ref{fig:z-values-example}.
+\end{definition}
+
+% ── Figure: Z-values example ──────────────────────────────
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[
+  cell/.style={
+    minimum width=7mm, minimum height=7mm,
+    font=\ttfamily\small, inner sep=0pt,
+    text centered, rounded corners=2pt,
+  },
+  Pfx/.style={cell, draw=violet!65!black, fill=violet!22, text=violet!20!black},
+  Occ/.style={cell, draw=teal!65!black,   fill=teal!16,   text=teal!20!black},
+  NC/.style ={cell, draw=gray!35,         fill=gray!6,    text=gray!55},
+]
+\def\cw{0.82}
+
+% position indices
+\foreach \i in {1,...,6}
+  \node[font=\tiny\sffamily, text=gray!55] at ({(\i-1)*\cw}, 1.45) {\i};
+
+% string row: A = a a b a a b
+\node[font=\small\ttfamily, anchor=east] at (-0.6*\cw, 0.9) {$A$};
+\node[Pfx] (c1) at (0*\cw, 0.9) {a};
+\node[Pfx] (c2) at (1*\cw, 0.9) {a};
+\node[Pfx] (c3) at (2*\cw, 0.9) {b};
+\node[Occ] (c4) at (3*\cw, 0.9) {a};
+\node[Occ] (c5) at (4*\cw, 0.9) {a};
+\node[Occ] (c6) at (5*\cw, 0.9) {b};
+
+% Z-values row - moved up
+\node[font=\small\sffamily, anchor=east] at (-0.6*\cw, 0.15) {$Z$};
+\node[font=\small\ttfamily, text=gray!45]                at (0*\cw, 0.15) {--};
+\node[font=\small\ttfamily, text=gray!60]                at (1*\cw, 0.15) {1};
+\node[font=\small\ttfamily, text=gray!60]                at (2*\cw, 0.15) {0};
+\node[font=\small\bfseries\ttfamily, text=teal!70!black] at (3*\cw, 0.15) {3};
+\node[font=\small\ttfamily, text=gray!60]                at (4*\cw, 0.15) {1};
+\node[font=\small\ttfamily, text=gray!60]                at (5*\cw, 0.15) {0};
+
+% braces showing the two matching blocks - moved down to clear Z row
+\draw[violet!60!black, decorate, decoration={brace, mirror, raise=28pt}]
+  (c1.south west) -- (c3.south east)
+  node[midway, below=32pt, font=\tiny\sffamily, text=violet!65!black]
+    {prefix $A[1,3]$};
+\draw[teal!60!black, decorate, decoration={brace, mirror, raise=28pt}]
+  (c4.south west) -- (c6.south east)
+  node[midway, below=32pt, font=\tiny\sffamily, text=teal!65!black]
+    {$A[4,6]$,\; $Z_4=3$};
+
+% curved arrow above showing the two blocks are equal - slightly lowered
+\draw[gray!50, thick, <->, rounded corners=6pt, shorten >=2pt, shorten <=2pt]
+  ([yshift=7pt]c2.north) -- ([yshift=24pt]c2.north) --
+  node[above=2pt, font=\tiny\sffamily, text=gray!55] {same}
+  ([yshift=24pt]c5.north) -- ([yshift=7pt]c5.north);
+
+\end{tikzpicture}
+\caption{%
+  Z values for $A = \texttt{aabaab}$ ($n=6$).
+  The prefix $A[1,3] = \texttt{aab}$ (\textcolor{violet!65!black}{violet})
+  reappears at position $4$ (\textcolor{teal!65!black}{teal}), giving $Z_4 = 3$.
+  Also $Z_2 = Z_5 = 1$ since $A[1]=A[2]=A[5]=\texttt{a}$, and
+  $Z_3=Z_6=0$ since $A[3]=A[6]=\texttt{b}\neq A[1]$.
+  $Z_1$ is left undefined.
+}
+\label{fig:z-values-example}
+\end{figure}
+
+\paragraph{Connection to pattern matching.}
+Choose a separator $\$\notin\Sigma$ and form $A = P\$T$ (of length $m+1+n$).
+For any index $i$ in the $T$-part of $A$ (i.e.\ $i > m+1$):
+\[
+  Z_i(P\$T) = m
+  \quad\iff\quad
+  P \text{ occurs in } T \text{ starting at position } i - m - 1.
+\]
+The separator prevents $Z_i$ from exceeding $m$, so equality with $m$ detects all occurrences.
+
+\subsubsection{Computing Z values: the Z-box algorithm}
+
+A naive computation of all Z values costs $\Oh{n^2}$.
+The Z-algorithm achieves $\Oh{n}$ by maintaining a \emph{Z-box} $[l,r]$: the interval
+with maximum right endpoint $r$ seen so far such that $A[l,r] = A[1,\,r-l+1]$, i.e.\
+\[
+  r = l + Z_l(A) - 1 \quad (\text{maximised over all processed positions}).
+\]
+The following two cases, illustrated in Figure~\ref{fig:z-box}, distinguish how we
+compute $Z_i$:
+
+\begin{enumerate}
+  \item \textbf{$i > r$ (outside the box).}  No cached information is available.
+        Compare $A[1], A[2], \ldots$ against $A[i], A[i+1], \ldots$ directly until a
+        mismatch, setting $Z_i$ to the number of matches.
+        If $Z_i > 0$, update $l \gets i$ and $r \gets i + Z_i - 1$.
+
+  \item \textbf{$i \leq r$ (inside the box).}
+        Let $k = i - l + 1$ be the \emph{mirror} of $i$ in the prefix:
+        $A[i, r] = A[k,\, r-l+1]$ and $Z_k$ is already known.
+        \begin{enumerate}[label=(\alph*)]
+          \item \textbf{$Z_k < r - i + 1$:}  the Z-box at $k$ is strictly shorter than the
+                remaining portion of the current box.
+                The match at $i$ cannot extend further: $Z_i = Z_k$, no comparisons needed.
+          \item \textbf{$Z_k \geq r - i + 1$:}  the cached region is exhausted.
+                Start comparing from $A[r+1]$ against $A[r-i+2]$ until a mismatch,
+                then update $l \gets i$ and $r \gets i + Z_i - 1$.
+        \end{enumerate}
+\end{enumerate}
+
+% ── Figure: Z-box algorithm, case (a) ────────────────────
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[
+  cell/.style={
+    minimum width=7mm, minimum height=7mm,
+    font=\ttfamily\small, inner sep=0pt,
+    text centered, rounded corners=2pt,
+  },
+  Pfx/.style={cell, draw=violet!65!black, fill=violet!22, text=violet!20!black},
+  Box/.style={cell, draw=teal!65!black,   fill=teal!16,   text=teal!20!black},
+  Cur/.style={cell, draw=orange!80!black, fill=orange!22, text=orange!20!black},
+  NC/.style ={cell, draw=gray!35,         fill=gray!6,    text=gray!55},
+]
+\def\cw{0.82}
+
+% position indices - moved below boxes to avoid arrow overlap
+\foreach \i in {1,...,6}
+  \node[font=\tiny\sffamily, text=gray!55] at ({(\i-1)*\cw}, 0.8) {\i};
+
+% string row: A = a a b a a b
+%   A[1..3] = prefix (violet); A[4..6] = Z-box (teal)
+%   A[2] = mirror k=2 (orange); A[5] = current i=5 (orange)
+\node[font=\small\ttfamily, anchor=east] at (-0.6*\cw, 1.3) {$A$};
+\node[Pfx] (c1) at (0*\cw, 1.3) {a};
+\node[Cur] (c2) at (1*\cw, 1.3) {a};   % mirror k=2
+\node[Pfx] (c3) at (2*\cw, 1.3) {b};
+\node[Box] (c4) at (3*\cw, 1.3) {a};   % l=4
+\node[Cur] (c5) at (4*\cw, 1.3) {a};   % i=5
+\node[Box] (c6) at (5*\cw, 1.3) {b};   % r=6
+
+% l, r, i, k labels above
+\node[font=\tiny\sffamily, text=orange!75!black, above=2pt] at (c2.north) {$k{=}2$};
+\node[font=\tiny\sffamily, text=teal!70!black,   above=2pt] at (c4.north) {$l{=}4$};
+\node[font=\tiny\sffamily, text=orange!75!black, above=2pt] at (c5.north) {$i{=}5$};
+\node[font=\tiny\sffamily, text=teal!70!black,   above=2pt] at (c6.north) {$r{=}6$};
+
+% brace under Z-box [4,6]
+\draw[teal!60!black, decorate, decoration={brace, mirror, raise=8pt}]
+  (c4.south west) -- (c6.south east)
+  node[midway, below=12pt, font=\tiny\sffamily, text=teal!65!black]
+    {Z-box $[l,r]=[4,6]$, \;$Z_l=3$};
+
+% brace under prefix [1,3]
+\draw[violet!55!black, decorate, decoration={brace, mirror, raise=8pt}]
+  (c1.south west) -- (c3.south east)
+  node[midway, below=12pt, font=\tiny\sffamily, text=violet!65!black]
+    {prefix $A[1,\,Z_l]$};
+
+% curved arrow: mirror relationship k=2 <-> i=5 - squared to clear labels
+\draw[orange!65!black, thick, <->, rounded corners=6pt,
+      shorten >=2pt, shorten <=2pt]
+  ([yshift=14pt]c2.north) -- ([yshift=30pt]c2.north) --
+  node[above=2pt, font=\tiny\sffamily, text=orange!70!black] {mirror}
+  ([yshift=30pt]c5.north) -- ([yshift=14pt]c5.north);
+
+% conclusion annotation
+\node[font=\small\sffamily, text=teal!65!black, anchor=west]
+  at (0, -0.85)
+  {$Z_k = Z_2 = 1 \;<\; r{-}i{+}1 = 2$
+   \;\;$\Rightarrow$\;\;
+   $Z_5 = Z_k = 1$\quad (no comparisons, case~(a))};
+
+\end{tikzpicture}
+\caption{%
+  Z-box algorithm on $A = \texttt{aabaab}$, step $i=5$.
+  The Z-box $[l,r]=[4,6]$ (\textcolor{teal!65!black}{teal}) records that
+  $A[4,6]=A[1,3]=\texttt{aab}$.
+  The mirror of $i=5$ in the prefix is $k=i{-}l{+}1=2$
+  (\textcolor{orange!70!black}{orange}).
+  Since $Z_k = Z_2 = 1$ is strictly less than the remaining box width
+  $r{-}i{+}1=2$, the match at $i$ cannot extend beyond $Z_k$ --- we set
+  $Z_5=1$ immediately without any character comparisons (case~(a)).
+}
+\label{fig:z-box}
+\end{figure}
+
+\begin{algorithm}[H]
+  \caption{Z-Algorithm}
+  \KwIn{String $A[1\ldots n]$}
+  \KwOut{Array $Z[2\ldots n]$ with $Z[i] = Z_i(A)$}
+  $l \gets 0$\;  $r \gets 0$\;
+  \For{$i \gets 2$ \KwTo $n$}{
+    \eIf{$i > r$}{
+      $Z[i] \gets 0$\;
+      \While{$i + Z[i] \leq n$ \textbf{and} $A[1 + Z[i]] = A[i + Z[i]]$}{
+        $Z[i] \gets Z[i] + 1$\;
+      }
+    }{
+      $k \gets i - l + 1$\;
+      \eIf{$Z[k] < r - i + 1$}{
+        $Z[i] \gets Z[k]$ \tcp*{fully inside — no comparisons}
+      }{
+        $Z[i] \gets r - i + 1$\;
+        \While{$i + Z[i] \leq n$ \textbf{and} $A[1 + Z[i]] = A[i + Z[i]]$}{
+          $Z[i] \gets Z[i] + 1$\;
+        }
+      }
+    }
+    \If{$Z[i] > 0$ \textbf{and} $i + Z[i] - 1 > r$}{
+      $l \gets i$\;  $r \gets i + Z[i] - 1$\;
+    }
+  }
+  \Return $Z$
+\end{algorithm}
+
+\paragraph{Amortised $\Oh{n}$ complexity.}
+The variable $r$ is non-decreasing and bounded by $n$, so it increments at most $n$ times.
+Every comparison in the \textbf{while} loops either advances $r$ (paid by the budget) or
+ends the step without advancing $r$ (at most one per outer step $i$).
+Hence the total number of comparisons is $\Oh{n}$.
+
+\subsubsection{From Z values to $sp$ values}
+\label{sec:z-to-sp}
+
+The $sp$ values of $P$ can be read off directly from its Z-array.
+
+\begin{observation}
+  $Z_j(P) = k$ means $P[j \ldots j+k-1] = P[1 \ldots k]$, so $P[1\ldots k]$ is a
+  prefix-suffix of $P[1\ldots i]$ for $i = j + k - 1$.
+  We say $j$ \emph{maps to} $i$ when $i = j + Z_j(P) - 1$.
+\end{observation}
+
+\begin{proposition}
+  \label{prop:sp-from-Z}
+  For each $i \in \{2, \ldots, m\}$,
+  \[
+    \spi{i} \;=\; Z_{j^*}(P),
+    \qquad\text{where}\quad
+    j^* = \min\bigl\{\, j \geq 2 \mid j + Z_j(P) - 1 = i \,\bigr\}.
+  \]
+\end{proposition}
+
+\begin{proof}
+  Any $j$ mapping to $i$ gives a prefix-suffix of $P[1\ldots i]$ of length
+  $Z_j(P) = i - j + 1$.
+  The minimum such $j$ maximises $i - j + 1$, yielding the longest prefix-suffix, which is
+  $\spi{i}$ by definition.
+\end{proof}
+
+\begin{exercise}
+  Using the Z-array of $P$, design an $\Oh{m}$ algorithm that computes $\spi{i}$ for every
+  $i \in \{1, \ldots, m\}$.
+\end{exercise}
+
+% ══════════════════════════════════════════════════════════════════
+\subsection{Strong borders and real-time KMP}
+% ══════════════════════════════════════════════════════════════════
+
+\subsubsection{The real-time bottleneck}
+
+KMP with plain $sp$ values is \emph{blind} (it never re-reads $T$) but not \emph{real-time}:
+a single new character of $T$ can trigger a fallback chain costing $\Oh{m}$ in the worst
+case.
+The fix is to collapse the entire chain into a single precomputed lookup.
+
+\subsubsection{Strong border ($sp'$)}
+
+\begin{definition}[Strong border]
+  For $i \in \{1,\ldots,m-1\}$, define
+  \[
+    \spi{i}' \;=\; \max\bigl\{\, k \leq \spi{i} \mid k = 0 \text{ or }
+    P[k+1] \neq P[i+1] \,\bigr\}.
+  \]
+  This is the length of the longest proper prefix-suffix of $P[1\ldots i]$ whose next
+  character differs from $P[i+1]$.
+\end{definition}
+
+% ── Figure: strong border ─────────────────────────────────
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[
+  cell/.style={
+    minimum width=7mm, minimum height=7mm,
+    font=\ttfamily\small, inner sep=0pt,
+    text centered, rounded corners=2pt,
+  },
+  Brd/.style={cell, draw=violet!65!black, fill=violet!22, text=violet!20!black},
+  Nxt/.style={cell, draw=orange!80!black, fill=orange!22, text=orange!20!black},
+  NC/.style ={cell, draw=gray!35,         fill=gray!6,    text=gray!55},
+]
+\def\cw{0.82}
+
+% position indices - moved closer to boxes to avoid arrow overlap
+\foreach \i in {1,...,5}
+  \node[font=\tiny\sffamily, text=gray!55] at ({(\i-1)*\cw}, 0.55) {\i};
+
+% P label - moved further left
+\node[font=\small\ttfamily, anchor=east] at (-0.6*\cw, 0.9) {$P$};
+\node[Brd] (p1) at (0*\cw, 1.05) {a};   % prefix of border
+\node[Nxt] (p2) at (1*\cw, 1.05) {a};   % P[k+1]
+\node[NC]  (p3) at (2*\cw, 1.05) {b};
+\node[Brd] (p4) at (3*\cw, 1.05) {a};   % suffix of border (= p1)
+\node[Nxt] (p5) at (4*\cw, 1.05) {a};   % P[i+1]
+
+% dashed separator
+\draw[gray!40, dashed, thick]
+  (3.5*\cw, 0.4) -- (3.5*\cw, 1.4);
+\node[font=\tiny\sffamily, text=gray!50] at (3.5*\cw, 1.5)
+  [above] {$i{+}1$};
+
+% labels below
+\node[font=\tiny\sffamily, text=violet!65!black, below=4pt] at (p1.south)
+  {$P[k]$};
+\node[font=\tiny\sffamily, text=orange!70!black, below=4pt] at (p2.south)
+  {$P[k{+}1]$};
+\node[font=\tiny\sffamily, text=violet!65!black, below=4pt] at (p4.south)
+  {$P[i]$};
+\node[font=\tiny\sffamily, text=orange!70!black, below=4pt] at (p5.south)
+  {$P[i{+}1]$};
+
+% curved arrow above: P[k+1] = P[i+1] => useless - increased height to 32pt
+\draw[orange!65!black, thick, <->, rounded corners=6pt,
+      shorten >=2pt, shorten <=2pt]
+  ([yshift=5pt]p2.north) -- ([yshift=32pt]p2.north) --
+  node[above=2pt, font=\small, text=orange!70!black]
+    {$P[k{+}1] = P[i{+}1]$ \;\textbf{---} useless border!}
+  ([yshift=32pt]p5.north) -- ([yshift=5pt]p5.north);
+
+% brace under border (k=1): P[1..1]=P[4..4]
+\draw[violet!60!black, decorate, decoration={brace, mirror, raise=22pt}]
+  (p1.south west) -- (p4.south east)
+  node[midway, below=26pt, font=\tiny\sffamily, text=violet!65!black]
+    {border $\alpha$, \;$k = \spi{4} = 1$};
+
+\end{tikzpicture}
+\caption{%
+  Strong border for $P = \texttt{aabaa}$ at $i=4$.
+  The border $\alpha = \texttt{a}$ (\textcolor{violet!65!black}{violet},
+  $k=\spi{4}=1$) satisfies $P[1]=P[4]$,
+  but its ``next character'' $P[k{+}1]=P[2]=\texttt{a}$
+  (\textcolor{orange!70!black}{orange}) equals $P[i{+}1]=P[5]=\texttt{a}$.
+  Any mismatch on $P[5]$ with text character $x\neq\texttt{a}$ would
+  \emph{also} fail immediately at $P[k{+}1]$ after the fallback ---
+  the border is useless.
+  Hence $\spi{4}'=0$: skip straight to the start.
+}
+\label{fig:strong-border}
+\end{figure}
+
+Any mismatch on $P[i+1]$ with a text character $x$ would also fail at the next
+border $k = \spi{i}$ if $P[k+1] = P[i+1]$ --- we say such borders are \emph{useless}
+(see Figure~\ref{fig:strong-border}).
+$\spi{i}'$ skips all of them in one step, guaranteeing $\Oh{1}$ worst-case time per
+character of $T$.
+
+\subsubsection{Character-indexed borders and the DFA}
+
+For a complete real-time solution we precompute, for each position $i$ and character
+$x \in \Sigma$, the longest border of $P[1\ldots i]$ whose next character is exactly $x$:
+
+\begin{definition}[$sp_{i,x}$ values]
+  For $i \in \{0,1,\ldots,m\}$ and $x \in \Sigma$,
+  \[
+    \mathrm{sp}_{i,x}(P) \;=\; \max\bigl\{\, k \leq \spi{i} \mid P[k+1] = x \,\bigr\},
+  \]
+  with default $0$ when no such $k$ exists.
+\end{definition}
+
+The table $\{\mathrm{sp}_{i,x}(P)\}_{i,x}$ is precisely the \emph{transition function} of
+the deterministic finite automaton (DFA) for pattern $P$: state $i$ encodes ``$i$ characters
+of $P$ matched so far'', and on reading $x$ the automaton transitions to
+$\mathrm{sp}_{i,x}(P) + \mathbf{1}[P[i+1]=x]$.\aside{%
+  The DFA has $m+1$ states and $|\Sigma|$ transitions per state, so the table takes
+  $\Oh{m|\Sigma|}$ space and time to build.}
+With this table, each character of $T$ is processed in $\Oh{1}$ worst-case time, making
+KMP truly \textbf{real-time}.
+
+\paragraph{Online vs.\ real-time: KMP vs.\ Z-algorithm.}
+The Z-algorithm requires the \emph{entire} string before it can report results — the Z-box
+$[l,r]$ may depend on characters far ahead — so it is \emph{not online}.\aside{%
+  KMP with $sp'$ (or the full $sp_{i,x}$ table) is also \emph{blind} and processes each
+  new character in $\Oh{1}$ worst-case, which is why it appears as real-time in the
+  comparison table above.}
+KMP with $sp'$ processes $T$ one character at a time in $\Oh{1}$ worst-case per character,
+making it both \textbf{online} and \textbf{real-time} — the key practical advantage over
+the Z-algorithm.
+
+% ══════════════════════════════════════════════════════════════════
+\subsection{A Comprehensive Trace: KMP and Z-Algorithm}
+% ══════════════════════════════════════════════════════════════════
+
+To solidify these concepts, let's trace both algorithms on a concrete example.
+
+\subsubsection{KMP Step-by-Step}
+
+Consider the pattern $P = \texttt{ababa}$ and the text $T = \texttt{ababcababa}$.
+
+\paragraph{1. Preprocessing $P$.}
+We compute the $sp$ array for $P$.
+\begin{center}
+\begin{tabular}{rccccc}
+  \toprule
+  $i$    & 1 & 2 & 3 & 4 & 5 \\
+  \midrule
+  $P[i]$ & \texttt{a} & \texttt{b} & \texttt{a} & \texttt{b} & \texttt{a} \\
+  $\spi{i}$ & 0 & 0 & 1 & 2 & 3 \\
+  \bottomrule
+\end{tabular}
+\end{center}
+\aside{For $i=4$, $P[1..4]=\texttt{abab}$. Proper prefix-suffixes are $\texttt{ab}$ (len 2) and $\texttt{a}$ (len 1). Max is 2.}
+
+\paragraph{2. Searching $T$.}
+We maintain a pointer $i$ into $T$ and a pointer $j$ representing the length of the current match in $P$.
+The complete trace is shown in Figure~\ref{fig:kmp-trace}.
+
+% ── Figure: KMP Full Trace ────────────────────────────────
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[
+  cell/.style={
+    minimum width=6.5mm, minimum height=6.5mm,
+    font=\ttfamily\small, inner sep=0pt,
+    text centered, rounded corners=2pt,
+  },
+  Tcell/.style={cell, draw=blue!50!black, fill=blue!8},
+  Match/.style={cell, draw=green!55!black, fill=green!18, text=green!30!black},
+  Fail/.style ={cell, draw=red!65!black,   fill=red!12,   text=red!50!black},
+  Skip/.style ={cell, draw=gray!30,        fill=gray!5,    text=gray!40},
+  Pointer/.style={-Stealth, thick, red!70!black},
+]
+\def\cw{0.75}
+
+% --- Text T ---
+\node[font=\small\ttfamily, anchor=east] at (-0.5, 3.5) {$T$};
+\foreach \i/\c in {1/a, 2/b, 3/a, 4/b, 5/c, 6/a, 7/b, 8/a, 9/b, 10/a}
+  \node[Tcell] (t\i) at ({(\i-1)*\cw}, 3.5) {\c};
+
+% --- Step 1: i=1 to 4, match abab ---
+\node[font=\tiny\sffamily, text=gray] at (-0.7, 2.5) {Step 1};
+\foreach \i/\c in {1/a, 2/b, 3/a, 4/b} \node[Match] at ({(\i-1)*\cw}, 2.5) {\c};
+\node[Fail] at (4*\cw, 2.5) {a}; % P[5]
+\node[font=\tiny\sffamily, text=red!70!black, anchor=west] at (10.5*\cw, 2.5) {$T[5]=\texttt{c} \neq P[5]$};
+
+% --- Fallback ---
+\draw[Pointer] (4*\cw, 2.2) -- (4*\cw, 1.8);
+\node[font=\tiny\sffamily, text=red!70!black, anchor=west] at (10.5*\cw, 2.0) {mismatch! $j \gets sp[4]=2$};
+
+% --- Step 2: i=5, match aba? No ---
+\node[font=\tiny\sffamily, text=gray] at (-0.7, 1.5) {Step 2};
+\node[Skip] at (2*\cw, 1.5) {a}; \node[Skip] at (3*\cw, 1.5) {b}; % aligned ab
+\node[Fail] at (4*\cw, 1.5) {a}; % P[3]
+\node[font=\tiny\sffamily, text=red!70!black, anchor=west] at (10.5*\cw, 1.5) {$T[5]=\texttt{c} \neq P[3]$};
+
+% --- Fallback ---
+\draw[Pointer] (4*\cw, 1.2) -- (4*\cw, 0.8);
+\node[font=\tiny\sffamily, text=violet!80!black, anchor=west] at (10.5*\cw, 1.0) {$j \gets sp[2]=0$};
+
+% --- Step 3: i=5, match a? No ---
+\node[font=\tiny\sffamily, text=gray] at (-0.7, 0.5) {Step 3};
+\node[Fail] at (4*\cw, 0.5) {a}; % P[1]
+\node[font=\tiny\sffamily, text=red!70!black, anchor=west] at (10.5*\cw, 0.5) {$T[5]=\texttt{c} \neq P[1]$};
+
+% --- Step 4: i=6 to 10, Match! ---
+\node[font=\tiny\sffamily, text=gray] at (-0.7, -0.5) {Step 4};
+\foreach \i/\c [evaluate=\i as \tx using int(\i+5)] in {1/a, 2/b, 3/a, 4/b, 5/a}
+  \node[Match] at ({(\tx-1)*\cw}, -0.5) {\c};
+\node[font=\tiny\bfseries\sffamily, text=green!45!black, anchor=west] at (10.5*\cw, -0.5) {MATCH!};
+
+\end{tikzpicture}
+\caption{KMP trace for $P=\texttt{ababa}$ in $T=\texttt{ababcababa}$. Step 1 finds a mismatch at $T[5]$. KMP falls back twice ($j=4 \to 2 \to 0$) without re-reading $T$. Finally, Step 4 finds a complete match starting at $T[6]$.}
+\label{fig:kmp-trace}
+\end{figure}
+
+\subsubsection{Z-Algorithm Trace}
+
+Let's compute the Z-values for the string $S = \texttt{aababca}$.
+
+\begin{enumerate}
+  \item \textbf{$i=2$:} $S[2]=\texttt{a} = S[1]$. Check $S[3]=\texttt{b} \neq S[2]$. $Z_2 = 1$.
+        Box $[l,r] = [2,2]$.
+  \item \textbf{$i=3$:} $i > r=2$. $S[3]=\texttt{b} \neq S[1]$. $Z_3 = 0$. Box stays $[2,2]$.
+  \item \textbf{$i=4$:} $i > r=2$. $S[4]=\texttt{a} = S[1]$. Check $S[5]=\texttt{b} = S[2]$, $S[6]=\texttt{c} \neq S[3]$. $Z_4 = 2$.
+        New box $[l,r] = [4,5]$.
+  \item \textbf{$i=5$:} $i \leq r=5$. Mirror $k = i-l+1 = 5-4+1 = 2$.
+        $Z_k = Z_2 = 1$. Remaining box width $r-i+1 = 5-5+1 = 1$.
+        Since $Z_k \not< r-i+1$ (Case 2b), we try to extend from $r+1 = 6$.
+        $S[6]=\texttt{c} \neq S[3]$. No extension. $Z_5 = 1 + 0 = 1$. Box stays $[4,5]$.
+  \item \textbf{$i=6$:} $i > r=5$. $S[6]=\texttt{c} \neq S[1]$. $Z_6 = 0$.
+  \item \textbf{$i=7$:} $i > r=5$. $S[7]=\texttt{a} = S[1]$. No more chars. $Z_7 = 1$.
+\end{enumerate}
+
+\begin{center}
+\begin{tabular}{rccccccc}
+  \toprule
+  $i$    & 1 & 2 & 3 & 4 & 5 & 6 & 7 \\
+  \midrule
+  $S[i]$ & \texttt{a} & \texttt{a} & \texttt{b} & \texttt{a} & \texttt{b} & \texttt{c} & \texttt{a} \\
+  $Z_i$  & -- & 1 & 0 & 2 & 1 & 0 & 1 \\
+  \bottomrule
+\end{tabular}
+\end{center}
+
