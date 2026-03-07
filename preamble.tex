@@ -66,6 +66,28 @@
 \usepackage{booktabs}
 \usepackage{cleveref}
 
+% --- intermezzo box ---
+\usepackage{mdframed}
+\newmdenv[
+  skipabove=\bigskipamount,
+  skipbelow=\bigskipamount,
+  backgroundcolor=gray!7,
+  linecolor=gray!45,
+  linewidth=0.6pt,
+  innertopmargin=10pt,
+  innerbottommargin=10pt,
+  innerleftmargin=12pt,
+  innerrightmargin=8pt,
+]{intermezzoframe}
+\newenvironment{intermezzo}[1]{%
+  \begin{intermezzoframe}%
+  \noindent{\footnotesize\sffamily\scshape Intermezzo}\enspace%
+  {\small\sffamily\bfseries ---\enspace#1}%
+  \par\smallskip{\color{gray!60}\hrule height 0.4pt}\smallskip
+}{%
+  \end{intermezzoframe}%
+}
+
 % ---- theorem environments ----
 \theoremstyle{plain}
 \newtheorem{theorem}{Theorem}[section]

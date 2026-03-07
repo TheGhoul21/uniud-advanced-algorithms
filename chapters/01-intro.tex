@@ -712,19 +712,113 @@ Let's trace the algorithm on $P = \texttt{ababaca}$.
   \end{enumerate}
 \end{exercise}
 
-\subsubsection{Amortized analysis of preprocessing}
+\begin{intermezzo}{Amortised analysis — the credit method}
+
+Some algorithms contain operations that look expensive in isolation but are cheap
+\emph{on average} over any sequence of calls.
+\emph{Amortised analysis} makes this precise by distributing the cost of occasional
+expensive operations across the many cheap ones that made them possible.
+
+A clean way to formalise this is the \textbf{credit method}.
+
+\begin{definition}[Credit method]
+  Assign each operation an \emph{amortised cost} $\hat{c}$ (which we choose freely).
+  When an operation with real cost $c$ runs:
+  \begin{itemize}[nosep]
+    \item if $\hat{c} > c$, the surplus $\hat{c} - c$ is deposited as \emph{credits} into a bank;
+    \item if $\hat{c} < c$, the deficit $c - \hat{c}$ is withdrawn from the bank.
+  \end{itemize}
+  \textbf{Invariant:} the bank balance must never go negative.
+
+  \medskip
+  \textbf{Consequence:} since the bank starts at $0$ and never goes below $0$,
+  \[
+    \sum_{i} c_i \;\leq\; \sum_{i} \hat{c}_i,
+  \]
+  i.e.\ the total real cost is bounded by the total amortised cost.
+\end{definition}
+
+\paragraph{Example: stack with \textsc{push} and \textsc{multi-pop}.}
+Consider a stack supporting two operations:
+\begin{itemize}[nosep]
+  \item $\textsc{push}(x)$: push element $x$ onto the stack; real cost $1$.
+  \item $\textsc{multi-pop}(k)$: pop the top $\min(k,\,|S|)$ elements; real cost $=$ number of elements actually popped.
+\end{itemize}
+A single \textsc{multi-pop} can cost $\Th{n}$, so a naive worst-case analysis gives
+$\Oh{n^2}$ for $n$ operations.  Amortised analysis does much better.
+
+\medskip
+\textbf{Credit assignment.}
+Attach $1$ credit to each element at the moment it is pushed:
+\begin{itemize}[nosep]
+  \item $\textsc{push}$: amortised cost $\hat{c} = 2$
+        (pay $1$ for the real push, deposit $1$ credit \emph{on the element}).
+  \item $\textsc{multi-pop}(k)$: amortised cost $\hat{c} = 0$
+        (use the $1$ credit stored on each popped element to pay for its removal).
+\end{itemize}
+The bank balance equals the number of elements on the stack, which is always $\geq 0$,
+so the invariant holds.
+
+\begin{example}[Credit trace for a stack]
+  The table below traces the sequence
+  \textsc{push}(a), \textsc{push}(b), \textsc{push}(c), \textsc{multi-pop}(2),
+  \textsc{push}(d), \textsc{push}(e), \textsc{multi-pop}(3).
+
+  \medskip
+  \begin{center}
+  \begin{tabular}{lcccc}
+    \toprule
+    Operation              & Stack after  & Real cost & Amortised cost & Bank \\
+    \midrule
+    \textsc{push}(a)       & $[a]$        & 1         & 2              & 1    \\
+    \textsc{push}(b)       & $[a,b]$      & 1         & 2              & 2    \\
+    \textsc{push}(c)       & $[a,b,c]$    & 1         & 2              & 3    \\
+    \textsc{multi-pop}(2)  & $[a]$        & 2         & 0              & 1    \\
+    \textsc{push}(d)       & $[a,d]$      & 1         & 2              & 2    \\
+    \textsc{push}(e)       & $[a,d,e]$    & 1         & 2              & 3    \\
+    \textsc{multi-pop}(3)  & $[\,]$       & 3         & 0              & 0    \\
+    \midrule
+    \textbf{Total}         &              & \textbf{10} & \textbf{10}  &      \\
+    \bottomrule
+  \end{tabular}
+  \end{center}
+
+  \medskip
+  The bank never goes negative, confirming the invariant.
+  The total real cost $10$ is indeed $\leq$ the total amortised cost $10$.
+\end{example}
+
+\begin{lemma}
+  Any sequence of $n$ \textsc{push} and \textsc{multi-pop} operations on an initially
+  empty stack costs $\Oh{n}$ in total.
+\end{lemma}
+\begin{proof}
+  There are at most $n$ pushes, each with amortised cost $2$, and all \textsc{multi-pop}s
+  have amortised cost $0$.  The total amortised cost is therefore at most $2n$.
+  By the credit-method bound, the total real cost is at most $2n = \Oh{n}$.
+\end{proof}
+
+\end{intermezzo}
+
+\subsubsection{Application to KMP preprocessing}
 
 The $sp$-computation algorithm runs in $\Oh{m}$ total time despite the nested loops.
-The key observation is that the variable $k$ acts as a \emph{potential}:
+We apply the credit method with $k$ as the potential: credits measure how much $k$
+can still decrease.
 
 \begin{itemize}[nosep]
-  \item $k$ increases by at most $1$ per outer iteration (there are $m-1$ iterations, so $k$ grows at most $m-1$ times in total).
-  \item Each execution of the inner \textbf{while} body sets $k \gets sp[k] < k$, strictly decreasing $k$.
+  \item $k$ increases by at most $1$ per outer iteration (there are $m-1$ iterations,
+        so $k$ grows at most $m-1$ times in total).
+  \item Each execution of the inner \textbf{while} body sets $k \gets sp[k] < k$,
+        strictly decreasing $k$.
   \item $k \geq 0$ always holds.
 \end{itemize}
 
-Since $k$ can decrease only as many times as it has previously increased, the inner loop runs
-$\Oh{m}$ times \emph{across all outer iterations}.
+Assign amortised cost $2$ to each outer step that increments $k$ (real cost $1$ plus
+deposit $1$ credit), and amortised cost $0$ to each inner iteration that decrements $k$
+(use the saved credit).  The bank balance equals $k \geq 0$, so the invariant holds,
+and the total number of inner iterations is at most the total number of increments,
+which is $\Oh{m}$.
 Together with the $\Oh{m}$ overhead of the outer loop, the total preprocessing time is $\Oh{m}$.
 
 \begin{example}
@@ -734,15 +828,6 @@ Together with the $\Oh{m}$ overhead of the outer loop, the total preprocessing t
   as we process each character of $P$. There are no decreases in this case, so the inner loop
   runs only once per outer iteration, for a total of $\Oh{m}$ time.
 \end{example}
-
-\begin{remark}[Amortised analysis]
-  This argument is a standard \emph{amortised} one: charge each decrement of $k$ to the
-  increment that made it possible.
-  A useful analogy is a stack supporting \textsc{push} and \textsc{multi-pop}: if each
-  \textsc{push} costs $2$ (one real, one saved credit), the saved credit later pays for the
-  \textsc{pop} of the same element, bounding the total cost of any sequence of operations
-  by $\Oh{\text{number of pushes}}$.
-\end{remark}
 
 \subsubsection{The search phase}
 
