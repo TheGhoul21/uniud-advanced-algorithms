@@ -446,7 +446,7 @@ Well, it turns out that this is indeed correct, and we won't miss any matches by
 \subsubsection{Preprocessing: computing $sp$ values}
 
 To exploit this idea, we need to precompute for every prefix $P[1\ldots i]$ its
-\emph{longest proper prefix that is also a suffix}\aside{A \emph{proper} prefix/suffix excludes the string itself.}. We write this length as $\spi{i}$.
+\emph{longest proper prefix that is also a suffix}. We write this length as $\spi{i}$\aside{A \emph{proper} prefix/suffix excludes the string itself; $\spi{i}$ is thus an integer.}.
 
 \begin{definition}[$sp$ values]
   Let $P$ be a pattern of length $m$. For each $i \in \{1,\ldots,m\}$, define
