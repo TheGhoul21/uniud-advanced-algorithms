@@ -580,22 +580,91 @@ The resulting algorithm is the following:
   \Return $sp$
 \end{algorithm}
 
+\begin{remark}[{Why fall back to $sp[k]$?}]
+  At every point in the loop, $k$ has a precise meaning: it is the length
+  of the longest prefix of $P$ that currently matches a suffix of
+  $P[1\ldots i{-}1]$.
+  In other words,
+  \[
+    P[1\ldots k] \;=\; P[i-k\ldots i-1],
+  \]
+  the $k$ characters immediately before position~$i$ are exactly the first $k$
+  characters of the pattern.
+  When $P[k+1] = P[i]$ we can extend this match by one: $sp[i] = k+1$.
+  When $P[k+1] \neq P[i]$ the match of length $k$ cannot be extended, and we
+  need a shorter candidate $j < k$ that still satisfies the same property:
+  $P[1\ldots j] = P[i-j\ldots i-1]$.
+
+  \smallskip\noindent
+  \textbf{Key insight.}
+  $P[1\ldots k]$ is not an arbitrary string --- it is a \emph{prefix} of $P$.
+  Any valid candidate $j$ must be a prefix of $P$ that also appears as a
+  suffix of $P[1\ldots i{-}1]$.
+  Two simple observations handle this:
+  \begin{itemize}[noitemsep, topsep=2pt]
+    \item \emph{Prefix of a prefix is a prefix}: if $P[1\ldots j]$ is a
+          prefix of $P[1\ldots k]$, it is a prefix of~$P$.
+    \item \emph{Suffix of a suffix is a suffix}: since $P[1\ldots k]$
+          is a suffix of $P[1\ldots i{-}1]$ (by the invariant), any suffix of
+          $P[1\ldots k]$ of length $j$ is also a suffix of $P[1\ldots i{-}1]$.
+  \end{itemize}
+  Therefore $j$ is a valid candidate \emph{if and only if} $P[1\ldots j]$ is
+  a \emph{border} of $P[1\ldots k]$ (a string that is both a prefix and a
+  suffix of it).
+  The longest such border is $sp[k]$, already computed during preprocessing.
+  Any value strictly between $sp[k]$ and $k$ is, by definition of $sp[k]$,
+  not a border of $P[1\ldots k]$ and therefore not a valid candidate --- no
+  check is needed.
+  We jump directly to $k \gets sp[k]$ and repeat.
+  Figure~\ref{fig:sp-fallback-trace} shows this chain for $i=6$, $k=3$.
+\end{remark}
+
+\begin{note}[{Formal argument and example}]
+  \textit{Proof that values between $sp[k]$ and $k$ are skipped correctly.}
+  Suppose for contradiction that $sp[k] < k' < k$ satisfies the invariant,
+  i.e.\ $P[1\ldots k'] = P[i-k'\ldots i-1]$.
+  Since $k' < k$, the suffix $P[i-k'\ldots i-1]$ is a suffix of
+  $P[i-k\ldots i-1] = P[1\ldots k]$.
+  So $P[1\ldots k']$ is simultaneously a prefix and a suffix of $P[1\ldots k]$:
+  a border of length $k' > sp[k]$, contradicting $sp[k]$ being the longest
+  proper border of $P[1\ldots k]$. \hfill$\square$
+
+  \smallskip
+  \textit{Example: a fallback that succeeds.}
+  Let $P = \texttt{ababcababa}$ and consider $i = 10$.
+  We have $k = 4$ since $P[1\ldots 4] = P[6\ldots 9] = \texttt{abab}$.
+  Check $P[5] = \texttt{c}$ vs.\ $P[10] = \texttt{a}$: mismatch.
+  Could $k'=3$ be a valid candidate?
+  It would need $P[1\ldots 3]$ to be a border of $\texttt{abab}$,
+  i.e.\ $\texttt{aba} = \texttt{bab}$: no.
+  The longest border of $\texttt{abab}$ is $\texttt{ab}$ (length~$2$),
+  so $sp[4] = 2$.
+  We fall back to $k = 2$: $P[1\ldots 2] = P[8\ldots 9] = \texttt{ab}$.
+  Check $P[3] = \texttt{a}$ vs.\ $P[10] = \texttt{a}$: \textbf{match}!
+  Hence $sp[10] = 3$.
+  Skipping $k'=3$ was not a shortcut --- it was the only correct move.
+\end{note}
+
 \subsubsection*{Step-by-step: Computing $sp$ values}
 
 Let's trace the algorithm on $P = \texttt{ababaca}$.
 
-\begin{enumerate}
+\begin{enumerate}[noitemsep, topsep=3pt]
   \item \textbf{$i=1$:} By definition $sp[1] = 0$. $k \gets 0$.
   \item \textbf{$i=2$:} $k=0$, $P[1]=\texttt{a} \neq P[2]=\texttt{b}$. $sp[2] = 0$.
   \item \textbf{$i=3$:} $k=0$, $P[1]=\texttt{a} = P[3]=\texttt{a}$. $k \gets k+1 = 1$. $sp[3] = 1$.
   \item \textbf{$i=4$:} $k=1$, $P[2]=\texttt{b} = P[4]=\texttt{b}$. $k \gets k+1 = 2$. $sp[4] = 2$.
   \item \textbf{$i=5$:} $k=2$, $P[3]=\texttt{a} = P[5]=\texttt{a}$. $k \gets k+1 = 3$. $sp[5] = 3$.
-  \item \textbf{$i=6$:} $k=3$, $P[4]=\texttt{b} \neq P[6]=\texttt{c}$.
+  \item \textbf{$i=6$:} $k=3$.
+        The invariant gives $P[1\ldots 3] = P[3\ldots 5] = \texttt{aba}$.
+        We check $P[4]=\texttt{b}$ against $P[6]=\texttt{c}$: mismatch, so we fall back.
         The fallback chain is shown in Figure~\ref{fig:sp-fallback-trace}:
-        \begin{itemize}
-          \item Fallback: $k \gets sp[3] = 1$. $P[2]=\texttt{b} \neq P[6]=\texttt{c}$.
-          \item Fallback: $k \gets sp[1] = 0$. $P[1]=\texttt{a} \neq P[6]=\texttt{c}$.
-          \item Match fails, $k=0$. $sp[6] = 0$.
+        \begin{itemize}[noitemsep, topsep=2pt]
+          \item $k \gets sp[3] = 1$: the longest border of $\texttt{aba}$ is $\texttt{a}$
+                (length~$1$). Check $P[2]=\texttt{b}$ against $P[6]=\texttt{c}$: mismatch.
+          \item $k \gets sp[1] = 0$: the longest border of $\texttt{a}$ is empty.
+                Check $P[1]=\texttt{a}$ against $P[6]=\texttt{c}$: mismatch.
+          \item $k=0$: no candidate left. $sp[6] = 0$.
         \end{itemize}
 
 % ── Figure: sp-fallback-trace ─────────────────────────────
@@ -608,50 +677,83 @@ Let's trace the algorithm on $P = \texttt{ababaca}$.
     text centered, rounded corners=2pt,
   },
   Alpha/.style={cell, draw=violet!70!black, fill=violet!25, text=violet!20!black},
-  Cmp/.style  ={cell, draw=red!65!black,   fill=red!10,    text=red!60!black},
+  Try/.style  ={cell, draw=orange!75!black, fill=orange!12, text=orange!60!black},
   NC/.style   ={cell, draw=gray!30,         fill=gray!5,    text=gray!55},
-  Pointer/.style={-Stealth, thick, red!70!black},
+  Cur/.style  ={cell, draw=red!60!black,    fill=red!8,     text=red!55!black},
+  Pointer/.style={-Stealth, thick, red!65!black},
 ]
-\def\cw{0.75}
+\def\cw{0.82}
 
-% P = a b a b a c a
+% ── indices ──────────────────────────────────────────────────────────
 \foreach \i in {1,...,7}
-  \node[font=\tiny\sffamily, text=gray!55] at ({(\i-1)*\cw}, 1.2) {\i};
+  \node[font=\tiny\sffamily, text=gray!55] at ({(\i-1)*\cw}, 2.2) {\i};
 
-\node[font=\small\ttfamily, anchor=east] at (-0.15, 0.6) {$P$};
-\foreach \i/\c in {1/a, 2/b, 3/a, 4/b, 5/a, 6/c, 7/a}
-  \node[NC] (p\i) at ({(\i-1)*\cw}, 0.6) {\c};
+% ── full P reference row ─────────────────────────────────────────────
+\node[font=\small\ttfamily, anchor=east] at (-0.55, 1.4) {$P$};
+\foreach \i/\c in {1/a, 2/b, 3/a, 4/b, 5/a, 7/a}
+  \node[NC] at ({(\i-1)*\cw}, 1.4) {\c};
+\node[Cur] (pi) at (5*\cw, 1.4) {c};
+\node[font=\tiny\sffamily, text=red!60!black, below=3pt] at (pi.south) {$P[6]=P[i]$};
 
-% Step i=6 fallback
-\node[font=\tiny\sffamily, text=gray, anchor=east] at (-0.6*\cw, -0.6) {$i=6$};
+% ── header ───────────────────────────────────────────────────────────
+\node[font=\tiny\itshape, text=gray!60, anchor=west] at (0, 0.45)
+  {All borders of $P[1..5]=\texttt{ababa}$, tried longest first:};
 
-% Row 1: k=3, compare P[4] vs P[6]
-\node[Alpha] (r1c1) at (0*\cw, -0.6) {a};
-\node[Alpha] (r1c2) at (1*\cw, -0.6) {b};
-\node[Alpha] (r1c3) at (2*\cw, -0.6) {a};
-\node[Cmp]   (r1c4) at (3*\cw, -0.6) {b}; % P[4]
-\node[Cmp]   (r1c6) at (5*\cw, -0.6) {c}; % P[6]
+% ══ candidate 1: k = 3  (border "aba", length 3) ═════════════════════
+\node[font=\tiny\sffamily, text=gray!60, anchor=east] at (-0.1*\cw, -0.7) {$k{=}3$};
 
-\node[font=\tiny\sffamily, text=red!70!black, below=3pt] at (r1c4.south) {$P[k{+}1]$};
-\node[font=\tiny\sffamily, text=red!70!black, below=3pt] at (r1c6.south) {$P[i]$};
+\node[Alpha] (s1c3) at (2*\cw, -0.7) {a};
+\node[Alpha] (s1c4) at (3*\cw, -0.7) {b};
+\node[Alpha] (s1c5) at (4*\cw, -0.7) {a};
+\node[Try]   (s1x)  at (5*\cw, -0.7) {b};   % P[k+1]=P[4]
 
-% Fallback Arrow 1
-\draw[Pointer] (3*\cw, -1.55) -- (1*\cw, -1.55)
-  node[midway, below=3pt, font=\tiny\sffamily, text=red!70!black] {mismatch! $k \gets sp[3]=1$};
+\node[font=\tiny\sffamily, text=red!65!black, right=5pt] at (s1x.east)
+  {$P[k{+}1]{=}P[4]{=}\texttt{b}\ \neq\ \texttt{c}{=}P[i]$};
 
-% Row 2: k=1, compare P[2] vs P[6]
-\node[Alpha] (r2c1) at (0*\cw, -2.4) {a};
-\node[Cmp]   (r2c2) at (1*\cw, -2.4) {b}; % P[2]
-\node[Cmp]   (r2c6) at (5*\cw, -2.4) {c}; % P[6] (repeated)
+\draw[decorate, decoration={brace, mirror, raise=8pt}, violet!65!black]
+  (s1c3.south west) -- (s1c5.south east)
+  node[midway, below=12pt, font=\tiny\sffamily, text=violet!60!black]
+    {$P[3..5] = P[1..3]$};
 
-\node[font=\tiny\sffamily, text=red!70!black, below=3pt] at (r2c2.south) {$P[k{+}1]$};
+\draw[Pointer] (3*\cw, -1.9) -- (0, -1.9)
+  node[midway, below=2pt, font=\tiny\sffamily, text=red!65!black]
+    {$k \gets sp[3]=1$ \enspace(longest border of $\texttt{aba}$ is $\texttt{a}$)};
 
-% Fallback Arrow 2
-\draw[Pointer] (1*\cw, -3.35) -- (0*\cw, -3.35)
-  node[midway, below=3pt, font=\tiny\sffamily, text=red!70!black] {$k \gets sp[1]=0$};
+% ══ candidate 2: k = 1  (border "a", length 1) ═══════════════════════
+\node[font=\tiny\sffamily, text=gray!60, anchor=east] at (-0.1*\cw, -2.8) {$k{=}1$};
+
+\node[Alpha] (s2c5) at (4*\cw, -2.8) {a};
+\node[Try]   (s2x)  at (5*\cw, -2.8) {b};   % P[k+1]=P[2]
+
+\node[font=\tiny\sffamily, text=red!65!black, right=5pt] at (s2x.east)
+  {$P[k{+}1]{=}P[2]{=}\texttt{b}\ \neq\ \texttt{c}{=}P[i]$};
+
+\draw[decorate, decoration={brace, mirror, raise=8pt}, violet!65!black]
+  (s2c5.south west) -- (s2c5.south east)
+  node[midway, below=12pt, font=\tiny\sffamily, text=violet!60!black]
+    {$P[5..5] = P[1..1]$};
+
+\draw[Pointer] (1*\cw, -3.9) -- (0, -3.9)
+  node[midway, below=2pt, font=\tiny\sffamily, text=red!65!black]
+    {$k \gets sp[1]=0$ \enspace(border of $\texttt{a}$ is empty)};
+
+% ══ candidate 3: k = 0  (empty border) ═══════════════════════════════
+\node[font=\tiny\sffamily, text=gray!60, anchor=east] at (-0.1*\cw, -4.9) {$k{=}0$};
+
+\node[Try] (s3x) at (0*\cw, -4.9) {a};   % P[k+1]=P[1]
+
+\node[font=\tiny\sffamily, text=red!65!black, right=5pt] at (s3x.east)
+  {$P[k{+}1]{=}P[1]{=}\texttt{a}\ \neq\ \texttt{c}{=}P[i]$
+   \enspace$\Rightarrow$\enspace $sp[6]=0$};
 
 \end{tikzpicture}
-\caption{The fallback chain in step $i=6$ while computing $sp$ values for $P = \texttt{ababaca}$. The mismatched character $P[6]=\texttt{c}$ triggers recursive jumps through the border chain until $k=0$ is reached.}
+\caption{Fallback chain at step $i=6$ for $P=\texttt{ababaca}$.
+  The three rows show \emph{all} borders of $P[1..5]=\texttt{ababa}$
+  (lengths $3$, $1$, $0$), tried longest first.
+  For each candidate $k$, the violet cells show the matched suffix
+  $P[i-k..i-1]=P[1..k]$; the orange cell is the character $P[k+1]$
+  we would need at position $i$ to extend it.
+  All three fail, so $sp[6]=0$.}
 \label{fig:sp-fallback-trace}
 \end{figure}
 

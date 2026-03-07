@@ -105,6 +105,35 @@
 \newtheorem{note}[theorem]{Note}
 \newtheorem{exercise}[theorem]{Exercise}
 
+% ---- theorem environment styles (colored left bar) ----
+\mdfdefinestyle{thmbar}{%
+  skipabove=7pt, skipbelow=5pt,
+  topline=false, rightline=false, bottomline=false, leftline=true,
+  linewidth=2.5pt,
+  innerleftmargin=9pt, innerrightmargin=4pt,
+  innertopmargin=3pt,  innerbottommargin=3pt,
+}
+\surroundwithmdframed[style=thmbar,
+  linecolor=blue!60!black, backgroundcolor=blue!4]{theorem}
+\surroundwithmdframed[style=thmbar,
+  linecolor=blue!60!black, backgroundcolor=blue!4]{lemma}
+\surroundwithmdframed[style=thmbar,
+  linecolor=blue!60!black, backgroundcolor=blue!4]{corollary}
+\surroundwithmdframed[style=thmbar,
+  linecolor=blue!60!black, backgroundcolor=blue!4]{proposition}
+\surroundwithmdframed[style=thmbar,
+  linecolor=teal!65!black,  backgroundcolor=teal!4]{definition}
+\surroundwithmdframed[style=thmbar,
+  linecolor=orange!70!black, backgroundcolor=orange!5]{example}
+\surroundwithmdframed[style=thmbar,
+  linecolor=violet!60!black, backgroundcolor=violet!4]{exercise}
+\surroundwithmdframed[style=thmbar,
+  linecolor=violet!60!black, backgroundcolor=violet!4]{problem}
+\surroundwithmdframed[style=thmbar, linewidth=1.5pt,
+  linecolor=gray!50]{remark}
+\surroundwithmdframed[style=thmbar, linewidth=1.5pt,
+  linecolor=gray!50]{note}
+
 % ---- custom margin-note shorthand ----
 % \aside{text}  — unnumbered note in the margin
 \newcommand{\aside}[1]{%
