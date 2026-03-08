@@ -444,6 +444,7 @@ But is this correct? Or do we miss some potential matches by jumping directly to
 Well, it turns out that this is indeed correct, and we won't miss any matches by doing this. The KMP algorithm is based on this very idea, and it guarantees that we will find all occurrences of $P$ in $T$ without missing any, while also achieving a much better time complexity than the naive approach.
 
 \subsubsection{Preprocessing: computing $sp$ values}
+\label{sec:kmp-preprocessing}
 
 To exploit this idea, we need to precompute for every prefix $P[1\ldots i]$ its
 \emph{longest proper prefix that is also a suffix}. We write this length as $\spi{i}$\aside{A \emph{proper} prefix/suffix excludes the string itself; $\spi{i}$ is thus an integer.}.
@@ -989,6 +990,123 @@ characters of $P$ currently matched.
   }
 \end{algorithm}
 
+Figure~\ref{fig:kmp-search-trace} traces the search on a concrete example,
+showing how $sp$ values let the algorithm carry previously matched characters
+across fallbacks instead of starting from scratch.
+
+% ── Figure: KMP search trace ──────────────────────────────
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[
+  cell/.style={
+    minimum width=6.2mm, minimum height=5.5mm,
+    font=\ttfamily\scriptsize, inner sep=0pt,
+    text centered, rounded corners=1.5pt,
+  },
+  T/.style    ={cell, draw=gray!35,         fill=gray!5,    text=gray!65},
+  Carry/.style={cell, draw=teal!55!black,   fill=teal!10,   text=teal!30!black},
+  New/.style  ={cell, draw=green!55!black,  fill=green!18,  text=green!25!black},
+  Fail/.style ={cell, draw=red!60!black,    fill=red!10,    text=red!50!black},
+  Win/.style  ={cell, draw=green!60!black,  fill=green!22,  text=green!20!black},
+  SP/.style   ={cell, draw=gray!25,         fill=gray!3,    text=gray!55},
+  SPhi/.style ={cell, draw=orange!55!black, fill=orange!8,  text=black},
+]
+\def\cw{0.68}
+
+% ── sp array for P = ababc ────────────────────────────────
+\node[font=\scriptsize\sffamily, text=gray!55, anchor=east]
+  at ({-0.5*\cw}, 1.50) {$P$};
+\foreach \j/\c in {1/a,2/b,3/a,4/b,5/c}
+  \node[T, minimum height=5mm] at ({(\j-1)*\cw}, 1.50) {\c};
+
+\node[font=\scriptsize\sffamily, text=gray!55, anchor=east]
+  at ({-0.5*\cw}, 0.95) {$sp$};
+\node[SP,   minimum height=5mm] at ({0*\cw}, 0.95) {0};
+\node[SP,   minimum height=5mm] at ({1*\cw}, 0.95) {0};
+\node[SP,   minimum height=5mm] at ({2*\cw}, 0.95) {1};
+\node[SPhi, minimum height=5mm] at ({3*\cw}, 0.95) {2};   % sp[4]=2, key value
+\node[SP,   minimum height=5mm] at ({4*\cw}, 0.95) {0};
+\node[font=\tiny\sffamily, text=orange!60!black, anchor=west]
+  at ({5.0*\cw}, 0.95) {$sp[4]{=}2$: longest border of \texttt{abab} is \texttt{ab}
+  (see \S\ref{sec:kmp-preprocessing})};
+
+% ── T row ─────────────────────────────────────────────────
+\foreach \j in {1,...,9}
+  \node[font=\tiny\sffamily, text=gray!45] at ({(\j-1)*\cw}, 0.45) {\j};
+\node[font=\small\sffamily, text=gray!60, anchor=east] at ({-0.5*\cw},0){$T$};
+\foreach \j/\c in {1/a,2/b,3/a,4/b,5/a,6/b,7/a,8/b,9/c}
+  \node[T] at ({(\j-1)*\cw},0){\c};
+
+% ── Phase 1: offset=0, 4 new matches, fail at T[5] ────────
+\node[font=\scriptsize\sffamily, text=gray!55, anchor=east]
+  at ({-0.5*\cw},{-1.35}){Ph.\,1};
+\foreach \j/\c in {1/a,2/b,3/a,4/b}
+  \node[New]  at ({(\j-1)*\cw},{-1.35}){\c};
+\node[Fail] at ({4*\cw},{-1.35}){c};
+\node[font=\scriptsize\sffamily, text=gray!55, anchor=west]
+  at ({9.2*\cw},{-1.35}){$T[5]{=}\texttt{a}\neq P[5]{=}\texttt{c}$};
+
+% fallback arrow Phase 1 → Phase 2
+\draw[->, orange!65!black, shorten >=2pt, shorten <=2pt]
+  ({4*\cw},{-1.62}) -- ({2*\cw},{-2.08});
+\node[font=\tiny\sffamily, text=orange!62!black, anchor=west]
+  at ({4.2*\cw},{-1.85}){$j\gets sp[4]{=}2$};
+
+% ── Phase 2: offset=2, 2 carry + 2 new, fail at T[7] ──────
+\node[font=\scriptsize\sffamily, text=gray!55, anchor=east]
+  at ({-0.5*\cw},{-2.40}){Ph.\,2};
+\node[Carry] at ({2*\cw},{-2.40}){a};
+\node[Carry] at ({3*\cw},{-2.40}){b};
+\node[New]   at ({4*\cw},{-2.40}){a};
+\node[New]   at ({5*\cw},{-2.40}){b};
+\node[Fail]  at ({6*\cw},{-2.40}){c};
+% carry brace
+\draw[teal!50!black, decorate,
+      decoration={brace, mirror, amplitude=3.5pt, raise=2pt}]
+  ({1.68*\cw},{-2.68}) -- ({3.32*\cw},{-2.68})
+  node[midway, below=8pt, font=\tiny\sffamily, text=teal!50!black]
+    {free via $sp$};
+\node[font=\scriptsize\sffamily, text=gray!55, anchor=west]
+  at ({9.2*\cw},{-2.40}){$T[7]{=}\texttt{a}\neq P[5]{=}\texttt{c}$};
+
+% fallback arrow Phase 2 → Phase 3
+\draw[->, orange!65!black, shorten >=2pt, shorten <=2pt]
+  ({6*\cw},{-2.67}) -- ({4*\cw},{-3.13});
+\node[font=\tiny\sffamily, text=orange!62!black, anchor=west]
+  at ({6.2*\cw},{-2.90}){$j\gets sp[4]{=}2$};
+
+% ── Phase 3: offset=4, 2 carry + 3 new = MATCH ────────────
+\node[font=\scriptsize\sffamily, text=gray!55, anchor=east]
+  at ({-0.5*\cw},{-3.45}){Ph.\,3};
+\node[Carry] at ({4*\cw},{-3.45}){a};
+\node[Carry] at ({5*\cw},{-3.45}){b};
+\node[Win]   at ({6*\cw},{-3.45}){a};
+\node[Win]   at ({7*\cw},{-3.45}){b};
+\node[Win]   at ({8*\cw},{-3.45}){c};
+% carry brace
+\draw[teal!50!black, decorate,
+      decoration={brace, mirror, amplitude=3.5pt, raise=2pt}]
+  ({3.68*\cw},{-3.73}) -- ({5.32*\cw},{-3.73})
+  node[midway, below=8pt, font=\tiny\sffamily, text=teal!50!black]
+    {free via $sp$};
+\node[font=\scriptsize\bfseries\sffamily, text=green!50!black, anchor=west]
+  at ({9.2*\cw},{-3.45}){match at position~5};
+
+\end{tikzpicture}
+\caption{%
+  KMP search for $P{=}\texttt{ababc}$ ($m{=}5$) in $T{=}\texttt{ababababc}$ ($n{=}9$).
+  The $sp$ array for $P$ is shown at the top
+  (cf.\ the preprocessing in \S\ref{sec:kmp-preprocessing}).
+  \textcolor{green!55!black}{Green}: characters newly matched in this phase.
+  \textcolor{teal!55!black}{Teal}: characters carried for free from the previous
+  phase via $j\gets sp[j]$.
+  \textcolor{red!55!black}{Red}: mismatch.
+  After each fallback, the algorithm reuses the last $sp[j]$ matched characters
+  without any comparison, then continues from where it left off in $T$.
+}
+\label{fig:kmp-search-trace}
+\end{figure}
+
 The same amortised argument applies: $j$ increases by at most $1$ per outer step and each
 inner fallback strictly decreases $j \geq 0$, so the inner loop runs $\Oh{n}$ times in total.
 
@@ -1147,7 +1265,153 @@ with maximum right endpoint $r$ seen so far such that $A[l,r] = A[1,\,r-l+1]$, i
 \[
   r = l + Z_l(A) - 1 \quad (\text{maximised over all processed positions}).
 \]
-The following two cases, illustrated in Figure~\ref{fig:z-box}, distinguish how we
+Figure~\ref{fig:z-abstract} shows this setup schematically.
+
+% ── Figure: Z-box abstract schematic ─────────────────────
+\begin{figure}[H]
+\centering
+\resizebox{\linewidth}{!}{%
+\begin{tikzpicture}[
+  cell/.style={
+    minimum width=7.5mm, minimum height=6.5mm,
+    inner sep=0pt, text centered, rounded corners=1.5pt,
+  },
+  NC/.style  ={cell, draw=gray!30,         fill=gray!5},
+  Pfx/.style ={cell, draw=violet!55!black, fill=violet!12},
+  PfxK/.style={cell, draw=orange!75!black, fill=violet!12, line width=0.9pt},
+  Box/.style ={cell, draw=teal!60!black,   fill=teal!12},
+  BoxI/.style={cell, draw=orange!75!black, fill=teal!12,   line width=0.9pt},
+  Grn/.style ={cell, draw=green!55!black,  fill=green!18},
+  Fail/.style={cell, draw=red!60!black,    fill=red!10},
+]
+\def\cw{0.80}
+
+% ── Position index header ─────────────────────────────────
+\foreach \j in {1,...,12}
+  \node[font=\tiny\sffamily, text=gray!40] at ({(\j-1)*\cw}, 0.62) {\j};
+
+% ── SCHEMATIC ROW: general Z-box setup ───────────────────
+\node[font=\small\sffamily, text=gray!55, anchor=east] at ({-0.5*\cw},0){$A$};
+\node[Pfx]  at ({0*\cw},0){}; \node[Pfx]  at ({1*\cw},0){};
+\node[PfxK] at ({2*\cw},0){}; % k=3
+\node[Pfx]  at ({3*\cw},0){}; \node[Pfx]  at ({4*\cw},0){}; % Z_l=5
+\node[NC]   at ({5*\cw},0){}; % gap
+\node[Box]  at ({6*\cw},0){}; % l=7
+\node[Box]  at ({7*\cw},0){};
+\node[BoxI] at ({8*\cw},0){}; % i=9
+\node[Box]  at ({9*\cw},0){}; \node[Box]  at ({10*\cw},0){}; % r=11
+\node[NC]   at ({11*\cw},0){}; % r+1=12
+
+% labels above
+\node[font=\tiny\sffamily, text=teal!60!black]    at ({6*\cw},  0.43){$l$};
+\node[font=\tiny\sffamily, text=orange!65!black]  at ({2*\cw},  0.43){$k$};
+\node[font=\tiny\sffamily, text=orange!65!black]  at ({8*\cw},  0.43){$i$};
+\node[font=\tiny\sffamily, text=teal!60!black]    at ({10*\cw}, 0.43){$r$};
+\node[font=\tiny\sffamily, text=gray!50]          at ({11*\cw}, 0.43){$r{+}1$};
+
+% mirror arrow k ↔ i
+\draw[orange!58!black, <->, shorten >=3pt, shorten <=3pt]
+  ({2*\cw}, 0.43) to[bend left=38]
+  node[above=1pt, font=\tiny\sffamily, text=orange!58!black]{mirror: $k=i{-}l{+}1$}
+  ({8*\cw}, 0.43);
+
+% braces below prefix and Z-box + "=" between them
+\draw[violet!55!black, decorate, decoration={brace, mirror, amplitude=4pt, raise=2pt}]
+  ({0*\cw-0.37},{-0.33}) -- ({4*\cw+0.37},{-0.33})
+  node[midway, below=9pt, font=\tiny\sffamily, text=violet!55!black]{$A[1\ldots Z_l]$};
+\draw[teal!55!black, decorate, decoration={brace, mirror, amplitude=4pt, raise=2pt}]
+  ({6*\cw-0.37},{-0.33}) -- ({10*\cw+0.37},{-0.33})
+  node[midway, below=9pt, font=\tiny\sffamily, text=teal!55!black]{$A[l\ldots r]$};
+\node[font=\small, text=gray!55] at ({5*\cw},{-0.80}){$=$};
+
+% separator
+\draw[gray!18] ({-0.5*\cw},{-1.90}) -- ({11.5*\cw},{-1.90});
+
+% ── CASE (a): Z[k]=2 < r-i+1=3 ──────────────────────────
+\node[font=\scriptsize\sffamily\bfseries, text=gray!55, anchor=east]
+  at ({-0.5*\cw},{-2.65}){(a)};
+\node[font=\small\sffamily, text=gray!55, anchor=east] at ({-0.5*\cw},{-2.65}){};
+
+\node[Pfx]  at ({0*\cw},{-2.65}){}; \node[Pfx]  at ({1*\cw},{-2.65}){};
+\node[Grn]  at ({2*\cw},{-2.65}){}; % k, matched
+\node[Grn]  at ({3*\cw},{-2.65}){}; % matched
+\node[Fail] at ({4*\cw},{-2.65}){}; % mismatch in prefix (Z_l)
+\node[NC]   at ({5*\cw},{-2.65}){};
+\node[Box]  at ({6*\cw},{-2.65}){}; \node[Box]  at ({7*\cw},{-2.65}){};
+\node[Grn]  at ({8*\cw},{-2.65}){}; % i, same match
+\node[Grn]  at ({9*\cw},{-2.65}){}; % same match
+\node[Fail] at ({10*\cw},{-2.65}){}; % same mismatch reflected at r
+\node[NC]   at ({11*\cw},{-2.65}){};
+
+\node[font=\tiny\sffamily, text=orange!60!black] at ({2*\cw},{-2.10+0.43}){$k$};
+\node[font=\tiny\sffamily, text=orange!60!black] at ({8*\cw},{-2.10+0.43}){$i$};
+\node[font=\normalsize, text=red!55!black] at ({4*\cw},{-2.10+0.42}){$\times$};
+\node[font=\normalsize, text=red!55!black] at ({10*\cw},{-2.10+0.42}){$\times$};
+
+\draw[green!50!black, decorate, decoration={brace, mirror, amplitude=3pt, raise=2pt}]
+  ({2*\cw-0.37},{-2.10-0.33}) -- ({3*\cw+0.37},{-2.10-0.33})
+  node[midway, below=8pt, font=\tiny\sffamily, text=green!50!black]{$Z[k]$};
+\draw[green!50!black, decorate, decoration={brace, mirror, amplitude=3pt, raise=2pt}]
+  ({8*\cw-0.37},{-2.10-0.33}) -- ({9*\cw+0.37},{-2.10-0.33})
+  node[midway, below=8pt, font=\tiny\sffamily, text=green!50!black]{$Z[k]$};
+
+\node[font=\footnotesize\sffamily, text=gray!60, anchor=west, text width=3.8cm, align=left]
+  at ({12.2*\cw},{-2.65}){$Z[k]<r{-}i{+}1 \;\Rightarrow\; Z[i]=Z[k]$, no comparison};
+
+% separator
+\draw[gray!18] ({-0.5*\cw},{-3.85}) -- ({11.5*\cw},{-3.85});
+
+% ── CASE (b): Z[k]=3 ≥ r-i+1=3 ──────────────────────────
+\node[font=\scriptsize\sffamily\bfseries, text=gray!55, anchor=east]
+  at ({-0.5*\cw},{-4.55}){(b)};
+
+\node[Pfx]  at ({0*\cw},{-4.55}){}; \node[Pfx]  at ({1*\cw},{-4.55}){};
+\node[Grn]  at ({2*\cw},{-4.55}){}; % k
+\node[Grn]  at ({3*\cw},{-4.55}){};
+\node[Grn]  at ({4*\cw},{-4.55}){}; % reaches Z_l
+\node[NC]   at ({5*\cw},{-4.55}){};
+\node[Box]  at ({6*\cw},{-4.55}){}; \node[Box]  at ({7*\cw},{-4.55}){};
+\node[Grn]  at ({8*\cw},{-4.55}){}; % i
+\node[Grn]  at ({9*\cw},{-4.55}){};
+\node[Grn]  at ({10*\cw},{-4.55}){}; % reaches r
+\node[NC]   at ({11*\cw},{-4.55}){}; % r+1
+
+\node[font=\tiny\sffamily, text=orange!60!black] at ({2*\cw},{-3.65+0.43}){$k$};
+\node[font=\tiny\sffamily, text=orange!60!black] at ({8*\cw},{-3.65+0.43}){$i$};
+\node[font=\tiny\sffamily, text=teal!55!black]   at ({10*\cw},{-3.65+0.43}){$r$};
+\node[font=\tiny\sffamily, text=gray!50]         at ({11*\cw},{-3.65+0.43}){$r{+}1$};
+
+\draw[->, gray!55, thick, shorten <=3pt]
+  ({11*\cw},{-4.55}) -- ({12.5*\cw},{-4.55})
+  node[right, font=\tiny\sffamily, text=gray!55]{extend};
+
+\draw[green!50!black, decorate, decoration={brace, mirror, amplitude=3pt, raise=2pt}]
+  ({2*\cw-0.37},{-3.65-0.33}) -- ({4*\cw+0.37},{-3.65-0.33})
+  node[midway, below=8pt, font=\tiny\sffamily, text=green!50!black]{$Z[k]\geq r{-}i{+}1$};
+\draw[green!50!black, decorate, decoration={brace, mirror, amplitude=3pt, raise=2pt}]
+  ({8*\cw-0.37},{-3.65-0.33}) -- ({10*\cw+0.37},{-3.65-0.33})
+  node[midway, below=8pt, font=\tiny\sffamily, text=green!50!black]{$r{-}i{+}1$ (free)};
+
+\node[font=\footnotesize\sffamily, text=gray!60, anchor=west, text width=3.8cm, align=left]
+  at ({12.2*\cw},{-4.55}){$Z[k]\geq r{-}i{+}1 \;\Rightarrow\; Z[i]\geq r{-}i{+}1$, compare from $r{+}1$};
+
+\end{tikzpicture}%
+}% end resizebox
+\caption{%
+  Z-box schematic (positions $l{=}7$, $r{=}11$, $k{=}3$, $i{=}9$).
+  \textcolor{violet!60!black}{Violet}: the prefix $A[1\ldots Z_l]$ that established the box.
+  \textcolor{teal!60!black}{Teal}: the Z-box $A[l\ldots r]$, a copy of that prefix.
+  \textcolor{orange!70!black}{Orange border}: mirror pair $(k,\,i)$ with $k = i{-}l{+}1$.
+  \textcolor{green!55!black}{Green}: the $Z[k]$ characters that match at both $k$ and $i$
+  (free, by the mirror property).
+  \textcolor{red!60!black}{Red ×}: the mismatch that terminated $Z[k]$, reflected at~$i$.
+  Case~(a): the mismatch lies inside $[l,r]$, so $Z[i]=Z[k]$ at no cost.
+  Case~(b): the match reaches $r$, so we must compare from $r{+}1$.
+  See Figure~\ref{fig:z-trace} for a concrete step-by-step trace.
+}
+\label{fig:z-abstract}
+\end{figure}
+The following two cases (Figure~\ref{fig:z-box} and Figure~\ref{fig:z-trace}) distinguish how we
 compute $Z_i$:
 
 \begin{enumerate}[noitemsep, topsep=3pt]
