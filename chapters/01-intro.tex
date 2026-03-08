@@ -619,31 +619,65 @@ The resulting algorithm is the following:
   Figure~\ref{fig:sp-fallback-trace} shows this chain for $i=6$, $k=3$.
 \end{remark}
 
-\begin{note}[{Formal argument and example}]
-  \textit{Proof that values between $sp[k]$ and $k$ are skipped correctly.}
-  Suppose for contradiction that $sp[k] < k' < k$ satisfies the invariant,
-  i.e.\ $P[1\ldots k'] = P[i-k'\ldots i-1]$.
-  Since $k' < k$, the suffix $P[i-k'\ldots i-1]$ is a suffix of
-  $P[i-k\ldots i-1] = P[1\ldots k]$.
-  So $P[1\ldots k']$ is simultaneously a prefix and a suffix of $P[1\ldots k]$:
-  a border of length $k' > sp[k]$, contradicting $sp[k]$ being the longest
-  proper border of $P[1\ldots k]$. \hfill$\square$
-
-  \smallskip
-  \textit{Example: a fallback that succeeds.}
+\begin{note}[{A fallback that succeeds}]
   Let $P = \texttt{ababcababa}$ and consider $i = 10$.
   We have $k = 4$ since $P[1\ldots 4] = P[6\ldots 9] = \texttt{abab}$.
   Check $P[5] = \texttt{c}$ vs.\ $P[10] = \texttt{a}$: mismatch.
   Could $k'=3$ be a valid candidate?
   It would need $P[1\ldots 3]$ to be a border of $\texttt{abab}$,
   i.e.\ $\texttt{aba} = \texttt{bab}$: no.
-  The longest border of $\texttt{abab}$ is $\texttt{ab}$ (length~$2$),
-  so $sp[4] = 2$.
-  We fall back to $k = 2$: $P[1\ldots 2] = P[8\ldots 9] = \texttt{ab}$.
+  The longest border of $\texttt{abab}$ is $\texttt{ab}$ (length~$2$), so $sp[4]=2$.
+  We fall back to $k=2$: $P[1\ldots 2] = P[8\ldots 9] = \texttt{ab}$.
   Check $P[3] = \texttt{a}$ vs.\ $P[10] = \texttt{a}$: \textbf{match}!
-  Hence $sp[10] = 3$.
-  Skipping $k'=3$ was not a shortcut --- it was the only correct move.
+  Hence $sp[10] = 3$; skipping $k'=3$ was the only correct move.
 \end{note}
+
+\begin{formaldetails}[{Why no candidate between $sp[k]$ and $k$ exists}]
+  Suppose for contradiction that $sp[k] < k' < k$ and that $k'$ satisfies
+  the same property as $k$, i.e.\ $P[1\ldots k'] = P[i-k'\ldots i-1]$.
+  Since $k' < k$, the string $P[i-k'\ldots i-1]$ is a suffix of
+  $P[i-k\ldots i-1] = P[1\ldots k]$.
+  Combined with $P[1\ldots k']$ being a prefix of $P$, this makes
+  $P[1\ldots k']$ a border of $P[1\ldots k]$ of length $k' > sp[k]$,
+  contradicting $sp[k]$ being the \emph{longest} proper border of
+  $P[1\ldots k]$. \hfill$\square$
+\end{formaldetails}
+
+\begin{formaldetails}[Correctness of the $sp$ preprocessing algorithm]
+  We prove that at the end of iteration~$i$, $sp[i]$ equals the length of the
+  longest proper border of $P[1\ldots i]$.
+
+  \begin{loopproof}
+    \item[Precondition]  $P[1\ldots m]$ is given; $sp[1]=0$ and $k=0$ are set before the loop.
+    \item[Loop guard]    $i$ ranges from $2$ to $m$.
+    \item[Invariant]     At the \emph{start} of iteration~$i$:
+                         $k = sp[i{-}1]$, i.e.\ $k$ is the length of the longest
+                         proper border of $P[1\ldots i{-}1]$ (and in particular
+                         $P[1\ldots k] = P[i{-}k\ldots i{-}1]$).
+    \item[Postcondition] $sp[i]$ is correctly set for all $1 \le i \le m$.
+  \end{loopproof}
+
+  \lprulesep
+
+  \begin{loopproof}
+    \item[Base case]     Before the first iteration ($i=2$), $k=0=sp[1]$
+                         since $P[1\ldots 1]$ has no proper border. \checkmark
+    \item[Preservation]  Assume the invariant holds at the start of iteration~$i$,
+                         i.e.\ $k=sp[i{-}1]$.
+                         The inner \textbf{while} loop traverses the border chain
+                         $k \to sp[k] \to sp[sp[k]] \to \cdots$, stopping as soon
+                         as $P[k{+}1]=P[i]$ or $k=0$.
+                         By the border characterisation (a candidate $j$ is valid iff
+                         $P[1\ldots j]$ is a border of $P[1\ldots k]$), this finds
+                         the longest extendable border.
+                         The subsequent \textbf{if} either increments $k$ by one or
+                         leaves $k=0$.
+                         In both cases $sp[i] \gets k$ is correct, and $k=sp[i]$
+                         is the invariant for iteration $i{+}1$. \checkmark
+    \item[Postcondition] When the loop exits ($i=m+1$), all $sp[i]$ have been
+                         correctly computed. \checkmark
+  \end{loopproof}
+\end{formaldetails}
 
 \subsubsection*{Step-by-step: Computing $sp$ values}
 

@@ -88,6 +88,51 @@
   \end{intermezzoframe}%
 }
 
+% --- formal-details box ---
+% Usage: \begin{formaldetails}[optional title] ... \end{formaldetails}
+% For algorithm correctness proofs use the loopproof list inside.
+\newmdenv[
+  skipabove=\bigskipamount,
+  skipbelow=\bigskipamount,
+  backgroundcolor=blue!3,
+  linecolor=blue!25,
+  linewidth=0.6pt,
+  innertopmargin=10pt,
+  innerbottommargin=10pt,
+  innerleftmargin=12pt,
+  innerrightmargin=8pt,
+]{formaldetailsframe}
+\newenvironment{formaldetails}[1][]{%
+  \begin{formaldetailsframe}%
+  \noindent{\footnotesize\sffamily\scshape Formal details}%
+  \if\relax\detokenize{#1}\relax\else
+    \enspace{\small\sffamily\bfseries ---\enspace#1}%
+  \fi%
+  \par\smallskip{\color{blue!20}\hrule height 0.4pt}\smallskip
+}{%
+  \end{formaldetailsframe}%
+}
+
+% --- loop-invariant proof structure ---
+% Fields: Precondition / Loop guard / Invariant / Postcondition
+%         Base case / Preservation / Postcondition validity
+% Usage: \begin{loopproof} \item[Invariant] ... \end{loopproof}
+% Use \lprulesep between the declaration block and the proof block.
+\newlist{loopproof}{description}{1}
+\setlist[loopproof]{
+  font=\normalfont\small\itshape,
+  leftmargin=3.2cm,
+  labelwidth=3.0cm,
+  labelsep=0.2cm,
+  style=sameline,
+  topsep=3pt,
+  itemsep=4pt,
+  parsep=0pt,
+}
+\newcommand{\lprulesep}{%
+  \vspace{4pt}{\color{blue!20}\hrule height 0.4pt}\vspace{6pt}%
+}
+
 % ---- theorem environments ----
 \theoremstyle{plain}
 \newtheorem{theorem}{Theorem}[section]
