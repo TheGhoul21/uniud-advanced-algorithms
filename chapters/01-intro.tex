@@ -1094,6 +1094,51 @@ For any index $i$ in the $T$-part of $A$ (i.e.\ $i > m+1$):
 \]
 The separator prevents $Z_i$ from exceeding $m$, so equality with $m$ detects all occurrences.
 
+\begin{formaldetails}[{Proof of the connection}]
+  Write $A = P\$T$ and fix $i > m+1$ (i.e.\ $i$ is in the $T$-part of $A$).
+
+  \smallskip
+  \textbf{The separator bounds $Z_i \leq m$.}
+  If $Z_i > m$ then $A[i\ldots i+m] = A[1\ldots m+1]$, so in particular
+  $A[i+m] = A[m+1] = \$$.
+  But $i+m > 2m+1 > m+1$, so $A[i+m]$ lies in the $T$-part of $A$, hence
+  $A[i+m] \in \Sigma$.
+  Since $\$ \notin \Sigma$ we have a contradiction: $Z_i \leq m$.
+
+  \smallskip
+  \textbf{($\Rightarrow$)}
+  Suppose $Z_i = m$.
+  Then $A[i\ldots i+m-1] = A[1\ldots m] = P$.
+  Since $A[i+j-1] = T[i-m-1+j-1]$ for $j = 1,\ldots,m$, this gives
+  $T[i-m-1\ldots i-1] = P$, i.e.\ $P$ occurs at position $i-m-1$ in $T$.
+
+  \smallskip
+  \textbf{($\Leftarrow$)}
+  Suppose $P$ occurs at position $j = i - m - 1$ in $T$, i.e.\
+  $T[j\ldots j+m-1] = P$.
+  Then $A[i\ldots i+m-1] = T[j\ldots j+m-1] = P = A[1\ldots m]$,
+  so $Z_i \geq m$.
+  Combined with $Z_i \leq m$ we get $Z_i = m$. \hfill$\square$
+\end{formaldetails}
+
+\begin{example}
+  Let $P = \texttt{aba}$ ($m=3$) and $T = \texttt{ababac}$ ($n=6$).
+  Form $A = \texttt{aba\$ababac}$ and compute $Z$ values for positions $i > 4$:
+
+  \[
+    \begin{array}{c|cccccccccc}
+      i     & 1 & 2 & 3 & 4 & 5 & 6 & 7 & 8 & 9 & 10 \\
+      A[i]  & \texttt{a} & \texttt{b} & \texttt{a} & \texttt{\$}
+            & \texttt{a} & \texttt{b} & \texttt{a} & \texttt{b} & \texttt{a} & \texttt{c} \\
+      Z_i   & - & 0 & 1 & 0 & \mathbf{3} & 0 & \mathbf{3} & 0 & 1 & 0
+    \end{array}
+  \]
+
+  The two positions with $Z_i = 3 = m$ are $i = 5$ and $i = 7$, corresponding
+  to occurrences of $P$ in $T$ starting at positions $5-3-1=1$ and $7-3-1=3$.
+  Indeed $T[1\ldots 3] = \texttt{aba}$ and $T[3\ldots 5] = \texttt{aba}$. \checkmark
+\end{example}
+
 \subsubsection{Computing Z values: the Z-box algorithm}
 
 A naive computation of all Z values costs $\Oh{n^2}$.
@@ -1105,7 +1150,7 @@ with maximum right endpoint $r$ seen so far such that $A[l,r] = A[1,\,r-l+1]$, i
 The following two cases, illustrated in Figure~\ref{fig:z-box}, distinguish how we
 compute $Z_i$:
 
-\begin{enumerate}
+\begin{enumerate}[noitemsep, topsep=3pt]
   \item \textbf{$i > r$ (outside the box).}  No cached information is available.
         Compare $A[1], A[2], \ldots$ against $A[i], A[i+1], \ldots$ directly until a
         mismatch, setting $Z_i$ to the number of matches.
@@ -1114,7 +1159,7 @@ compute $Z_i$:
   \item \textbf{$i \leq r$ (inside the box).}
         Let $k = i - l + 1$ be the \emph{mirror} of $i$ in the prefix:
         $A[i, r] = A[k,\, r-l+1]$ and $Z_k$ is already known.
-        \begin{enumerate}[label=(\alph*)]
+        \begin{enumerate}[label=(\alph*), noitemsep, topsep=2pt]
           \item \textbf{$Z_k < r - i + 1$:}  the Z-box at $k$ is strictly shorter than the
                 remaining portion of the current box.
                 The match at $i$ cannot extend further: $Z_i = Z_k$, no comparisons needed.
@@ -1123,6 +1168,108 @@ compute $Z_i$:
                 then update $l \gets i$ and $r \gets i + Z_i - 1$.
         \end{enumerate}
 \end{enumerate}
+
+Figure~\ref{fig:z-trace} traces the full execution on $A = \texttt{aabaaab}$,
+showing how $[l,r]$ evolves across all three cases.
+
+% ── Figure: Z-box trace (full step-by-step) ──────────────
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[
+  cell/.style={
+    minimum width=7.5mm, minimum height=6mm,
+    font=\ttfamily\small, inner sep=0pt,
+    text centered, rounded corners=1.5pt,
+  },
+  NC/.style  ={cell, draw=gray!30,         fill=gray!5,    text=gray!55},
+  Box/.style ={cell, draw=teal!65!black,   fill=teal!13,   text=teal!25!black},
+  Cur/.style ={cell, draw=orange!80!black, fill=orange!20, text=black, line width=0.8pt},
+  CurB/.style={cell, draw=orange!80!black, fill=teal!13,   text=black, line width=0.8pt},
+  Mir/.style ={cell, draw=violet!60!black, fill=violet!16, text=violet!25!black},
+  Zv/.style  ={cell, draw=gray!25,         fill=gray!3,    font=\small, text=gray!55},
+  Zh/.style  ={cell, draw=orange!55!black, fill=orange!8,  font=\small, text=black},
+]
+\def\cw{0.82}
+\def\rs{1.35}
+
+% --- column index header ---
+\foreach \j in {1,...,7}
+  \node[font=\tiny\sffamily, text=gray!45] at ({(\j-1)*\cw}, 0.65) {\j};
+
+% ── i=2 : case 1, no box yet (l=r=0) ──────────────────────
+\node[font=\small\sffamily, text=gray!65, anchor=east] at ({-0.5*\cw},0){$i{=}2$};
+\node[NC]  at ({0*\cw},0){a}; \node[Cur] at ({1*\cw},0){a};
+\node[NC]  at ({2*\cw},0){b}; \node[NC]  at ({3*\cw},0){a};
+\node[NC]  at ({4*\cw},0){a}; \node[NC]  at ({5*\cw},0){a};
+\node[NC]  at ({6*\cw},0){b};
+\node[font=\tiny\sffamily, text=orange!70!black] at ({1*\cw}, 0.47) {$i$};
+\node[font=\footnotesize\sffamily, text=gray!60, anchor=west]
+  at ({7.2*\cw},0){case~1\;$\to$\;$Z[2]{=}1$,\quad $[l,r]\gets[2,2]$};
+
+% ── i=4 : case 1, [l,r]=[2,2] entering ───────────────────
+\node[font=\small\sffamily, text=gray!65, anchor=east] at ({-0.5*\cw},{-\rs}){$i{=}4$};
+\node[NC]  at ({0*\cw},{-\rs}){a}; \node[Box] at ({1*\cw},{-\rs}){a};
+\node[NC]  at ({2*\cw},{-\rs}){b}; \node[Cur] at ({3*\cw},{-\rs}){a};
+\node[NC]  at ({4*\cw},{-\rs}){a}; \node[NC]  at ({5*\cw},{-\rs}){a};
+\node[NC]  at ({6*\cw},{-\rs}){b};
+\node[font=\tiny\sffamily, text=orange!70!black] at ({3*\cw},{-\rs+0.47}){$i$};
+\node[font=\footnotesize\sffamily, text=gray!60, anchor=west]
+  at ({7.2*\cw},{-\rs}){case~1\;$\to$\;$Z[4]{=}2$,\quad $[l,r]\gets[4,5]$};
+
+% ── i=5 : case 2b, [l,r]=[4,5], k=2 ─────────────────────
+\node[font=\small\sffamily, text=gray!65, anchor=east] at ({-0.5*\cw},{-2*\rs}){$i{=}5$};
+\node[NC]   at ({0*\cw},{-2*\rs}){a}; \node[Mir]  at ({1*\cw},{-2*\rs}){a};
+\node[NC]   at ({2*\cw},{-2*\rs}){b}; \node[Box]  at ({3*\cw},{-2*\rs}){a};
+\node[CurB] at ({4*\cw},{-2*\rs}){a}; \node[NC]   at ({5*\cw},{-2*\rs}){a};
+\node[NC]   at ({6*\cw},{-2*\rs}){b};
+\node[font=\tiny\sffamily, text=violet!60!black] at ({1*\cw},{-2*\rs+0.47}){$k$};
+\node[font=\tiny\sffamily, text=orange!70!black] at ({4*\cw},{-2*\rs+0.47}){$i$};
+\draw[violet!50!black, <->, shorten >=3pt, shorten <=3pt]
+  ({1*\cw},{-2*\rs+0.35}) to[bend left=40]
+  node[midway, below=0.5pt, font=\tiny\sffamily, text=violet!55!black]{mirror}
+  ({4*\cw},{-2*\rs+0.35});
+\node[font=\footnotesize\sffamily, text=gray!60, anchor=west]
+  at ({7.2*\cw},{-2*\rs}){case~2b\;$\to$\;$Z[5]{=}3$,\quad $[l,r]\gets[5,7]$};
+
+% ── i=6 : case 2a, [l,r]=[5,7], k=2 ─────────────────────
+\node[font=\small\sffamily, text=gray!65, anchor=east] at ({-0.5*\cw},{-3*\rs}){$i{=}6$};
+\node[NC]   at ({0*\cw},{-3*\rs}){a}; \node[Mir]  at ({1*\cw},{-3*\rs}){a};
+\node[NC]   at ({2*\cw},{-3*\rs}){b}; \node[NC]   at ({3*\cw},{-3*\rs}){a};
+\node[Box]  at ({4*\cw},{-3*\rs}){a}; \node[CurB] at ({5*\cw},{-3*\rs}){a};
+\node[Box]  at ({6*\cw},{-3*\rs}){b};
+\node[font=\tiny\sffamily, text=violet!60!black] at ({1*\cw},{-3*\rs+0.47}){$k$};
+\node[font=\tiny\sffamily, text=orange!70!black] at ({5*\cw},{-3*\rs+0.47}){$i$};
+\draw[violet!50!black, <->, shorten >=3pt, shorten <=3pt]
+  ({1*\cw},{-3*\rs+0.35}) to[bend left=35]
+  node[midway, below=0.5pt, font=\tiny\sffamily, text=violet!55!black]{mirror}
+  ({5*\cw},{-3*\rs+0.35});
+\node[font=\footnotesize\sffamily, text=gray!60, anchor=west]
+  at ({7.2*\cw},{-3*\rs}){case~2a\;$\to$\;$Z[6]{=}Z[k]{=}1$,\quad $[l,r]$ unchanged};
+
+% ── separator ─────────────────────────────────────────────
+\draw[gray!20] ({-0.6*\cw},{-3.75*\rs}) -- ({6.6*\cw},{-3.75*\rs});
+
+% ── final Z values ────────────────────────────────────────
+\node[font=\small\sffamily, text=gray!60, anchor=east] at ({-0.5*\cw},{-4.25*\rs}){$Z$};
+\node[Zv] at ({0*\cw},{-4.25*\rs}){---};
+\node[Zh] at ({1*\cw},{-4.25*\rs}){1};
+\node[Zv] at ({2*\cw},{-4.25*\rs}){0};
+\node[Zh] at ({3*\cw},{-4.25*\rs}){2};
+\node[Zh] at ({4*\cw},{-4.25*\rs}){3};
+\node[Zh] at ({5*\cw},{-4.25*\rs}){1};
+\node[Zv] at ({6*\cw},{-4.25*\rs}){0};
+\end{tikzpicture}
+\caption{%
+  Z-box algorithm on $A=\texttt{aabaaab}$ (steps $i{=}3$ and $i{=}7$ omitted: $Z{=}0$, no update).
+  \textcolor{teal!65!black}{Teal}: current Z-box $[l,r]$.
+  \textcolor{orange!75!black}{Orange border}: current position $i$
+  (filled teal when $i$ is inside the box).
+  \textcolor{violet!60!black}{Violet}: mirror $k = i{-}l{+}1$, with arc showing
+  the mirror correspondence.
+  Bottom row: final $Z$ array (non-zero entries highlighted).
+}
+\label{fig:z-trace}
+\end{figure}
 
 % ── Figure: Z-box algorithm, case (a) ────────────────────
 \begin{figure}[H]
@@ -1229,6 +1376,65 @@ compute $Z_i$:
   }
   \Return $Z$
 \end{algorithm}
+
+\begin{formaldetails}[Correctness of the Z-box algorithm]
+  We prove that the algorithm sets $Z[i] = Z_i(A)$ for every $i \ge 2$.
+
+  \begin{loopproof}
+    \item[Precondition]  $A[1\ldots n]$ is given; $l = r = 0$ before the loop.
+    \item[Loop guard]    $i$ ranges from $2$ to $n$.
+    \item[Invariant]     At the \emph{start} of iteration~$i$:
+                         (i)~$Z[j]$ is correctly set for all $2 \le j < i$, and
+                         (ii)~$[l, r]$ is the Z-box with the largest right endpoint
+                         seen so far, i.e.\ $A[l\ldots r] = A[1\ldots r{-}l{+}1]$
+                         (with $l = r = 0$ meaning no box yet).
+    \item[Postcondition] $Z[i] = Z_i(A)$ for all $i \in \{2, \ldots, n\}$.
+  \end{loopproof}
+
+  \lprulesep
+
+  \begin{loopproof}
+    \item[Base case]     Before $i = 2$: $Z$ is empty and $l = r = 0$, so the
+                         invariant holds vacuously. \checkmark
+
+    \item[Preservation]  Assume the invariant holds at the start of iteration~$i$.
+                         We analyse the two cases.
+
+                         \textit{Case 1: $i > r$.}
+                         The while loop compares $A[1], A[2], \ldots$ against
+                         $A[i], A[i{+}1], \ldots$ directly and stops at the first
+                         mismatch, so $Z[i]$ is set to the correct value by
+                         definition. If $Z[i] > 0$, the box is updated to
+                         $[l, r] = [i,\, i{+}Z[i]{-}1]$, which has a larger $r$
+                         than before. \checkmark
+
+                         \textit{Case 2a: $i \le r$ and $Z[k] < r{-}i{+}1$
+                         (mirror strictly inside the box).}
+                         Let $k = i{-}l{+}1$.
+                         From the invariant, $A[l\ldots r] = A[1\ldots r{-}l{+}1]$,
+                         so $A[i{+}j] = A[k{+}j]$ for $j = 0, \ldots, r{-}i$.
+                         In particular $A[i\ldots i{+}Z[k]{-}1] = A[k\ldots k{+}Z[k]{-}1] = A[1\ldots Z[k]]$.
+                         Since $Z[k] < r{-}i{+}1$, position $k{+}Z[k]$ still lies
+                         inside $[1, r{-}l{+}1]$, so
+                         $A[i{+}Z[k]] = A[k{+}Z[k]] \ne A[1{+}Z[k]]$
+                         (the character that ended the match at $k$).
+                         Therefore $Z[i] = Z[k]$.
+                         The box $[l, r]$ is not updated since
+                         $i{+}Z[i]{-}1 < r$. \checkmark
+
+                         \textit{Case 2b: $i \le r$ and $Z[k] \ge r{-}i{+}1$
+                         (mirror reaches or exceeds the box boundary).}
+                         The same translation gives $A[i\ldots r] = A[1\ldots r{-}i{+}1]$,
+                         so $Z[i] \ge r{-}i{+}1$ is guaranteed.
+                         The algorithm initialises $Z[i] = r{-}i{+}1$ and extends
+                         it by comparing $A[r{+}1], A[r{+}2], \ldots$ directly
+                         until a mismatch, exactly as in Case~1.
+                         The box is then updated to $[i,\, i{+}Z[i]{-}1]$. \checkmark
+
+    \item[Postcondition] When the loop exits, all $Z[i]$ have been correctly
+                         computed by the case analysis above. \checkmark
+  \end{loopproof}
+\end{formaldetails}
 
 \paragraph{Amortised $\Oh{n}$ complexity.}
 The variable $r$ is non-decreasing and bounded by $n$, so it increments at most $n$ times.
