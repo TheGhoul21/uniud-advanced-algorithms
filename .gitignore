@@ -20,3 +20,9 @@ auto/
 
 # Build output (keep the PDF in git if you want, remove this line)
 # main.pdf
+
+
+# Manim temp files:
+__pycache__/
+*.pyc
+media/
