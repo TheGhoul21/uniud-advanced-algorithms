@@ -1742,10 +1742,12 @@ The $sp$ values of $P$ can be read off directly from its Z-array.
 
 KMP with plain $sp$ values is \emph{blind} (it never re-reads $T$) but not \emph{real-time}:
 a single new character of $T$ can trigger a fallback chain costing $\Oh{m}$ in the worst
-case.
-The fix is to collapse the entire chain into a single precomputed lookup.
+case. 
+The fix is to collapse the entire chain into a single precomputed lookup. We achieve this 
+in two logical steps: first by skipping strictly useless borders, and then by precomputing 
+transitions for every possible character.
 
-\subsubsection{Strong border ($sp'$)}
+\subsubsection{Strong border ($sp'$): Skipping useless fallbacks}
 
 \begin{definition}[Strong border]
   For $i \in \{1,\ldots,m-1\}$, define
@@ -1756,6 +1758,16 @@ The fix is to collapse the entire chain into a single precomputed lookup.
   This is the length of the longest proper prefix-suffix of $P[1\ldots i]$ whose next
   character differs from $P[i+1]$.
 \end{definition}
+
+In plain words, $\spi{i}'$ is the length of the longest border of $P[1\ldots i]$ that would
+not cause an immediate mismatch at $P[i+1]$. 
+
+Any mismatch on $P[i+1]$ with a text character $x$ would also fail at the next
+border $k = \spi{i}$ if $P[k+1] = P[i+1]$ --- we say such borders are \emph{useless}
+(see Figure~\ref{fig:strong-border}). What is a useless border? Example \ref{fig:strong-border} shows $P = \texttt{aabaa}$ at $i=4$: the border $\alpha = \texttt{a}$ of length $k=1$ is useless since $P[k+1] = P[2] = \texttt{a}$ equals $P[i+1] = P[5] = \texttt{a}$.
+If a mismatch occurs at $P[5]$ with some text character $x \neq \texttt{a}$, then after falling back to the border $\alpha$, we would immediately fail again at $P[k+1]$ --- the border is useless.
+$sp'$ allows us to skip an entier chain of useless borders in a single step, jumping directly to the longest safe border that could potentially match the next text character.
+
 
 % ── Figure: strong border ─────────────────────────────────
 \begin{figure}[H]
@@ -1772,17 +1784,17 @@ The fix is to collapse the entire chain into a single precomputed lookup.
 ]
 \def\cw{0.82}
 
-% position indices - moved closer to boxes to avoid arrow overlap
+% position indices
 \foreach \i in {1,...,5}
   \node[font=\tiny\sffamily, text=gray!55] at ({(\i-1)*\cw}, 0.55) {\i};
 
-% P label - moved further left
+% P label
 \node[font=\small\ttfamily, anchor=east] at (-0.6*\cw, 0.9) {$P$};
-\node[Brd] (p1) at (0*\cw, 1.05) {a};   % prefix of border
-\node[Nxt] (p2) at (1*\cw, 1.05) {a};   % P[k+1]
+\node[Brd] (p1) at (0*\cw, 1.05) {a};   
+\node[Nxt] (p2) at (1*\cw, 1.05) {a};   
 \node[NC]  (p3) at (2*\cw, 1.05) {b};
-\node[Brd] (p4) at (3*\cw, 1.05) {a};   % suffix of border (= p1)
-\node[Nxt] (p5) at (4*\cw, 1.05) {a};   % P[i+1]
+\node[Brd] (p4) at (3*\cw, 1.05) {a};   
+\node[Nxt] (p5) at (4*\cw, 1.05) {a};   
 
 % dashed separator
 \draw[gray!40, dashed, thick]
@@ -1800,7 +1812,7 @@ The fix is to collapse the entire chain into a single precomputed lookup.
 \node[font=\tiny\sffamily, text=orange!70!black, below=4pt] at (p5.south)
   {$P[i{+}1]$};
 
-% curved arrow above: P[k+1] = P[i+1] => useless - increased height to 32pt
+% curved arrow above
 \draw[orange!65!black, thick, <->, rounded corners=6pt,
       shorten >=2pt, shorten <=2pt]
   ([yshift=5pt]p2.north) -- ([yshift=32pt]p2.north) --
@@ -1808,7 +1820,7 @@ The fix is to collapse the entire chain into a single precomputed lookup.
     {$P[k{+}1] = P[i{+}1]$ \;\textbf{---} useless border!}
   ([yshift=32pt]p5.north) -- ([yshift=5pt]p5.north);
 
-% brace under border (k=1): P[1..1]=P[4..4]
+% brace under border
 \draw[violet!60!black, decorate, decoration={brace, mirror, raise=22pt}]
   (p1.south west) -- (p4.south east)
   node[midway, below=26pt, font=\tiny\sffamily, text=violet!65!black]
@@ -1829,13 +1841,12 @@ The fix is to collapse the entire chain into a single precomputed lookup.
 \label{fig:strong-border}
 \end{figure}
 
-Any mismatch on $P[i+1]$ with a text character $x$ would also fail at the next
-border $k = \spi{i}$ if $P[k+1] = P[i+1]$ --- we say such borders are \emph{useless}
-(see Figure~\ref{fig:strong-border}).
-$\spi{i}'$ skips all of them in one step, guaranteeing $\Oh{1}$ worst-case time per
-character of $T$.
+$\spi{i}'$ skips the entire chain of useless borders in one step, but it only encodes a
+single fallback state --- the longest ``safe'' border for the specific character $P[i+1]$.
+For a completely arbitrary text character $x$, a fallback chain might still occur. To achieve 
+strict $\Oh{1}$ time per character, a full character-indexed table is needed.
 
-\subsubsection{Character-indexed borders and the DFA}
+\subsubsection{Character-indexed borders and the DFA: True Real-Time}
 
 For a complete real-time solution we precompute, for each position $i$ and character
 $x \in \Sigma$, the longest border of $P[1\ldots i]$ whose next character is exactly $x$:
@@ -1848,34 +1859,87 @@ $x \in \Sigma$, the longest border of $P[1\ldots i]$ whose next character is exa
   with default $0$ when no such $k$ exists.
 \end{definition}
 
+This generalises $\spi{i}'$: where the strong border encodes a single fallback state for the
+character $P[i+1]$, the table $\mathrm{sp}_{i,x}$ encodes the optimal fallback for \emph{every}
+$x \in \Sigma$ simultaneously.
+
+\begin{example}[$sp'$ vs.\ $\mathrm{sp}_{i,x}$ for $P = \texttt{aabaab}$]
+\label{ex:sp-vs-spix}
+Consider $P = \texttt{aabaab}$ ($m=6$) over $\Sigma=\{\texttt{a},\texttt{b},\texttt{c}\}$.
+The $sp$ and $sp'$ values are:
+
+\begin{center}
+\begin{tabular}{rcccccc}
+  \toprule
+  $i$            & 1 & 2 & 3 & 4 & 5 & 6 \\
+  \midrule
+  $P[i]$         & \texttt{a} & \texttt{a} & \texttt{b} & \texttt{a} & \texttt{a} & \texttt{b} \\
+  $\spi{i}$      & 0 & 1 & 0 & 1 & 2 & 3 \\
+  $\spi{i}'$     & 0 & 1 & 0 & 0 & 1 & -- \\
+  \bottomrule
+\end{tabular}
+\end{center}
+
+\aside{%
+  At $i=5$, the border chain of $P[1..5]=\texttt{aabaa}$ is
+  $k \in \{2,\,1,\,0\}$.
+  Both $k=2$ ($P[3]{=}\texttt{b}{=}P[6]$) and $k=1$ ($P[2]{=}\texttt{a}$)
+  must be inspected; $\spi{5}'=1$ skips past the useless $k=2$.}
+At $i=5$ the border $\texttt{aa}$ ($\spi{5}=2$) is useless because $P[3]=\texttt{b}=P[6]$;
+the shorter border $\texttt{a}$ ($k=1$) satisfies $P[2]=\texttt{a}\neq P[6]$, so
+$\spi{5}'=1$.
+
+Now suppose we have matched $P[1..5]$ (state $j=5$) and the next text character is $x$.
+With $\spi{5}'=1$, KMP falls back to state~$1$ for \emph{every} mismatch
+$x \neq P[6]=\texttt{b}$, and may still need further comparisons depending on $x$:
+
+\aside[-2ex]{%
+  $\mathrm{sp}_{5,\texttt{a}}=1$ because the border of length~$1$
+  satisfies $P[2]=\texttt{a}=x$; no border has $P[k{+}1]=\texttt{c}$,
+  so $\mathrm{sp}_{5,\texttt{c}}=0$.}
+\begin{itemize}[topsep=4pt, itemsep=3pt]
+  \item $x=\texttt{a}$: $5\to 1$, then $P[2]=\texttt{a}=x \Rightarrow$ state $2$.
+        \textbf{Two comparisons.}
+  \item $x=\texttt{c}$: $5\to 1$, $P[2]\neq\texttt{c}$; $1\to 0$, $P[1]\neq\texttt{c}$;
+        stay at $0$. \textbf{Three comparisons.}
+\end{itemize}
+By contrast, $\mathrm{sp}_{5,x}$ resolves every case in one lookup:
+
+\begin{center}
+\begin{tabular}{rccc}
+  \toprule
+  $x$                      & \texttt{a} & \texttt{b} & \texttt{c} \\
+  \midrule
+  $\mathrm{sp}_{5,x}$     & 1 & -- \textnormal{\scriptsize (match $P[6]$)} & 0 \\[3pt]
+  DFA $\delta(5,x)$        & 2 & 6 \textnormal{\scriptsize (full match!)}   & 0 \\
+  \bottomrule
+\end{tabular}
+\end{center}
+
+$\delta(5,\texttt{a})=2$ replaces two comparisons with one table read;
+$\delta(5,\texttt{c})=0$ replaces three.
+\end{example}
+
 The table $\{\mathrm{sp}_{i,x}(P)\}_{i,x}$ is precisely the \emph{transition function} of
-the deterministic finite automaton (DFA) for pattern $P$: state $i$ encodes ``$i$ characters
-of $P$ matched so far'', and on reading $x$ the automaton transitions to
-$\mathrm{sp}_{i,x}(P) + \mathbf{1}[P[i+1]=x]$.\aside{%
+the deterministic finite automaton (DFA)\aside[1ex]{%
   The DFA has $m+1$ states and $|\Sigma|$ transitions per state, so the table takes
-  $\Oh{m|\Sigma|}$ space and time to build.}
-With this table, each character of $T$ is processed in $\Oh{1}$ worst-case time, making
+  $\Oh{m|\Sigma|}$ space and time to build.} for pattern $P$: state $i$ encodes ``$i$ characters
+of $P$ matched so far'', and on reading $x$ the automaton transitions to
+$\mathrm{sp}_{i,x}(P) + \mathbf{1}[P[i+1]=x]$.
+With this table, each character of $T$ is processed in strict $\Oh{1}$ worst-case time, making
 KMP truly \textbf{real-time}.
 
-\paragraph{Online vs.\ real-time: KMP vs.\ Z-algorithm.}
-The Z-algorithm requires the \emph{entire} string before it can report results — the Z-box
-$[l,r]$ may depend on characters far ahead — so it is \emph{not online}.\aside{%
-  KMP with $sp'$ (or the full $sp_{i,x}$ table) is also \emph{blind} and processes each
-  new character in $\Oh{1}$ worst-case, which is why it appears as real-time in the
-  comparison table above.}
-KMP with $sp'$ processes $T$ one character at a time in $\Oh{1}$ worst-case per character,
-making it both \textbf{online} and \textbf{real-time} — the key practical advantage over
-the Z-algorithm.
 
 % ══════════════════════════════════════════════════════════════════
 \subsection{A Comprehensive Trace: KMP and Z-Algorithm}
 % ══════════════════════════════════════════════════════════════════
 
-To solidify these concepts, let's trace both algorithms on a concrete example.
+To solidify these concepts, let's trace KMP and then contrast it directly with the Z-Algorithm.
 
 \subsubsection{KMP Step-by-Step}
 
 Consider the pattern $P = \texttt{ababa}$ and the text $T = \texttt{ababcababa}$.
+Here we trace the standard KMP behavior (using plain $sp$ values to illustrate the fallback mechanism that DFA optimizes).\aside[2ex]{For $i=4$, $P[1..4]=\texttt{abab}$. Proper prefix-suffixes are $\texttt{ab}$ (len 2) and $\texttt{a}$ (len 1). Max is 2.}
 
 \paragraph{1. Preprocessing $P$.}
 We compute the $sp$ array for $P$.
@@ -1889,7 +1953,6 @@ We compute the $sp$ array for $P$.
   \bottomrule
 \end{tabular}
 \end{center}
-\aside{For $i=4$, $P[1..4]=\texttt{abab}$. Proper prefix-suffixes are $\texttt{ab}$ (len 2) and $\texttt{a}$ (len 1). Max is 2.}
 
 \paragraph{2. Searching $T$.}
 We maintain a pointer $i$ into $T$ and a pointer $j$ representing the length of the current match in $P$.
@@ -1953,9 +2016,16 @@ The complete trace is shown in Figure~\ref{fig:kmp-trace}.
 \label{fig:kmp-trace}
 \end{figure}
 
+\subsubsection{Online vs.\ Real-Time: Bridging the Gap}
+
+The KMP trace above highlights a crucial property: KMP processes $T$ one character at a time without ever stepping backwards in $T$. This makes KMP an \textbf{online} algorithm. However, as seen in Steps 1-3, processing the single character $T[5]=\texttt{c}$ required multiple internal operations ($j$ falling back multiple times). If we had used the full DFA ($\mathrm{sp}_{i,x}$) discussed previously, those steps would collapse into $\Oh{1}$ worst-case time, upgrading the algorithm from merely online to strictly \textbf{real-time}.
+
+By contrast, the Z-algorithm is \emph{neither} real-time nor strictly online in the same way. The computation of the Z-box $[l,r]$ depends on reading characters ahead in the string. Let's trace it to see this structural difference in action.
+
 \subsubsection{Z-Algorithm Trace}
 
-Let's compute the Z-values for the string $S = \texttt{aababca}$.
+Let's compute the Z-values for the string $S = \texttt{aababca}$. 
+Notice how the algorithm looks ahead to establish the rightmost boundary $r$.
 
 \begin{enumerate}
   \item \textbf{$i=2$:} $S[2]=\texttt{a} = S[1]$. Check $S[3]=\texttt{b} \neq S[2]$. $Z_2 = 1$.
@@ -1982,3 +2052,46 @@ Let's compute the Z-values for the string $S = \texttt{aababca}$.
 \end{tabular}
 \end{center}
 
+
+\subsection{Boyer-Moore Algorithm}
+So far we have seen two algorithms that scan the text from left to right, never re-reading
+any character of $T$ once processed. Is this mandatory? Or can we change this approach?
+
+The Boyer-Moore algorithm scans the text from right to left, starting with the last character of
+the pattern aligned with the current text position. Why would this be a good idea?
+
+In this algorithm checks are computed from right to left, while the pattern is aligned with the text from left to right. 
+
+What are the advantages of this approach? Let's consider the following heuristics:
+\begin{itemize}
+  \item \textbf{Bad Character Rule}: during preprocessing, for each position $i$ and character $x$, we keep memory of the first occurrence of $x$ to the left of $i$.
+  
+  \begin{center}
+  \begin{tikzpicture}[
+    cell/.style={minimum width=7mm, minimum height=7mm, font=\ttfamily\small, inner sep=0pt, text centered, rounded corners=2pt},
+    Tcell/.style={cell, draw=blue!50!black, fill=blue!8},
+    XC/.style={cell, draw=red!65!black, fill=red!12, text=red!50!black},
+  ]
+    \draw[blue!50!black, fill=blue!8, rounded corners=2pt] (0,0) rectangle (5, 0.4);
+    \draw[thick, red!70!black] (3.5, 0) -- (3.5, 0.4) node[above, font=\small\sffamily] {$i$};
+    \draw[thick, orange!80!black] (2.5, 0) -- (2.5, 0.4) node[above, font=\small\sffamily] {$x$};
+    \draw[<-, thick, Stealth-, bend right=45] (2.6, -0.2) to (3.4, -0.2);
+    \node[below, font=\tiny\sffamily, text=gray!80] at (3, -0.5) {shift to align $x$};
+  \end{tikzpicture}
+  \end{center}
+
+  \item \textbf{Good Suffix Rule}: during preprocessing, for each suffix of $P$, we keep memory of its first further occurrence to the left.
+  
+  \begin{center}
+  \begin{tikzpicture}[
+    cell/.style={minimum width=7mm, minimum height=7mm, font=\ttfamily\small, inner sep=0pt, text centered, rounded corners=2pt},
+    Tcell/.style={cell, draw=blue!50!black, fill=blue!8},
+    Alpha/.style={cell, draw=violet!70!black, fill=violet!25, text=violet!20!black},
+  ]
+    \draw[blue!50!black, fill=blue!8, rounded corners=2pt] (0,0) rectangle (5, 0.4);
+    \draw[violet!70!black, fill=violet!25, rounded corners=2pt] (3.3, 0) rectangle (5, 0.4) node[midway, font=\tiny\sffamily] {suffix};
+    \draw[violet!70!black, fill=violet!25, rounded corners=2pt] (1, 0) rectangle (2.7, 0.4) node[midway, font=\tiny\sffamily] {copy};
+    \draw[<-, thick, Stealth-, bend left=45] (1.85, 0.6) to (4.15, 0.6);
+  \end{tikzpicture}
+  \end{center}
+\end{itemize}

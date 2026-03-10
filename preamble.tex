@@ -184,9 +184,9 @@
   linecolor=gray!50]{observation}
 
 % ---- custom margin-note shorthand ----
-% \aside{text}  — unnumbered note in the margin
-\newcommand{\aside}[1]{%
-  \marginnote{\footnotesize\itshape #1}%
+% \aside[offset]{text} — unnumbered note in the margin
+\newcommand{\aside}[2][0pt]{%
+  \marginnote{\footnotesize\itshape #2}[#1]%
 }
 
 % ---- KMP / string-matching notation ----
