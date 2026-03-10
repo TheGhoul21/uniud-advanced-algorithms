@@ -2095,3 +2095,118 @@ What are the advantages of this approach? Let's consider the following heuristic
   \end{tikzpicture}
   \end{center}
 \end{itemize}
+
+How do we use these two information? If we knew that both rules are correct, i.e. applying them would never skip a potential match, we could apply either of them at each step and have a more efficient algorithm.
+It turns out, that the two rules are indeed correct, and at each step we might apply the one that allows us to skip more characters. This is the Boyer-Moore algorithm.
+
+These are basically heuristics to reposition the pattern in the most convenient way after a mismatch.
+For example in one extreme case where $T$ = $c^n$ and $P$ = $a^{n-1}c$, the BCS rule will allow us to scan the text in $\sim \frac{m}{n}$ that is sublinear.
+\textbf{Note}: if there are many occurrences, this might become the naive algorithm.
+
+
+\subsubsection{BCR: Space-Time Trade-off}
+The Bad Character Rule can be implemented in two main ways:
+\begin{enumerate}[label=\alph*)]
+    \item \textbf{2D Table}: A table of size $|\Sigma| \times |P|$ where each entry $(x, i)$ stores the rightmost occurrence of character $x$ in $P[1 \dots i-1]$. This approach uses $\Oh{|\Sigma| \cdot |P|}$ space and allows $\Oh{1}$ time for each shift lookup.
+    \item \textbf{Position Lists}: For each character $x \in \Sigma$, maintain a sorted list of its positions in $P$. 
+    \begin{itemize}
+        \item \textbf{Pros}: Uses less space, specifically $\Oh{|P|}$ total across all lists.
+        \item \textbf{Cons}: Finding the rightmost occurrence of $x$ before $i$ requires searching the list (e.g., via binary search).
+    \end{itemize}
+\end{enumerate}
+\note{In an amortized sense, approach (b) has the same overall cost as approach (a), as the time spent searching the lists is balanced by the shifts in the pattern.}
+
+\subsubsection{GSR Preprocessing: $L'(i)$}
+The Good Suffix Rule (GSR) requires finding the rightmost occurrence of a suffix $P[i \dots m]$ that is preceded by a character different from $P[i-1]$. This is captured by the definition of $L'(i)$.
+
+\begin{definition}[$L'(i)$]
+For each $i \in \{1, \dots, |P|\}$, $L'(i)$ is defined as the largest index $j < |P|$ such that:
+\begin{enumerate}
+    \item $P[i \dots m]$ is a suffix of $P[1 \dots j]$.
+    \item $P[i-1] \neq P[j - (m-i) - 1]$.
+\end{enumerate}
+If no such index exists, $L'(i) = 0$.
+\end{definition}
+
+\begin{center}
+\begin{tikzpicture}[
+    scale=0.9,
+    pbar/.style={draw, fill=blue!5, thick, rounded corners=2pt},
+    suffix/.style={fill=gray!40, draw=gray!70, thick},
+    mismatch/.style={red!80!black, font=\footnotesize\ttfamily\bfseries}
+]
+    % Main pattern bar
+    \draw[pbar] (0,-0.3) rectangle (10, 0.3);
+    \node[above right] at (0, 0.3) {$P$};
+
+    % Suffix P[i..m]
+    \draw[suffix] (8, -0.3) rectangle (10, 0.3);
+    \node[above] at (8, 0.3) {$i$};
+    \node[below] at (9, -0.3) {$P[i, m]$};
+
+    % Copy in P[1..L'(i)]
+    \draw[suffix] (3, -0.3) rectangle (5, 0.3);
+    \node[above] at (5, 0.3) {$L'(i)$};
+    
+    % Mismatch characters
+    \node[mismatch] at (7.6, 0) {$y$};
+    \node[below] at (7.6, -0.3) {$i-1$};
+    
+    \node[mismatch] at (2.6, 0) {$x$};
+    \node[below] at (2.6, -0.3) {\scalebox{0.7}{$L'(i)-(m-i)-1$}};
+    
+    % Connection arc for mismatch
+    \draw[<->, dashed, red!70!black, bend left=30] (2.6, 0.4) to node[midway, above, font=\tiny] {$x \neq y$} (7.6, 0.4);
+
+    % Braces
+    \draw[decorate, decoration={brace, amplitude=5pt, mirror}] (0, -1.1) -- (5, -1.1) node[midway, below=6pt] {$P[1, L'(i)]$};
+    \draw[decorate, decoration={brace, amplitude=5pt, mirror}] (8, -1.1) -- (10, -1.1) node[midway, below=6pt] {$P[i, m]$};
+\end{tikzpicture}
+\end{center}
+
+\aside[-2ex]{Idea: to compute $L'(i)$ efficiently, we can use the $Z$-algorithm on the reverse of the pattern $P^r$.}
+
+\begin{definition}[$N_j(P)$]
+For each $j \in \{1, \dots, |P|\}$, $N_j(P)$ is the length of the longest suffix of $P[1 \dots j]$ that is also a suffix of $P$.
+\end{definition}
+
+\begin{theorem}
+The values of $L'(i)$ can be computed using $N_j(P)$ as follows:
+\[ L'(i) = \max \{ j < |P| \mid N_j(P) = |P| - i + 1 \text{ and } P[j - (m-i+1)] \neq P[i-1] \} \]
+Furthermore, $N_j(P)$ can be directly computed using the $Z$-algorithm on the reversed pattern $P^r$:
+\[ N_j(P) = Z_{m-j+1}(P^r) \]
+where $m = |P|$.
+\end{theorem}
+
+\aside[-2ex]{Based on this theorem, we can compute $L'(i)$ in $\Oh{m}$ time and thus implement the GSR rule efficiently.}
+
+\subsubsection{Complexity of Boyer-Moore}
+The Boyer-Moore algorithm has a **quadratic** worst-case complexity, specifically $\Oh{nm + |\Sigma|}$ if not carefully implemented. 
+\note{The algorithm can be made **linear**, i.e., $\Oh{n+m}$, by using more advanced techniques like the one proposed by \textbf{Apostolico and Giancarlo}.}
+
+\begin{center}
+\begin{tikzpicture}[
+    scale=0.9,
+    pbar/.style={draw, fill=blue!5, thick, rounded corners=2pt},
+    suffix/.style={fill=orange!20, draw=orange!70, thick},
+]
+    % P^r bar
+    \draw[pbar] (0, 0) rectangle (6, 0.6);
+    \node[left] at (0, 0.3) {$P^r$};
+    
+    % Z-box on P^r
+    \draw[suffix] (2, 0) rectangle (3.5, 0.6) node[midway, font=\tiny] {$Z_k(P^r)$};
+    \node[below] at (2, 0) {$k$};
+    
+    % P bar reversed
+    \draw[pbar] (0, -1.2) rectangle (6, -0.6);
+    \node[left] at (0, -0.9) {$P$};
+    
+    % Corresponding N_j(P)
+    \draw[suffix] (2.5, -1.2) rectangle (4, -0.6) node[midway, font=\tiny] {$N_j(P)$};
+    \node[below] at (4, -1.2) {$j$};
+    
+    % Relation arrow
+    \draw[<->, thick, Stealth-Stealth, blue!60!black] (3, -0.1) -- (3, -0.5) node[midway, right, font=\tiny\itshape] {reverse correspondence};
+\end{tikzpicture}
+\end{center}
