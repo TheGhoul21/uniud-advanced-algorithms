@@ -2103,8 +2103,8 @@ At each step Boyer-Moore applies whichever rule yields the larger shift.
 \begin{example}[BCR skip]
   Search $P = \texttt{ALGO}$ in $T = \texttt{\dots ALBERO\dots}$.
   Aligning $P$ with the first four characters, we compare right-to-left:
-  $P[4] = \texttt{O}$ vs $T[4] = \texttt{E}$ è un mismatch.
-  Siccome \texttt{E} non compare in $P$, la BCR sposta l'intero pattern oltre il carattere "cattivo".
+  $P[4] = \texttt{O}$ vs $T[4] = \texttt{E}$ is a mismatch.
+  Since \texttt{E} does not appear in $P$, BCR shifts the entire pattern past the "bad" character.
 
 \begin{center}
 \begin{tikzpicture}[
@@ -2119,12 +2119,12 @@ At each step Boyer-Moore applies whichever rule yields the larger shift.
 ]
 \def\cw{0.9}
 
-% Griglia verticale di riferimento
+% Vertical grid lines
 \foreach \x in {0,...,7} {
   \draw[gridline] (\x*\cw, 0.5) -- (\x*\cw, -3.2);
 }
 
-% Testo T
+% Text T
 \node[font=\small\sffamily\bfseries, text=gray!60, anchor=east] at ({-0.6*\cw}, 0)  {$T$};
 \node[T] at ({0*\cw}, 0) {A};
 \node[T] at ({1*\cw}, 0) {L};
@@ -2134,37 +2134,37 @@ At each step Boyer-Moore applies whichever rule yields the larger shift.
 \node[T] at ({5*\cw}, 0) {O};
 \node[font=\small, text=gray!40] at ({6.2*\cw}, 0) {\dots};
 
-% Pattern P (Originale)
+% Pattern P (Original)
 \node[font=\small\sffamily\bfseries, text=gray!60, anchor=east] at ({-0.6*\cw}, -1.2) {$P$};
 \node[P] at ({0*\cw}, -1.2) {A};
 \node[P] at ({1*\cw}, -1.2) {L};
 \node[P] at ({2*\cw}, -1.2) {G};
 \node[MismatchP] at ({3*\cw}, -1.2) {O};
 
-% Croce mismatch
+% Mismatch cross
 \node[red!70!black, font=\bfseries] at ({3*\cw}, -0.6) {$\times$};
 
-% Livello P' con Ghosting
+% Level P' with Ghosting
 \node[font=\small\sffamily\bfseries, text=gray!60, anchor=east] at ({-0.6*\cw}, -2.6) {$P'$};
 
-% Fantasma (vecchia posizione)
+% Ghost (old position)
 \node[ghost] at ({0*\cw}, -2.6) {A};
 \node[ghost] at ({1*\cw}, -2.6) {L};
 \node[ghost] at ({2*\cw}, -2.6) {G};
 \node[ghost] at ({3*\cw}, -2.6) {O};
 
-% Nuovo P' (nuova posizione)
+% New P' (shifted position)
 \node[Pnew] at ({4*\cw}, -2.6) {A};
 \node[Pnew] at ({5*\cw}, -2.6) {L};
 \node[Pnew] at ({6*\cw}, -2.6) {G};
 \node[Pnew] at ({7*\cw}, -2.6) {O};
 
-% Freccia di Shift
+% Shift Arrow
 \draw[->, >=Stealth, thick, blue!60!black] ({1.5*\cw}, -1.9) -- ({5.5*\cw}, -1.9)
   node[midway, fill=white, inner sep=2pt, font=\small\sffamily\bfseries, text=blue!70!black] {shift +4};
 
-\node[font=\footnotesize\itshape, text=gray!60, anchor=west] at ({8*\cw}, -1.2) {mismatch alla fine del pattern};
-\node[font=\footnotesize\itshape, text=gray!60, anchor=west] at ({8*\cw}, -2.6) {\texttt{E} $\notin P$: saltiamo l'intero blocco};
+\node[font=\footnotesize\itshape, text=gray!60, anchor=west] at ({8*\cw}, -1.2) {mismatch at end of pattern};
+\node[font=\footnotesize\itshape, text=gray!60, anchor=west] at ({8*\cw}, -2.6) {\texttt{E} $\notin P$: skip the entire block};
 
 \end{tikzpicture}
 \end{center}
@@ -2464,6 +2464,62 @@ There are four key cases when we encounter a previously matched segment ($w > 0$
 \end{enumerate}
 
 By using these rules, Apostolico--Giancarlo ensures that each character of the text is involved in at most a constant number of \emph{successful} comparisons, bringing the worst-case complexity down to $\Oh{n+m}$.
+
+\begin{example}[Apostolico--Giancarlo in action]
+Consider the classic worst-case for Boyer-Moore: $P = \texttt{aaaaa}$ ($m=5$) and $T = \dots\texttt{aaaaaa}\dots$.
+Precomputing $N_i(P)$: since every prefix of $P$ is also a suffix of $P$, we have $N_i = i$ for all $i$.
+
+\begin{enumerate}
+    \item \textbf{Shift $s=0$}: Compare $P$ against $T[1\dots 5]$ right-to-left. 5 matches found.
+    Update array $M$ with match lengths: $M[1]=1, M[2]=2, M[3]=3, M[4]=4, M[5]=5$.
+    
+    \item \textbf{Shift $s=1$}: Align $P$ starting at $T[2]$.
+    \begin{itemize}
+        \item Compare $P[5]$ with $T[6]$. Match! (1 comparison).
+        \item Move to $P[4]$ vs $T[5]$. We see $M[5] = 5$ (previous match).
+        \item Check Case 4: $w=5 \ge N_4=4$ and $N_4=4$ (prefix match).
+        \item \textbf{Jump}: We can declare a full match for the rest of the pattern without any further comparisons.
+    \end{itemize}
+\end{enumerate}
+
+\begin{center}
+\begin{tikzpicture}[
+    cell/.style={rectangle, draw=gray!30, fill=gray!5, minimum width=7mm, minimum height=6mm, font=\ttfamily\small},
+    mcell/.style={rectangle, draw=blue!40, fill=blue!10, minimum width=7mm, minimum height=6mm, font=\ttfamily\tiny\bfseries},
+    match/.style={fill=green!10, draw=green!60!black},
+    skip/.style={fill=blue!5, draw=blue!30, text=blue!40}
+]
+    \def\cw{0.8}
+
+    % Text T
+    \node[anchor=east, font=\small\sffamily] at (0, 0) {$T$:};
+    \foreach \x in {1,...,7} \node[cell] (t\x) at (\x*\cw, 0) {a};
+
+    % M array
+    \node[anchor=east, font=\small\sffamily] at (0, -0.8) {$M[k]$:};
+    \foreach \x in {1,...,5} \node[mcell] at (\x*\cw, -0.8) {\x};
+    \node[mcell, dashed, draw=gray!20, fill=white] at (6*\cw, -0.8) {?};
+
+    % Shift 0
+    \node[anchor=east, font=\small\sffamily] (s0label) at (0, -1.8) {$s=0$:};
+    \foreach \x in {1,...,5} \node[cell, match] (p0\x) at (\x*\cw, -1.8) {a};
+    \node[above=1pt of p03, font=\tiny\itshape, text=gray] {5 comparisons};
+
+    % Shift 1
+    \node[anchor=east, font=\small\sffamily] at (0, -2.8) {$s=1$:};
+    \foreach \x in {2,...,5} \node[cell, skip] at (\x*\cw, -2.8) {a};
+    \node[cell, match, draw=orange, thick] (new) at (6*\cw, -2.8) {a};
+    
+    \draw[blue!60, thick, decorate, decoration={brace, amplitude=5pt, mirror}] 
+        (1.6*\cw, -3.2) -- (5.4*\cw, -3.2) node[midway, below=6pt, font=\tiny\sffamily\bfseries] {Skipped via $M[5]$};
+        
+    \node[below=2pt of new, font=\tiny, text=orange!80!black] {single comparison};
+\end{tikzpicture}
+\end{center}
+
+In this scenario, while Boyer-Moore would perform $m$ comparisons for each shift ($\Oh{nm}$), AG performs only one (plus the $M$ check), guaranteeing $\Oh{n}$ linearity even on periodic strings.
+\end{example}
+
 On the other hand, in favourable inputs (e.g.\ $T = c^n$,
 $P = a^{m-1}c$) the original Boyer-Moore already scans the text in as few as
 $\lceil n/m \rceil$ character comparisons.
