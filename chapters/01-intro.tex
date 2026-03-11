@@ -2657,11 +2657,12 @@ reflecting the shared prefix \texttt{t}.
   \node[ll, below=5pt] at (nOTHER.south)   {\texttt{other}};
 
   %% ── SHARED-PREFIX BRACE ──────────────────────────────────────
-  % Highlight that "tatoo" and "theater" share the initial 't'
+  % Span across nTA and nTH (sibling depth-2 nodes under ndT)
+  % mirror → brace opens downward; label sits below the two subtrees
   \draw[blue!35, thick, decorate,
-        decoration={brace, raise=4pt, amplitude=5pt}]
-    (nTA.west |- nTATOO.south) -- (nTH.east |- nTATOO.south)
-    node[midway, below=10pt, font=\tiny\sffamily, text=blue!55!black]
+        decoration={brace, mirror, raise=5pt, amplitude=5pt}]
+    (nTA.west) -- (nTH.east)
+    node[midway, below=13pt, font=\tiny\sffamily, text=blue!55!black]
       {share prefix \texttt{t} $\to$ tracked by one node};
 
 \end{tikzpicture}
@@ -2762,7 +2763,7 @@ prefix-matching state for the whole set $\mathcal{P}$.}
   \draw[eg] (nR)   -- (Rll);
   % highlighted active path
   \draw[aeg] (root) -- (nM)
-    node[midway, right, font=\tiny\ttfamily, text=violet!55!black] {$a_j$};
+    node[midway, right, font=\tiny\ttfamily, text=violet!55!black, left=-2pt] {$a_j$};
   \draw[aeg] (nM)   -- (nMa);
   \draw[aeg, densely dashed] (nMa) -- (nMl);
 
