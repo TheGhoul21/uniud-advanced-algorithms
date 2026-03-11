@@ -2103,73 +2103,165 @@ At each step Boyer-Moore applies whichever rule yields the larger shift.
 \begin{example}[BCR skip]
   Search $P = \texttt{ALGO}$ in $T = \texttt{\dots ALBERO\dots}$.
   Aligning $P$ with the first four characters, we compare right-to-left:
-  $P[4] = \texttt{O}$ vs $T[4] = \texttt{E}$ is a mismatch.
-  Since \texttt{E} does not appear anywhere in $P$, BCR shifts the entire
-  pattern past the mismatch character.
+  $P[4] = \texttt{O}$ vs $T[4] = \texttt{E}$ è un mismatch.
+  Siccome \texttt{E} non compare in $P$, la BCR sposta l'intero pattern oltre il carattere "cattivo".
 
 \begin{center}
 \begin{tikzpicture}[
-  cell/.style={
-    minimum width=7.5mm, minimum height=6.5mm,
-    font=\ttfamily\small, inner sep=0pt,
-    text centered, rounded corners=1.5pt,
-  },
-  T/.style={cell, draw=gray!30, fill=gray!5},
+  cell/.style={rectangle, draw=gray!30, fill=gray!5, minimum width=8mm, minimum height=7mm, font=\ttfamily, inner sep=0pt, rounded corners=1pt},
+  T/.style={cell},
   P/.style={cell, draw=orange!60!black, fill=orange!10},
   MismatchT/.style={cell, draw=red!60!black, fill=red!15},
   MismatchP/.style={cell, draw=red!60!black, fill=red!15, text=red!50!black},
-  Pnew/.style={cell, draw=green!50!black, fill=green!10},
+  Pnew/.style={cell, draw=green!60!black, fill=green!10},
+  ghost/.style={cell, draw=gray!20, dashed, fill=none, text=gray!30},
+  gridline/.style={dashed, gray!15, thin}
 ]
-\def\cw{0.85}
+\def\cw{0.9}
 
-\node[font=\small\sffamily, text=gray!60, anchor=east] at ({-0.5*\cw}, 0)  {$T$};
-\node[T]         at ({0*\cw}, 0) {A};
-\node[T]         at ({1*\cw}, 0) {L};
-\node[T]         at ({2*\cw}, 0) {B};
+% Griglia verticale di riferimento
+\foreach \x in {0,...,7} {
+  \draw[gridline] (\x*\cw, 0.5) -- (\x*\cw, -3.2);
+}
+
+% Testo T
+\node[font=\small\sffamily\bfseries, text=gray!60, anchor=east] at ({-0.6*\cw}, 0)  {$T$};
+\node[T] at ({0*\cw}, 0) {A};
+\node[T] at ({1*\cw}, 0) {L};
+\node[T] at ({2*\cw}, 0) {B};
 \node[MismatchT] at ({3*\cw}, 0) {E};
-\node[T]         at ({4*\cw}, 0) {R};
-\node[T]         at ({5*\cw}, 0) {O};
-\node[T, draw=none, fill=none] at ({6*\cw}, 0) {\dots};
+\node[T] at ({4*\cw}, 0) {R};
+\node[T] at ({5*\cw}, 0) {O};
+\node[font=\small, text=gray!40] at ({6.2*\cw}, 0) {\dots};
 
-\node[font=\small\sffamily, text=gray!60, anchor=east] at ({-0.5*\cw}, -1) {$P$};
-\node[P]         at ({0*\cw}, -1) {A};
-\node[P]         at ({1*\cw}, -1) {L};
-\node[P]         at ({2*\cw}, -1) {G};
-\node[MismatchP] at ({3*\cw}, -1) {O};
+% Pattern P (Originale)
+\node[font=\small\sffamily\bfseries, text=gray!60, anchor=east] at ({-0.6*\cw}, -1.2) {$P$};
+\node[P] at ({0*\cw}, -1.2) {A};
+\node[P] at ({1*\cw}, -1.2) {L};
+\node[P] at ({2*\cw}, -1.2) {G};
+\node[MismatchP] at ({3*\cw}, -1.2) {O};
 
-\node[font=\tiny\sffamily\bfseries, text=red!70!black] at ({3*\cw}, -0.5) {$\times$};
+% Croce mismatch
+\node[red!70!black, font=\bfseries] at ({3*\cw}, -0.6) {$\times$};
 
-\draw[->, thick, gray!80, rounded corners=4pt]
-  ({1.5*\cw}, -1.5) -- ++(0, -0.4) -| ({5.5*\cw}, -2.6);
+% Livello P' con Ghosting
+\node[font=\small\sffamily\bfseries, text=gray!60, anchor=east] at ({-0.6*\cw}, -2.6) {$P'$};
 
-\node[font=\footnotesize\sffamily, text=gray!70, text width=5.5cm, align=center]
-  at ({3.5*\cw}, -2.1)
-  {\texttt{E} does not appear in $P$: skip the entire pattern past it.};
+% Fantasma (vecchia posizione)
+\node[ghost] at ({0*\cw}, -2.6) {A};
+\node[ghost] at ({1*\cw}, -2.6) {L};
+\node[ghost] at ({2*\cw}, -2.6) {G};
+\node[ghost] at ({3*\cw}, -2.6) {O};
 
-\node[font=\small\sffamily, text=gray!60, anchor=east] at ({3.5*\cw}, -3.1) {$P'$};
-\node[Pnew] at ({4*\cw}, -3.1) {A};
-\node[Pnew] at ({5*\cw}, -3.1) {L};
-\node[Pnew] at ({6*\cw}, -3.1) {G};
-\node[Pnew] at ({7*\cw}, -3.1) {O};
+% Nuovo P' (nuova posizione)
+\node[Pnew] at ({4*\cw}, -2.6) {A};
+\node[Pnew] at ({5*\cw}, -2.6) {L};
+\node[Pnew] at ({6*\cw}, -2.6) {G};
+\node[Pnew] at ({7*\cw}, -2.6) {O};
+
+% Freccia di Shift
+\draw[->, >=Stealth, thick, blue!60!black] ({1.5*\cw}, -1.9) -- ({5.5*\cw}, -1.9)
+  node[midway, fill=white, inner sep=2pt, font=\small\sffamily\bfseries, text=blue!70!black] {shift +4};
+
+\node[font=\footnotesize\itshape, text=gray!60, anchor=west] at ({8*\cw}, -1.2) {mismatch alla fine del pattern};
+\node[font=\footnotesize\itshape, text=gray!60, anchor=west] at ({8*\cw}, -2.6) {\texttt{E} $\notin P$: saltiamo l'intero blocco};
 
 \end{tikzpicture}
 \end{center}
 \end{example}
 
 \paragraph{Preprocessing options.}
-Two standard approaches exist for building the BCR table:
+Depending on the alphabet size $|\Sigma|$ and pattern length $m$, different data structures can be used to implement the Bad Character Rule:
+
 \begin{enumerate}[label=\alph*)]
-  \item \textbf{Full 2-D table} ($|\Sigma| \times m$): $\Oh{1}$ query time,
-        but $\Oh{|\Sigma| m}$ space.
-  \item \textbf{Position lists}: for each character store the sorted list of
-        its occurrences in $P$ and answer queries with binary search in
-        $\Oh{\log m}$.
+  \item \textbf{Full 2-D table} ($|\Sigma| \times m$):
+        A matrix $M[x, i]$ storing $\mathrm{BC}(i, x)$.
+        This provides $\Oh{1}$ query time but requires $\Oh{|\Sigma| m}$ space, which is only feasible for small alphabets like DNA.
+
+  \item \textbf{Compressed Matrix (Array of Lists):}
+        For each position $1 \le i \le m$, store a linked list of pairs $(x, j)$ where $j$ is the rightmost occurrence of character $x$ in $P[1 \ldots i-1]$. 
+        This is a sparse representation of the 2-D table (see \Cref{fig:bcr-sparse}).
+        The space complexity is $\Oh{m \cdot \min(m, |\Sigma|)}$, and the query time is $\Oh{\min(m, |\Sigma|)}$.
+
+  \item \textbf{Position Lists (Character-indexed lists):}
+        For each character $x$ that appears in $P$, store a list of its occurrence indices in $P$ in \emph{descending} order (see \Cref{fig:bcr-poslists}).
+        To find $\mathrm{BC}(i, x)$, we search the list for $x$ for the largest index $j < i$.
+        Space is $\Oh{m}$, and query time is $\Oh{\log m}$ with binary search.
 \end{enumerate}
 
+\begin{figure}[H]
+  \centering
+  \begin{tikzpicture}[
+    listnode/.style={rectangle, draw=gray!80, fill=gray!5, minimum width=1.4cm, minimum height=0.7cm, font=\small, inner sep=2pt},
+    indexnode/.style={rectangle, draw=gray!60, fill=gray!10, minimum width=0.7cm, minimum height=0.7cm, font=\small\bfseries},
+    pointer/.style={-Stealth, thick, gray!80}
+  ]
+    \node[indexnode] (idx1) at (0, 0) {1};
+    \node[indexnode] (idx2) at (0, -0.9) {2};
+    \node[font=\small] at (0, -1.6) {\vdots};
+    \node[indexnode] (idxn) at (0, -2.5) {$m$};
+
+    % Row 1
+    \node[listnode, right=0.6cm of idx1] (n11) {$s_{i_1^1} \mid j_1^1$};
+    \node[listnode, right=0.5cm of n11] (n12) {$s_{i_1^2} \mid j_1^2$};
+    \node[right=0.5cm of n12] (n1end) {\dots};
+    \node[right=0.4cm of n1end, font=\Large] (n1null) {$\times$};
+    \draw[pointer] (idx1) -- (n11);
+    \draw[pointer] (n11) -- (n12);
+    \draw[pointer] (n12) -- (n1end);
+    \draw[pointer] (n1end) -- (n1null);
+
+    % Row n
+    \node[listnode, right=0.6cm of idxn] (nn1) {$s_{i_m^1} \mid j_m^1$};
+    \node[right=0.5cm of nn1] (nnend) {\dots};
+    \node[right=0.4cm of nnend, font=\Large] (nnnull) {$\times$};
+    \draw[pointer] (idxn) -- (nn1);
+    \draw[pointer] (nn1) -- (nnend);
+    \draw[pointer] (nnend) -- (nnnull);
+
+    \node[above=0.3cm of n11, font=\footnotesize\itshape, text=gray!70] {Pairs: (character, rightmost index)};
+  \end{tikzpicture}
+  \caption{BCR as an array of $|P|$ linked lists (Sparse Matrix representation).}
+  \label{fig:bcr-sparse}
+\end{figure}
+
+\begin{figure}[H]
+  \centering
+  \begin{tikzpicture}[
+    listnode/.style={rectangle, draw=blue!40, fill=blue!5, minimum width=0.8cm, minimum height=0.7cm, font=\small},
+    charnode/.style={rectangle, draw=blue!60, fill=blue!10, minimum width=0.8cm, minimum height=0.7cm, font=\ttfamily\bfseries},
+    pointer/.style={-Stealth, thick, blue!60}
+  ]
+    \node[charnode] (c1) at (0, 0) {$s_{i_1}$};
+    \node at (0, -0.8) {\vdots};
+    \node[charnode] (c3) at (0, -1.6) {$s_{i_p}$};
+
+    % Row 1
+    \node[listnode, right=0.6cm of c1] (l11) {$j_1$};
+    \node[listnode, right=0.5cm of l11] (l12) {$j_2$};
+    \node[right=0.5cm of l12] (l1end) {\dots};
+    \node[right=0.4cm of l1end, font=\Large] (l1null) {$\times$};
+    \draw[pointer] (c1) -- (l11);
+    \draw[pointer] (l11) -- (l12);
+    \draw[pointer] (l12) -- (l1end);
+    \draw[pointer] (l1end) -- (l1null);
+
+    % Row 3
+    \node[listnode, right=0.6cm of c3] (l31) {$k_1$};
+    \node[right=0.5cm of l31] (l3end) {\dots};
+    \node[right=0.4cm of l3end, font=\Large] (l3null) {$\times$};
+    \draw[pointer] (c3) -- (l31);
+    \draw[pointer] (l31) -- (l3end);
+    \draw[pointer] (l3end) -- (l3null);
+
+    \node[above=0.3cm of l11, font=\footnotesize\itshape, text=blue!70] {Indices of occurrences in descending order};
+  \end{tikzpicture}
+  \caption{BCR as an array of character-indexed lists.}
+  \label{fig:bcr-poslists}
+\end{figure}
+
 \begin{remark}
-  Although binary search costs $\Oh{\log m}$ per query, the large shifts
-  that BCR produces amortise this overhead over the full run of the
-  algorithm, making the two implementations equivalent in practice.
+  While binary search on position lists costs $\Oh{\log m}$, the total pattern length $m$ is typically small enough that this overhead is negligible compared to the large shifts BCR provides.
 \end{remark}
 
 \subsubsection{Good Suffix Rule}
@@ -2315,6 +2407,34 @@ GSR preprocessing: run the same routine on the reversed pattern.}
 \end{tikzpicture}
 \end{center}
 
+\subsubsection{Algorithm Implementation}
+
+The full Boyer-Moore algorithm combines the precomputed Bad Character and Good Suffix tables to determine the maximum possible shift at each step.
+
+\begin{algorithm}[H]
+  \caption{Boyer-Moore Pattern Matching}
+  \KwIn{Text $T$ of length $n$, Pattern $P$ of length $m$}
+  \KwOut{Indices of all occurrences of $P$ in $T$}
+  $\mathrm{BC} \leftarrow \text{PrecomputeBadCharacter}(P)$\;
+  $\mathrm{GS} \leftarrow \text{PrecomputeGoodSuffix}(P)$\;
+  $s \leftarrow 0$ \tcp*{Current shift}
+  \While{$s \le n - m$}{
+    $j \leftarrow m$\;
+    \While{$j > 0$ \textbf{and} $P[j] = T[s + j]$}{
+      $j \leftarrow j - 1$\;
+    }
+    \If{$j = 0$}{
+      \text{Report occurrence at } $s+1$\;
+      $s \leftarrow s + \mathrm{GS}[1]$\;
+    }
+    \Else{
+      $shift_{BC} \leftarrow \max(1, j - \mathrm{BC}(j, T[s + j]))$\;
+      $shift_{GS} \leftarrow \mathrm{GS}[j]$\;
+      $s \leftarrow s + \max(shift_{BC}, shift_{GS})$\;
+    }
+  }
+\end{algorithm}
+
 \subsubsection{Complexity}
 
 \begin{theorem}
@@ -2325,11 +2445,398 @@ The classical worst case is $T = a^n$, $P = ba^{m-1}$: every alignment
 compares the entire pattern right-to-left, reaches the first character, and
 shifts by only one position.
 
-\begin{remark}
-  The \textbf{Apostolico--Giancarlo} extension records which portions of
-  the text have already been matched, avoiding redundant comparisons and
-  bringing the worst-case complexity down to $\Oh{n+m}$.
-  On the other hand, in favourable inputs (e.g.\ $T = c^n$,
-  $P = a^{m-1}c$) BCR allows Boyer-Moore to scan the text in as few as
-  $\lceil n/m \rceil$ character comparisons---sublinear in $n$.
+In contrast, for a random text over a large alphabet, the algorithm
+frequently triggers the BCR skip, leading to an average-case complexity of
+$\Oh{n/m}$.
+
+\subsubsection{Apostolico--Giancarlo Optimization}
+
+The Boyer-Moore algorithm can perform $\Oh{nm}$ comparisons in the worst case because it "forgets" matches made in previous alignments. The \textbf{Apostolico--Giancarlo} algorithm improves this to $\Oh{n}$ by maintaining an array $M$ where $M[k]$ is the length of the longest suffix of $P$ that matched $T$ ending at position $k$ in some previous alignment.
+
+When $P$ is aligned at shift $s$ and we are comparing $P[i]$ with $T[k]$ (where $k = s+i$), we check $w = M[k]$. Recall that $N_i(P)$ is the length of the longest suffix of $P[1\dots i]$ that is also a suffix of $P$.
+
+There are four key cases when we encounter a previously matched segment ($w > 0$):
+\begin{enumerate}
+  \item \textbf{Case 1: $w > N_i$.} Since the text matches a longer suffix of $P$ than what is available as a sub-occurrence ending at $i$, there must be a mismatch at $i - N_i$. We can immediately shift.
+  \item \textbf{Case 2: $w < N_i$.} The text matches a shorter suffix than the available sub-occurrence. This implies a mismatch at $i - w$.
+  \item \textbf{Case 3: $w = N_i$.} The match in the text exactly matches the sub-occurrence of the suffix in $P$. We can skip $w$ comparisons and continue checking $P$ from position $i - w$.
+  \item \textbf{Case 4: $w \ge N_i$ and $N_i = i$.} This corresponds to a prefix of $P$ matching the text. If $i=m$, we found a full match; otherwise, we can skip and continue.
+\end{enumerate}
+
+By using these rules, Apostolico--Giancarlo ensures that each character of the text is involved in at most a constant number of \emph{successful} comparisons, bringing the worst-case complexity down to $\Oh{n+m}$.
+On the other hand, in favourable inputs (e.g.\ $T = c^n$,
+$P = a^{m-1}c$) the original Boyer-Moore already scans the text in as few as
+$\lceil n/m \rceil$ character comparisons.
+
+
+
+\subsection{Generalization of the Problem: Multiple Patterns}
+The algorithms we have seen so far are designed to search for a single pattern $P$ in a text $T$.
+In many applications, we need to search for multiple patterns simultaneously.
+For example, in DNA sequencing, we might want to find all occurrences of a set of motifs in a long genome sequence.
+
+\begin{definition}[Multiple Pattern Matching]
+Given a set of patterns $\mathcal{P} = \{P_1, P_2, \ldots, P_z\}$ and a text $T$, find all occurrences of all pattern in $\mathcal{P}$ within $T$.
+\end{definition}
+
+\subsubsection{Naïve Approach}
+
+As usual, let's establish a baseline to compare against.
+The simplest idea is to run a single-pattern algorithm (e.g.\ KMP or the
+Z-algorithm) once for \emph{each} pattern in $\mathcal{P}$ independently.
+
+Denote $m_i = |P_i|$ and let $m = \displaystyle\sum_{i=1}^{z} m_i$ be the
+total pattern length.
+Each invocation costs $\Oh{n + m_i}$, so the overall cost is
+\[
+  \Oh{n + m_1} + \cdots + \Oh{n + m_z}
+  \;=\; \Oh{z \cdot n + m}.
+\]
+
+\aside{The $z\cdot n$ term dominates when many patterns are present:
+we are re-reading $T$ once per pattern, ignoring any shared structure
+among the $P_i$.}
+
+The culprit is the factor $z$ multiplying $n$: we scan $T$ from scratch
+for every pattern, wasting all the information accumulated from previous
+passes.
+
+\textbf{Can we do better?}
+Ideally we would like to scan $T$ only \emph{once}, achieving
+$\Oh{n + m}$ total time regardless of $z$.
+The key insight is that instead of processing the patterns independently,
+we should \emph{combine} all of them into a single shared data structure,
+then query it while performing a single left-to-right pass over $T$.
+
+The natural structure for organising a set of strings by their shared
+prefixes is a tree---specifically, a \textbf{keyword tree}.
+
+\subsubsection{Keyword Tree}
+
+\begin{definition}[Keyword tree, $K(\mathcal{P})$]
+  Given a set of patterns $\mathcal{P} = \{P_1, \ldots, P_z\}$ over alphabet
+  $\Sigma$, the \textbf{keyword tree} $K(\mathcal{P})$ is a rooted tree whose
+  edges are labelled with characters of $\Sigma$ such that:
+  \begin{enumerate}[label=(\roman*), leftmargin=2em]
+    \item edges leaving the same node carry \emph{distinct} labels;
+    \item for each $i \in \{1,\ldots,z\}$ there is exactly one root-to-leaf
+          path whose edge-labels, read in order, spell $P_i$; conversely,
+          every root-to-leaf path spells some $P_i \in \mathcal{P}$.
+  \end{enumerate}
+\end{definition}
+
+\begin{remark}[Simplifying assumption]
+  Throughout this section we assume no $P_i$ is a proper prefix of another
+  $P_j$.
+  Under this assumption every pattern ends at a \textit{leaf}, giving a
+  \textbf{bijection} between leaves and patterns.
+  The Aho--Corasick construction lifts this restriction.
 \end{remark}
+
+\aside{The bijection means: a single pointer inside $K(\mathcal{P})$
+simultaneously represents \emph{all} patterns that share the prefix
+corresponding to the current node --- the exact analogue of the single
+state in KMP, now for a whole set of patterns.}
+
+\begin{observation}[Size, height, and fan-out of $K(\mathcal{P})$]\leavevmode
+  \begin{itemize}[leftmargin=1.6em, itemsep=2pt]
+    \item \textbf{Size.}  The number of edges is at most
+          $m = \sum_{i=1}^{z} m_i$:
+          every non-root node is introduced by a distinct edge, and
+          each root-to-leaf path contributes exactly $m_i$ edges.
+    \item \textbf{Height.}  The longest root-to-leaf path has length
+          $m_{\max} = \max_i m_i$, the length of the longest pattern.
+    \item \textbf{Fan-out.}  By property~(i), the children of any node carry
+          distinct labels, so the fan-out is at most $|\Sigma|$.
+  \end{itemize}
+\end{observation}
+
+Figure~\ref{fig:keyword-tree} shows the keyword tree for
+$\mathcal{P} = \{\texttt{potato},\allowbreak\texttt{tatoo},\allowbreak
+\texttt{theater},\allowbreak\texttt{other}\}$.
+The \texttt{t}-subtree branches at depth~2 into the \texttt{a}-path
+(for \texttt{tatoo}) and the \texttt{h}-path (for \texttt{theater}),
+reflecting the shared prefix \texttt{t}.
+
+% ── Figure: keyword tree ──────────────────────────────────────────
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[
+    scale=0.90,
+    % node styles
+    rnd/.style={circle, draw=gray!60,          fill=gray!12,    inner sep=0pt,
+                minimum size=10pt, thick},
+    tnd/.style={circle, draw=blue!55!black,    fill=blue!7,     inner sep=0pt,
+                minimum size=7pt,  thick},
+    lnd/.style={circle, draw=orange!65!black,  fill=orange!18,  inner sep=0pt,
+                minimum size=7pt,  thick},
+    % edge style
+    eg/.style={-Stealth, draw=gray!50, thin, shorten >=2.5pt, shorten <=2.5pt},
+    % edge-label style
+    el/.style={font=\tiny\ttfamily, inner sep=1.5pt, text=gray!70},
+    % leaf-name style
+    ll/.style={font=\scriptsize\sffamily\itshape, text=orange!55!black},
+]
+
+  %% ── NODES ────────────────────────────────────────────────────
+  % root
+  \node[rnd] (root) at (4.5, 0)    {};
+  \node[above=4pt, font=\tiny\sffamily, text=gray!45] at (root.north) {root};
+
+  % depth-1 children
+  \node[tnd] (ndP)  at (0.7, -1.2) {};
+  \node[tnd] (ndT)  at (4.5, -1.2) {};
+  \node[tnd] (ndO)  at (8.5, -1.2) {};
+
+  % ── potato chain  (x = 0.7) ──────────────────────────────────
+  \node[tnd] (nPO)     at (0.7, -2.4) {};
+  \node[tnd] (nPOT)    at (0.7, -3.6) {};
+  \node[tnd] (nPOTA)   at (0.7, -4.8) {};
+  \node[tnd] (nPOTAT)  at (0.7, -6.0) {};
+  \node[lnd] (nPOTATO) at (0.7, -7.2) {};
+
+  % ── tatoo chain  (x = 3.0) ───────────────────────────────────
+  \node[tnd] (nTA)    at (3.0, -2.4) {};
+  \node[tnd] (nTAT)   at (3.0, -3.6) {};
+  \node[tnd] (nTATO)  at (3.0, -4.8) {};
+  \node[lnd] (nTATOO) at (3.0, -6.0) {};
+
+  % ── theater chain  (x = 6.0) ─────────────────────────────────
+  \node[tnd] (nTH)      at (6.0, -2.4) {};
+  \node[tnd] (nTHE)     at (6.0, -3.6) {};
+  \node[tnd] (nTHEA)    at (6.0, -4.8) {};
+  \node[tnd] (nTHEAT)   at (6.0, -6.0) {};
+  \node[tnd] (nTHEATE)  at (6.0, -7.2) {};
+  \node[lnd] (nTHEATER) at (6.0, -8.4) {};
+
+  % ── other chain  (x = 8.5) ───────────────────────────────────
+  \node[tnd] (nOT)    at (8.5, -2.4) {};
+  \node[tnd] (nOTH)   at (8.5, -3.6) {};
+  \node[tnd] (nOTHE)  at (8.5, -4.8) {};
+  \node[lnd] (nOTHER) at (8.5, -6.0) {};
+
+  %% ── EDGES ────────────────────────────────────────────────────
+  % root → depth-1
+  \draw[eg] (root)  -- (ndP)  node[midway, left,        el] {p};
+  \draw[eg] (root)  -- (ndT)  node[midway, right,       el] {t};
+  \draw[eg] (root)  -- (ndO)  node[midway, above right, el] {o};
+
+  % potato
+  \draw[eg] (ndP)      -- (nPO)      node[midway, right, el] {o};
+  \draw[eg] (nPO)      -- (nPOT)     node[midway, right, el] {t};
+  \draw[eg] (nPOT)     -- (nPOTA)    node[midway, right, el] {a};
+  \draw[eg] (nPOTA)    -- (nPOTAT)   node[midway, right, el] {t};
+  \draw[eg] (nPOTAT)   -- (nPOTATO)  node[midway, right, el] {o};
+
+  % t branches
+  \draw[eg] (ndT)  -- (nTA)   node[midway, above left,  el] {a};
+  \draw[eg] (ndT)  -- (nTH)   node[midway, above right, el] {h};
+
+  % tatoo
+  \draw[eg] (nTA)    -- (nTAT)    node[midway, right, el] {t};
+  \draw[eg] (nTAT)   -- (nTATO)   node[midway, right, el] {o};
+  \draw[eg] (nTATO)  -- (nTATOO)  node[midway, right, el] {o};
+
+  % theater
+  \draw[eg] (nTH)      -- (nTHE)      node[midway, right, el] {e};
+  \draw[eg] (nTHE)     -- (nTHEA)     node[midway, right, el] {a};
+  \draw[eg] (nTHEA)    -- (nTHEAT)    node[midway, right, el] {t};
+  \draw[eg] (nTHEAT)   -- (nTHEATE)   node[midway, right, el] {e};
+  \draw[eg] (nTHEATE)  -- (nTHEATER)  node[midway, right, el] {r};
+
+  % other
+  \draw[eg] (ndO)    -- (nOT)     node[midway, right, el] {t};
+  \draw[eg] (nOT)    -- (nOTH)    node[midway, right, el] {h};
+  \draw[eg] (nOTH)   -- (nOTHE)   node[midway, right, el] {e};
+  \draw[eg] (nOTHE)  -- (nOTHER)  node[midway, right, el] {r};
+
+  %% ── LEAF LABELS ──────────────────────────────────────────────
+  \node[ll, below=5pt] at (nPOTATO.south)  {\texttt{potato}};
+  \node[ll, below=5pt] at (nTATOO.south)   {\texttt{tatoo}};
+  \node[ll, below=5pt] at (nTHEATER.south) {\texttt{theater}};
+  \node[ll, below=5pt] at (nOTHER.south)   {\texttt{other}};
+
+  %% ── SHARED-PREFIX BRACE ──────────────────────────────────────
+  % Highlight that "tatoo" and "theater" share the initial 't'
+  \draw[blue!35, thick, decorate,
+        decoration={brace, raise=4pt, amplitude=5pt}]
+    (nTA.west |- nTATOO.south) -- (nTH.east |- nTATOO.south)
+    node[midway, below=10pt, font=\tiny\sffamily, text=blue!55!black]
+      {share prefix \texttt{t} $\to$ tracked by one node};
+
+\end{tikzpicture}
+\caption{%
+  Keyword tree $K(\mathcal{P})$ for
+  $\mathcal{P} = \{\texttt{potato},\,\texttt{tatoo},\,\texttt{theater},\,\texttt{other}\}$.
+  Grey root, blue internal nodes, orange leaves.
+  The \texttt{tatoo} and \texttt{theater} sub-trees branch from the same
+  \texttt{t}-node (depth~1), reflecting their shared first character.
+}
+\label{fig:keyword-tree}
+\end{figure}
+
+% ══════════════════════════════════════════════════════════════════
+\subsubsection{Using $K(\mathcal{P})$ on $T$}
+% ══════════════════════════════════════════════════════════════════
+
+The tree is built once in $\Oh{m}$ time.
+We then make a \emph{single} left-to-right pass over $T$: at each starting
+position $s$ we descend $K(\mathcal{P})$ from the root following edge-labels
+$T[s], T[s+1], \ldots$; reaching a leaf at depth $m_i$ reports an occurrence
+of $P_i$ ending at $T[s + m_i - 1]$.
+
+\aside{The key gain: all patterns sharing a common prefix are tracked
+\emph{in parallel} by a single internal node.
+As long as the text characters keep matching a shared prefix, no extra
+work is done for any of them --- the tree compresses the joint
+prefix-matching state for the whole set $\mathcal{P}$.}
+
+% ── Figure: single pass over T via K(P) ──────────────────────────
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[
+    scale=0.88,
+    %-- node styles --------------------------------------------------
+    rnd/.style={circle, draw=gray!55, fill=white,
+                inner sep=0pt, minimum size=12pt, thick},
+    tnd/.style={circle, draw=blue!50!black, fill=blue!8,
+                inner sep=0pt, minimum size=6pt, semithick},
+    lnd/.style={circle, draw=orange!70!black, fill=orange!16,
+                inner sep=0pt, minimum size=8pt, thick},
+    act/.style={circle, draw=violet!65!black, fill=violet!20,
+                inner sep=0pt, minimum size=7pt, thick},
+    %-- edge styles --------------------------------------------------
+    eg/.style= {-Stealth, draw=gray!38, thin,
+                shorten >=2.5pt, shorten <=2.5pt},
+    aeg/.style={-Stealth, draw=violet!55!black, very thick,
+                shorten >=2.5pt, shorten <=2.5pt},
+    %-- edge-label style ---------------------------------------------
+    el/.style= {font=\tiny\ttfamily, inner sep=1pt, text=gray!60},
+]
+
+  %% ── organic cloud (K(P) region) ─────────────────────────────
+  \fill[blue!4]
+    plot[smooth cycle, tension=0.52] coordinates {
+      (0.6,5.9) (2.2,6.3) (4.0,6.4) (5.7,6.0)
+      (6.9,4.9) (7.1,3.4) (6.6,1.7) (5.3,0.4)
+      (3.6,-0.2) (1.9,0.2) (0.6,1.2) (0.0,2.8) (0.0,4.5)
+    };
+  \draw[blue!22, thick]
+    plot[smooth cycle, tension=0.52] coordinates {
+      (0.6,5.9) (2.2,6.3) (4.0,6.4) (5.7,6.0)
+      (6.9,4.9) (7.1,3.4) (6.6,1.7) (5.3,0.4)
+      (3.6,-0.2) (1.9,0.2) (0.6,1.2) (0.0,2.8) (0.0,4.5)
+    };
+
+  \node[font=\small\sffamily\bfseries, text=blue!40!black]
+    at (5.6, 5.9) {$K(\mathcal{P})$};
+
+  %% ── shared-prefix highlight zone (behind the nL subtree) ─────
+  \fill[violet!9, rounded corners=7pt]
+    (0.1, 2.0) rectangle (2.5, 4.7);
+  \node[font=\tiny\sffamily\itshape, text=violet!45!black, align=center]
+    at (1.3, 5.0) {$P_1,\,P_2$\\[-1pt]share~$a_1$};
+
+  %% ── tree nodes ───────────────────────────────────────────────
+  \node[rnd] (root) at (3.6, 5.5) {};
+  \node[above=3pt, font=\tiny\sffamily, text=gray!45] at (root.north) {root};
+  % depth 1
+  \node[tnd] (nL)   at (1.2, 4.1) {};   % left  branch (P1, P2 share first char)
+  \node[act] (nM)   at (3.6, 4.1) {};   % centre branch — currently active
+  \node[tnd] (nR)   at (5.9, 4.1) {};   % right branch
+  % depth 2 under nL → two leaves (P1, P2)
+  \node[lnd] (Ll1)  at (0.6, 2.5) {};
+  \node[lnd] (Ll2)  at (1.8, 2.5) {};
+  % active path under nM
+  \node[act] (nMa)  at (3.6, 2.9) {};
+  \node[lnd] (nMl)  at (3.6, 1.3) {};   % leaf Pk (active — will report match)
+  % leaf under nR
+  \node[lnd] (Rll)  at (5.9, 2.7) {};
+
+  %% ── edges ────────────────────────────────────────────────────
+  % dim branches
+  \draw[eg] (root) -- (nL)  node[midway, above left,  el] {$a_1$};
+  \draw[eg] (root) -- (nR)  node[midway, above right, el] {$a_z$};
+  \draw[eg] (nL)   -- (Ll1) node[midway, left,        el] {$b$};
+  \draw[eg] (nL)   -- (Ll2) node[midway, right,       el] {$c$};
+  \draw[eg] (nR)   -- (Rll);
+  % highlighted active path
+  \draw[aeg] (root) -- (nM)
+    node[midway, right, font=\tiny\ttfamily, text=violet!55!black] {$a_j$};
+  \draw[aeg] (nM)   -- (nMa);
+  \draw[aeg, densely dashed] (nMa) -- (nMl);
+
+  %% ── leaf labels ──────────────────────────────────────────────
+  \node[font=\scriptsize\sffamily,        text=orange!60!black, below=4pt] at (Ll1) {$P_1$};
+  \node[font=\scriptsize\sffamily,        text=orange!60!black, below=4pt] at (Ll2) {$P_2$};
+  \node[font=\scriptsize\sffamily\bfseries,text=violet!65!black, below=4pt] at (nMl) {$P_k$};
+  \node[font=\scriptsize\sffamily,        text=orange!60!black, below=4pt] at (Rll)  {$P_z$};
+
+  %% ── inner annotation (parallel-tracking) ────────────────────
+  \node[font=\small\sffamily\itshape, text=violet!55!black, align=center]
+    at (5.2, 3.4) {each path\\spells~$P_i \in \mathcal{P}$};
+
+  %% ── active state label ───────────────────────────────────────
+  \node[font=\tiny\sffamily, text=violet!55!black, align=center,
+        above right=2pt and 3pt of nM]
+    {active\\[-1pt]state};
+
+  %% ── scan arrow ───────────────────────────────────────────────
+  \draw[-Stealth, black!38, thick]
+    (0.2,-1.55) -- (7.2,-1.55);
+
+  %% ── T bar ────────────────────────────────────────────────────
+  % full bar
+  \fill[violet!18, rounded corners=5pt]
+    (0.2,-2.75) rectangle (7.2,-1.85);
+  \draw[violet!38, semithick, rounded corners=5pt]
+    (0.2,-2.75) rectangle (7.2,-1.85);
+
+  % already-matched prefix segment [s .. s+depth], darker tint
+  \fill[violet!40, rounded corners=3pt]
+    (2.6,-2.70) rectangle (4.15,-1.90);
+  \node[font=\tiny\sffamily, text=white, align=center]
+    at (3.38,-2.30) {matched\\[-2pt]so far};
+
+  % start-of-attempt cursor at s (dashed grey)
+  \draw[gray!55, dashed, thin] (2.6,-2.75) -- (2.6,-1.85);
+  \node[above=3pt, font=\small\sffamily, text=gray!55]
+    at (2.6,-1.55) {$s$};
+
+  % current read-head at s+depth (solid orange)
+  \draw[orange!65!black, line width=1.6pt] (4.15,-2.75) -- (4.15,-1.85);
+  \node[above=3pt, font=\scriptsize\sffamily, text=orange!60!black]
+    at (4.4,-1.55) {$s{+}d$};
+
+  % T label
+  \node[font=\normalsize\sffamily\bfseries, text=violet!60!black]
+    at (3.7,-3.15) {$T$};
+
+  %% ── connector: active leaf ↔ matched region in T ─────────────
+  \draw[orange!45!black, dotted, thin]
+    (nMl.south) -- (3.6,-1.85);
+
+\end{tikzpicture}
+\caption{%
+  Scanning $T$ with $K(\mathcal{P})$.
+  At each starting position $s$ we follow edge-labels
+  $T[s], T[s{+}1],\ldots$ downward from the root (depth~$d$ reached so
+  far is shaded on $T$); reaching a leaf reports an occurrence of the
+  corresponding pattern.
+  Patterns with a shared prefix --- here $P_1$ and $P_2$ both start with
+  $a_1$ (pale violet zone) --- are tracked in parallel by a single internal
+  node, so no extra work is done for either until they diverge.
+  The highlighted violet path is the \emph{active} descent for the current
+  starting position.
+}
+\label{fig:ktree-scan}
+\end{figure}
+
+This already beats the naïve approach when patterns share long prefixes, but
+the worst-case cost per starting position is still $\Oh{m_{\max}}$, giving
+$\Oh{n \cdot m_{\max} + m}$ overall.
+To achieve a true $\Oh{n + m}$ single pass we need to handle mismatches
+without restarting from the root --- the same challenge KMP solved for a
+single pattern.
+The solution is to equip $K(\mathcal{P})$ with \textbf{failure links},
+leading to the \textbf{Aho--Corasick} automaton.
