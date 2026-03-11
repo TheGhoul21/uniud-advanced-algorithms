@@ -2054,78 +2054,138 @@ Notice how the algorithm looks ahead to establish the rightmost boundary $r$.
 
 
 \subsection{Boyer-Moore Algorithm}
-So far we have seen two algorithms that scan the text from left to right, never re-reading
-any character of $T$ once processed. Is this mandatory? Or can we change this approach?
 
-The Boyer-Moore algorithm scans the text from right to left, starting with the last character of
-the pattern aligned with the current text position. Why would this be a good idea?
+So far we have seen algorithms that scan the text strictly left to right,
+never revisiting a character once processed.
+The Boyer-Moore algorithm takes a different approach: it compares the
+pattern against the text \emph{from right to left} while still sliding the
+pattern from left to right.
+Mismatches on the rightmost characters of the pattern are the cheapest
+failures possible—they let the algorithm skip large portions of the text.
 
-In this algorithm checks are computed from right to left, while the pattern is aligned with the text from left to right. 
+\aside{Scanning right-to-left is the key insight: a mismatch at the
+\emph{last} character of the current alignment gives the most information
+about how far to jump.}
 
-What are the advantages of this approach? Let's consider the following heuristics:
+\subsubsection{Intuition}
+
+The algorithm combines two independent heuristics.
+At every alignment it takes the \emph{maximum} shift allowed by either rule:
+
 \begin{itemize}
-  \item \textbf{Bad Character Rule}: during preprocessing, for each position $i$ and character $x$, we keep memory of the first occurrence of $x$ to the left of $i$.
-  
-  \begin{center}
-  \begin{tikzpicture}[
-    cell/.style={minimum width=7mm, minimum height=7mm, font=\ttfamily\small, inner sep=0pt, text centered, rounded corners=2pt},
-    Tcell/.style={cell, draw=blue!50!black, fill=blue!8},
-    XC/.style={cell, draw=red!65!black, fill=red!12, text=red!50!black},
-  ]
-    \draw[blue!50!black, fill=blue!8, rounded corners=2pt] (0,0) rectangle (5, 0.4);
-    \draw[thick, red!70!black] (3.5, 0) -- (3.5, 0.4) node[above, font=\small\sffamily] {$i$};
-    \draw[thick, orange!80!black] (2.5, 0) -- (2.5, 0.4) node[above, font=\small\sffamily] {$x$};
-    \draw[<-, thick, Stealth-, bend right=45] (2.6, -0.2) to (3.4, -0.2);
-    \node[below, font=\tiny\sffamily, text=gray!80] at (3, -0.5) {shift to align $x$};
-  \end{tikzpicture}
-  \end{center}
+  \item \textbf{Bad Character Rule (BCR).}
+        When character $x$ in the text causes a mismatch at position $i$ in
+        the pattern, shift $P$ right so that the rightmost occurrence of $x$
+        in $P[1\ldots i{-}1]$ aligns with $x$ in the text.
+        If $x$ does not appear in $P$ at all, skip past $x$ entirely.
 
-  \item \textbf{Good Suffix Rule}: during preprocessing, for each suffix of $P$, we keep memory of its first further occurrence to the left.
-  
-  \begin{center}
-  \begin{tikzpicture}[
-    cell/.style={minimum width=7mm, minimum height=7mm, font=\ttfamily\small, inner sep=0pt, text centered, rounded corners=2pt},
-    Tcell/.style={cell, draw=blue!50!black, fill=blue!8},
-    Alpha/.style={cell, draw=violet!70!black, fill=violet!25, text=violet!20!black},
-  ]
-    \draw[blue!50!black, fill=blue!8, rounded corners=2pt] (0,0) rectangle (5, 0.4);
-    \draw[violet!70!black, fill=violet!25, rounded corners=2pt] (3.3, 0) rectangle (5, 0.4) node[midway, font=\tiny\sffamily] {suffix};
-    \draw[violet!70!black, fill=violet!25, rounded corners=2pt] (1, 0) rectangle (2.7, 0.4) node[midway, font=\tiny\sffamily] {copy};
-    \draw[<-, thick, Stealth-, bend left=45] (1.85, 0.6) to (4.15, 0.6);
-  \end{tikzpicture}
-  \end{center}
+  \item \textbf{Good Suffix Rule (GSR).}
+        When the suffix $S = P[i\ldots m]$ has already been matched and
+        position $i{-}1$ causes a mismatch, shift $P$ right so that another
+        copy of $S$ in $P$—preceded by a character \emph{different} from
+        $P[i{-}1]$—aligns with the matched copy of $S$ in the text.
 \end{itemize}
 
-How do we use these two information? If we knew that both rules are correct, i.e. applying them would never skip a potential match, we could apply either of them at each step and have a more efficient algorithm.
-It turns out, that the two rules are indeed correct, and at each step we might apply the one that allows us to skip more characters. This is the Boyer-Moore algorithm.
+Both rules are correct in the sense that neither one ever skips a genuine
+occurrence of $P$.
+At each step Boyer-Moore applies whichever rule yields the larger shift.
 
-These are basically heuristics to reposition the pattern in the most convenient way after a mismatch.
-For example in one extreme case where $T$ = $c^n$ and $P$ = $a^{n-1}c$, the BCS rule will allow us to scan the text in $\sim \frac{m}{n}$ that is sublinear.
-\textbf{Note}: if there are many occurrences, this might become the naive algorithm.
+\subsubsection{Bad Character Rule}
 
+\begin{definition}[Bad Character table]
+  For each position $1 \le i \le m$ and character $x \in \Sigma$, let
+  $\mathrm{BC}(i,x)$ be the largest $j < i$ such that $P[j] = x$, or $0$
+  if no such $j$ exists.
+  When a mismatch occurs at $P[i]$ against text character $x$, shift $P$
+  right by $i - \mathrm{BC}(i,x)$ positions.
+\end{definition}
 
-\subsubsection{BCR: Space-Time Trade-off}
-The Bad Character Rule can be implemented in two main ways:
+\begin{example}[BCR skip]
+  Search $P = \texttt{ALGO}$ in $T = \texttt{\dots ALBERO\dots}$.
+  Aligning $P$ with the first four characters, we compare right-to-left:
+  $P[4] = \texttt{O}$ vs $T[4] = \texttt{E}$ is a mismatch.
+  Since \texttt{E} does not appear anywhere in $P$, BCR shifts the entire
+  pattern past the mismatch character.
+
+\begin{center}
+\begin{tikzpicture}[
+  cell/.style={
+    minimum width=7.5mm, minimum height=6.5mm,
+    font=\ttfamily\small, inner sep=0pt,
+    text centered, rounded corners=1.5pt,
+  },
+  T/.style={cell, draw=gray!30, fill=gray!5},
+  P/.style={cell, draw=orange!60!black, fill=orange!10},
+  MismatchT/.style={cell, draw=red!60!black, fill=red!15},
+  MismatchP/.style={cell, draw=red!60!black, fill=red!15, text=red!50!black},
+  Pnew/.style={cell, draw=green!50!black, fill=green!10},
+]
+\def\cw{0.85}
+
+\node[font=\small\sffamily, text=gray!60, anchor=east] at ({-0.5*\cw}, 0)  {$T$};
+\node[T]         at ({0*\cw}, 0) {A};
+\node[T]         at ({1*\cw}, 0) {L};
+\node[T]         at ({2*\cw}, 0) {B};
+\node[MismatchT] at ({3*\cw}, 0) {E};
+\node[T]         at ({4*\cw}, 0) {R};
+\node[T]         at ({5*\cw}, 0) {O};
+\node[T, draw=none, fill=none] at ({6*\cw}, 0) {\dots};
+
+\node[font=\small\sffamily, text=gray!60, anchor=east] at ({-0.5*\cw}, -1) {$P$};
+\node[P]         at ({0*\cw}, -1) {A};
+\node[P]         at ({1*\cw}, -1) {L};
+\node[P]         at ({2*\cw}, -1) {G};
+\node[MismatchP] at ({3*\cw}, -1) {O};
+
+\node[font=\tiny\sffamily\bfseries, text=red!70!black] at ({3*\cw}, -0.5) {$\times$};
+
+\draw[->, thick, gray!80, rounded corners=4pt]
+  ({1.5*\cw}, -1.5) -- ++(0, -0.4) -| ({5.5*\cw}, -2.6);
+
+\node[font=\footnotesize\sffamily, text=gray!70, text width=5.5cm, align=center]
+  at ({3.5*\cw}, -2.1)
+  {\texttt{E} does not appear in $P$: skip the entire pattern past it.};
+
+\node[font=\small\sffamily, text=gray!60, anchor=east] at ({3.5*\cw}, -3.1) {$P'$};
+\node[Pnew] at ({4*\cw}, -3.1) {A};
+\node[Pnew] at ({5*\cw}, -3.1) {L};
+\node[Pnew] at ({6*\cw}, -3.1) {G};
+\node[Pnew] at ({7*\cw}, -3.1) {O};
+
+\end{tikzpicture}
+\end{center}
+\end{example}
+
+\paragraph{Preprocessing options.}
+Two standard approaches exist for building the BCR table:
 \begin{enumerate}[label=\alph*)]
-    \item \textbf{2D Table}: A table of size $|\Sigma| \times |P|$ where each entry $(x, i)$ stores the rightmost occurrence of character $x$ in $P[1 \dots i-1]$. This approach uses $\Oh{|\Sigma| \cdot |P|}$ space and allows $\Oh{1}$ time for each shift lookup.
-    \item \textbf{Position Lists}: For each character $x \in \Sigma$, maintain a sorted list of its positions in $P$. 
-    \begin{itemize}
-        \item \textbf{Pros}: Uses less space, specifically $\Oh{|P|}$ total across all lists.
-        \item \textbf{Cons}: Finding the rightmost occurrence of $x$ before $i$ requires searching the list (e.g., via binary search).
-    \end{itemize}
+  \item \textbf{Full 2-D table} ($|\Sigma| \times m$): $\Oh{1}$ query time,
+        but $\Oh{|\Sigma| m}$ space.
+  \item \textbf{Position lists}: for each character store the sorted list of
+        its occurrences in $P$ and answer queries with binary search in
+        $\Oh{\log m}$.
 \end{enumerate}
-\note{In an amortized sense, approach (b) has the same overall cost as approach (a), as the time spent searching the lists is balanced by the shifts in the pattern.}
 
-\subsubsection{GSR Preprocessing: $L'(i)$}
-The Good Suffix Rule (GSR) requires finding the rightmost occurrence of a suffix $P[i \dots m]$ that is preceded by a character different from $P[i-1]$. This is captured by the definition of $L'(i)$.
+\begin{remark}
+  Although binary search costs $\Oh{\log m}$ per query, the large shifts
+  that BCR produces amortise this overhead over the full run of the
+  algorithm, making the two implementations equivalent in practice.
+\end{remark}
+
+\subsubsection{Good Suffix Rule}
+
+After matching suffix $S = P[i\ldots m]$, we want to shift $P$ so that
+another copy of $S$ aligns with the text.
+We require that copy to be preceded by a character \emph{different} from
+$P[i{-}1]$; otherwise the same mismatch would recur immediately.
 
 \begin{definition}[$L'(i)$]
-For each $i \in \{1, \dots, |P|\}$, $L'(i)$ is defined as the largest index $j < |P|$ such that:
-\begin{enumerate}
-    \item $P[i \dots m]$ is a suffix of $P[1 \dots j]$.
-    \item $P[i-1] \neq P[j - (m-i) - 1]$.
-\end{enumerate}
-If no such index exists, $L'(i) = 0$.
+  $L'(i)$ is the largest index $j < m$ such that
+  \begin{enumerate}
+    \item $P[i\ldots m]$ occurs in $P$ ending at position $j$, and
+    \item the character immediately before that occurrence differs from
+          $P[i{-}1]$: $P[j - (m-i)] \neq P[i{-}1]$.
+  \end{enumerate}
 \end{definition}
 
 \begin{center}
@@ -2135,54 +2195,101 @@ If no such index exists, $L'(i) = 0$.
     suffix/.style={fill=gray!40, draw=gray!70, thick},
     mismatch/.style={red!80!black, font=\footnotesize\ttfamily\bfseries}
 ]
-    % Main pattern bar
     \draw[pbar] (0,-0.3) rectangle (10, 0.3);
     \node[above right] at (0, 0.3) {$P$};
 
-    % Suffix P[i..m]
     \draw[suffix] (8, -0.3) rectangle (10, 0.3);
     \node[above] at (8, 0.3) {$i$};
-    \node[below] at (9, -0.3) {$P[i, m]$};
+    \node[below] at (9, -0.3) {\small Suffix $S$};
 
-    % Copy in P[1..L'(i)]
     \draw[suffix] (3, -0.3) rectangle (5, 0.3);
     \node[above] at (5, 0.3) {$L'(i)$};
-    
-    % Mismatch characters
-    \node[mismatch] at (7.6, 0) {$y$};
-    \node[below] at (7.6, -0.3) {$i-1$};
-    
-    \node[mismatch] at (2.6, 0) {$x$};
-    \node[below] at (2.6, -0.3) {\scalebox{0.7}{$L'(i)-(m-i)-1$}};
-    
-    % Connection arc for mismatch
-    \draw[<->, dashed, red!70!black, bend left=30] (2.6, 0.4) to node[midway, above, font=\tiny] {$x \neq y$} (7.6, 0.4);
+    \node[below] at (4, -0.3) {\small Copy of $S$};
 
-    % Braces
-    \draw[decorate, decoration={brace, amplitude=5pt, mirror}] (0, -1.1) -- (5, -1.1) node[midway, below=6pt] {$P[1, L'(i)]$};
-    \draw[decorate, decoration={brace, amplitude=5pt, mirror}] (8, -1.1) -- (10, -1.1) node[midway, below=6pt] {$P[i, m]$};
+    \node[mismatch] at (7.6, 0) {$y$};
+    \node[below] at (7.6, -0.3) {\scalebox{0.8}{Original}};
+
+    \node[mismatch] at (2.6, 0) {$x$};
+    \node[below] at (2.6, -0.3) {\scalebox{0.8}{Different!}};
+
+    \draw[<->, dashed, red!70!black, bend left=30]
+      (2.6, 0.4) to node[midway, above, font=\tiny] {$x \neq y$} (7.6, 0.4);
 \end{tikzpicture}
 \end{center}
 
-\aside[-2ex]{Idea: to compute $L'(i)$ efficiently, we can use the $Z$-algorithm on the reverse of the pattern $P^r$.}
+To compute $L'(i)$ efficiently we exploit its connection with the
+Z-algorithm applied to the reversed pattern $P^r$.
 
 \begin{definition}[$N_j(P)$]
-For each $j \in \{1, \dots, |P|\}$, $N_j(P)$ is the length of the longest suffix of $P[1 \dots j]$ that is also a suffix of $P$.
+  $N_j(P)$ is the length of the longest suffix of $P[1\ldots j]$ that is
+  also a suffix of $P$.
 \end{definition}
 
 \begin{theorem}
-The values of $L'(i)$ can be computed using $N_j(P)$ as follows:
-\[ L'(i) = \max \{ j < |P| \mid N_j(P) = |P| - i + 1 \text{ and } P[j - (m-i+1)] \neq P[i-1] \} \]
-Furthermore, $N_j(P)$ can be directly computed using the $Z$-algorithm on the reversed pattern $P^r$:
-\[ N_j(P) = Z_{m-j+1}(P^r) \]
-where $m = |P|$.
+  The values $N_j(P)$ satisfy
+  \[
+    N_j(P) = Z_{m-j+1}(P^r),
+  \]
+  where $m = |P|$ and $P^r$ denotes $P$ reversed.
+  Consequently, the entire GSR table can be computed in $\Oh{m}$ time by
+  running the Z-algorithm on $P^r$.
 \end{theorem}
 
-\aside[-2ex]{Based on this theorem, we can compute $L'(i)$ in $\Oh{m}$ time and thus implement the GSR rule efficiently.}
+\begin{formaldetails}[{Proof: $N_j(P) = Z_{m-j+1}(P^r)$}]
+  Set $k = m - j + 1$ and recall the two definitions:
+  \begin{itemize}[leftmargin=1.5em]
+    \item $N_j(P) = \ell$ iff $\ell$ is the largest integer such that
+          $P[j{-}\ell{+}1 \ldots j] = P[m{-}\ell{+}1 \ldots m]$,
+          i.e.\ the last $\ell$ characters of $P[1\ldots j]$ equal the
+          last $\ell$ characters of $P$.
+    \item $Z_k(P^r) = \ell$ iff the length-$\ell$ prefix of $P^r$
+          matches $P^r$ at position~$k$:
+          $P^r[1\ldots\ell] = P^r[k\ldots k{+}\ell{-}1]$.
+  \end{itemize}
 
-\subsubsection{Complexity of Boyer-Moore}
-The Boyer-Moore algorithm has a **quadratic** worst-case complexity, specifically $\Oh{nm + |\Sigma|}$ if not carefully implemented. 
-\note{The algorithm can be made **linear**, i.e., $\Oh{n+m}$, by using more advanced techniques like the one proposed by \textbf{Apostolico and Giancarlo}.}
+  \smallskip
+  \textbf{Key observation.}
+  Since $P^r[i] = P[m+1-i]$, reading $P^r$ from left to right is
+  the same as reading $P$ from right to left.
+  More precisely, for any $\ell \geq 1$ and $s = 0,1,\ldots,\ell-1$:
+  \[
+    P^r[1+s] = P[m - s]
+    \qquad\text{and}\qquad
+    P^r[k+s] = P[m+1-k-s] = P[j - s],
+  \]
+  where the last equality uses $k = m - j + 1$.
+
+  \smallskip
+  \textbf{The two conditions are equivalent.}
+  For any $\ell \geq 0$:
+  \begin{align*}
+    P^r[1\ldots\ell] = P^r[k\ldots k{+}\ell{-}1]
+    &\iff P[m{-}s] = P[j{-}s]
+          \;\forall\, s \in \{0,\ldots,\ell{-}1\} \\
+    &\iff P[m{-}\ell{+}1\ldots m] = P[j{-}\ell{+}1\ldots j].
+  \end{align*}
+  The rightmost condition is exactly the requirement that
+  $P[1\ldots j]$ has a suffix of length $\ell$ that matches a suffix of $P$.
+
+  \smallskip
+  \textbf{Conclusion.}
+  Because the two conditions agree for every $\ell$, their maxima agree:
+  \[
+    N_j(P) = Z_{m-j+1}(P^r). \hfill\square
+  \]
+
+  \lprulesep
+
+  \textbf{Complexity.}
+  Running the Z-algorithm on $P^r$ costs $\Oh{m}$ time and produces all
+  $m$ values $Z_1(P^r), \ldots, Z_m(P^r)$ in a single pass.
+  Reading off $N_j = Z_{m-j+1}$ for $j = 1,\ldots,m$ is then an
+  $\Oh{m}$ post-processing step, so the full GSR precomputation is
+  $\Oh{m}$ overall.
+\end{formaldetails}
+
+\aside{Reusing the Z-algorithm on $P^r$ means no new code is needed for
+GSR preprocessing: run the same routine on the reversed pattern.}
 
 \begin{center}
 \begin{tikzpicture}[
@@ -2190,23 +2297,39 @@ The Boyer-Moore algorithm has a **quadratic** worst-case complexity, specificall
     pbar/.style={draw, fill=blue!5, thick, rounded corners=2pt},
     suffix/.style={fill=orange!20, draw=orange!70, thick},
 ]
-    % P^r bar
     \draw[pbar] (0, 0) rectangle (6, 0.6);
     \node[left] at (0, 0.3) {$P^r$};
-    
-    % Z-box on P^r
+
     \draw[suffix] (2, 0) rectangle (3.5, 0.6) node[midway, font=\tiny] {$Z_k(P^r)$};
     \node[below] at (2, 0) {$k$};
-    
-    % P bar reversed
+
     \draw[pbar] (0, -1.2) rectangle (6, -0.6);
     \node[left] at (0, -0.9) {$P$};
-    
-    % Corresponding N_j(P)
+
     \draw[suffix] (2.5, -1.2) rectangle (4, -0.6) node[midway, font=\tiny] {$N_j(P)$};
     \node[below] at (4, -1.2) {$j$};
-    
-    % Relation arrow
-    \draw[<->, thick, Stealth-Stealth, blue!60!black] (3, -0.1) -- (3, -0.5) node[midway, right, font=\tiny\itshape] {reverse correspondence};
+
+    \draw[<->, thick, Stealth-Stealth, blue!60!black]
+      (3, -0.1) -- (3, -0.5)
+      node[midway, right, font=\tiny\itshape] {reversal correspondence};
 \end{tikzpicture}
 \end{center}
+
+\subsubsection{Complexity}
+
+\begin{theorem}
+  In the worst case, Boyer-Moore runs in $\Oh{nm}$ time.
+\end{theorem}
+
+The classical worst case is $T = a^n$, $P = ba^{m-1}$: every alignment
+compares the entire pattern right-to-left, reaches the first character, and
+shifts by only one position.
+
+\begin{remark}
+  The \textbf{Apostolico--Giancarlo} extension records which portions of
+  the text have already been matched, avoiding redundant comparisons and
+  bringing the worst-case complexity down to $\Oh{n+m}$.
+  On the other hand, in favourable inputs (e.g.\ $T = c^n$,
+  $P = a^{m-1}c$) BCR allows Boyer-Moore to scan the text in as few as
+  $\lceil n/m \rceil$ character comparisons---sublinear in $n$.
+\end{remark}
