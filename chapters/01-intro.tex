@@ -2136,13 +2136,20 @@ At each step Boyer-Moore applies whichever rule yields the larger shift.
 
 % Pattern P (Original)
 \node[font=\small\sffamily\bfseries, text=gray!60, anchor=east] at ({-0.6*\cw}, -1.2) {$P$};
-\node[P] at ({0*\cw}, -1.2) {A};
-\node[P] at ({1*\cw}, -1.2) {L};
+\node[P, text=gray!40] at ({0*\cw}, -1.2) {A};
+\node[P, text=gray!40] at ({1*\cw}, -1.2) {L};
 \node[P] at ({2*\cw}, -1.2) {G};
 \node[MismatchP] at ({3*\cw}, -1.2) {O};
 
+% "not compared" label under A, L
+\node[font=\tiny\sffamily, text=gray!40] at ({0.5*\cw}, -1.65) {not compared};
+
 % Mismatch cross
 \node[red!70!black, font=\bfseries] at ({3*\cw}, -0.6) {$\times$};
+
+% Right-to-left scan arrow above P
+\draw[->, >=Stealth, thick, gray!50] ({3.4*\cw}, -0.85) -- ({-0.2*\cw}, -0.85)
+  node[midway, above, font=\scriptsize\sffamily, text=gray!60] {scan direction};
 
 % Level P' with Ghosting
 \node[font=\small\sffamily\bfseries, text=gray!60, anchor=east] at ({-0.6*\cw}, -2.6) {$P'$};
@@ -2163,8 +2170,8 @@ At each step Boyer-Moore applies whichever rule yields the larger shift.
 \draw[->, >=Stealth, thick, blue!60!black] ({1.5*\cw}, -1.9) -- ({5.5*\cw}, -1.9)
   node[midway, fill=white, inner sep=2pt, font=\small\sffamily\bfseries, text=blue!70!black] {shift +4};
 
-\node[font=\footnotesize\itshape, text=gray!60, anchor=west] at ({8*\cw}, -1.2) {mismatch at end of pattern};
-\node[font=\footnotesize\itshape, text=gray!60, anchor=west] at ({8*\cw}, -2.6) {\texttt{E} $\notin P$: skip the entire block};
+\node[font=\footnotesize\itshape, text=gray!60, anchor=west] at ({8*\cw}, -1.2) {first comparison (rightmost): \texttt{O}$\neq$\texttt{E}};
+\node[font=\footnotesize\itshape, text=gray!60, anchor=west] at ({8*\cw}, -2.6) {\texttt{E} $\notin P$: shift entire pattern past \texttt{E}};
 
 \end{tikzpicture}
 \end{center}
@@ -2266,6 +2273,36 @@ Depending on the alphabet size $|\Sigma|$ and pattern length $m$, different data
 
 \subsubsection{Good Suffix Rule}
 
+\paragraph{Intuition.}
+The Bad Character Rule ignores the characters we \emph{already matched}.
+When Boyer-Moore scans right-to-left and a mismatch occurs at position $i$,
+we have successfully matched the suffix $S = P[i\ldots m]$ against the text.
+That information is precious: if $S$ appears again somewhere to the left in $P$,
+we can shift $P$ so that second occurrence lines up with the matched region in $T$
+and continue --- no re-reading of $T$ required.
+
+\begin{example}[GSR intuition]
+  Let $P = \texttt{CABAB}$ and suppose scanning right-to-left we match
+  $S = P[4\ldots5] = \texttt{AB}$ against $T$, then mismatch at $P[3]=\texttt{B}$.
+  The substring $\texttt{AB}$ also appears in $P$ at positions $2$--$3$, preceded
+  by $\texttt{C} \neq \texttt{B}$ (so the same mismatch cannot immediately
+  recur). We shift $P$ right by $2$ to realign that copy of $\texttt{AB}$
+  with the matched region of $T$.
+\end{example}
+
+\aside{The Good Suffix Rule is the Boyer-Moore analogue of KMP's border
+table: both exploit internal repetition of the pattern to skip shifts
+that are guaranteed to fail.}
+
+Two boundary situations arise:
+\begin{itemize}
+  \item If no copy of $S$ exists inside $P$ (other than at the end), we fall
+        back to the longest \emph{prefix} of $P$ that is a suffix of $S$,
+        and align that prefix with the end of the matched region.
+  \item If even that fails (no prefix of $P$ matches any suffix of $S$), we
+        shift the entire pattern past the matched region.
+\end{itemize}
+
 After matching suffix $S = P[i\ldots m]$, we want to shift $P$ so that
 another copy of $S$ aligns with the text.
 We require that copy to be preceded by a character \emph{different} from
@@ -2280,7 +2317,13 @@ $P[i{-}1]$; otherwise the same mismatch would recur immediately.
   \end{enumerate}
 \end{definition}
 
-\begin{center}
+Figure~\ref{fig:gsr-lprime} illustrates the geometry: the suffix $S = P[i\ldots m]$
+appears again ending at position $L'(i)$, and the character immediately
+to its left ($x$) differs from $y = P[i{-}1]$, guaranteeing the shift avoids
+an immediate re-mismatch.
+
+\begin{figure}[H]
+\centering
 \begin{tikzpicture}[
     scale=0.9,
     pbar/.style={draw, fill=blue!5, thick, rounded corners=2pt},
@@ -2292,25 +2335,33 @@ $P[i{-}1]$; otherwise the same mismatch would recur immediately.
 
     \draw[suffix] (8, -0.3) rectangle (10, 0.3);
     \node[above] at (8, 0.3) {$i$};
-    \node[below] at (9, -0.3) {\small Suffix $S$};
+    \node[below] at (9, -0.3) {\small Suffix $S = P[i\ldots m]$};
 
     \draw[suffix] (3, -0.3) rectangle (5, 0.3);
     \node[above] at (5, 0.3) {$L'(i)$};
     \node[below] at (4, -0.3) {\small Copy of $S$};
 
     \node[mismatch] at (7.6, 0) {$y$};
-    \node[below] at (7.6, -0.3) {\scalebox{0.8}{Original}};
+    \node[below] at (7.6, -0.3) {\scalebox{0.8}{mismatch char}};
 
     \node[mismatch] at (2.6, 0) {$x$};
-    \node[below] at (2.6, -0.3) {\scalebox{0.8}{Different!}};
+    \node[below] at (2.6, -0.3) {\scalebox{0.8}{$x \neq y$: safe!}};
 
     \draw[<->, dashed, red!70!black, bend left=30]
       (2.6, 0.4) to node[midway, above, font=\tiny] {$x \neq y$} (7.6, 0.4);
 \end{tikzpicture}
-\end{center}
+\caption{Geometry of $L'(i)$. The suffix $S = P[i\ldots m]$ occurs again
+  ending at $L'(i)$, preceded by a character $x \neq y = P[i{-}1]$.
+  Shifting $P$ so that the copy of $S$ aligns with the matched text region
+  guarantees the mismatch character changes, so the same failure cannot repeat.}
+\label{fig:gsr-lprime}
+\end{figure}
 
-To compute $L'(i)$ efficiently we exploit its connection with the
-Z-algorithm applied to the reversed pattern $P^r$.
+To compute $L'(i)$ efficiently we need a helper quantity that measures
+how much of $P$'s own suffix repeats inside $P$.
+Intuitively, $L'(i) = j$ means that $P[j-(m-i)\ldots j] = P[i\ldots m]$,
+so we need to find the rightmost position $j$ where such a match ends.
+That is exactly captured by the \emph{$N$-values}:
 
 \begin{definition}[$N_j(P)$]
   $N_j(P)$ is the length of the longest suffix of $P[1\ldots j]$ that is
@@ -2380,10 +2431,50 @@ Z-algorithm applied to the reversed pattern $P^r$.
   $\Oh{m}$ overall.
 \end{formaldetails}
 
+\begin{example}[$N_j$ and $L'(i)$ on a concrete pattern]
+  Let $P = \texttt{CABAB}$ ($m=5$).
+  The reversed pattern is $P^r = \texttt{BABAC}$.
+  Running the Z-algorithm on $P^r$:
+
+  \medskip
+  \begin{center}
+  \begin{tabular}{c|ccccc}
+    position $k$ & 1 & 2 & 3 & 4 & 5 \\
+    \hline
+    $P^r[k]$     & B & A & B & A & C \\
+    $Z_k(P^r)$   & -- & 0 & 2 & 0 & 0 \\
+  \end{tabular}
+  \end{center}
+  \medskip
+
+  Converting via $N_j = Z_{m-j+1}(P^r)$:
+  \begin{itemize}[noitemsep, topsep=2pt]
+    \item $N_5 = Z_1 = $ (by convention, the full string) $= 5$
+    \item $N_4 = Z_2 = 0$
+    \item $N_3 = Z_3 = 2$ \quad (suffix $\texttt{AB}$ of $P[1\ldots3]=\texttt{CAB}$ matches suffix $\texttt{AB}$ of $P$)
+    \item $N_2 = Z_4 = 0$
+    \item $N_1 = Z_5 = 0$
+  \end{itemize}
+
+  \noindent
+  From $N_3 = 2$ we read: the last $2$ characters of $P[1\ldots3]$ form a
+  suffix of $P$, i.e.\ $P[2\ldots3] = P[4\ldots5] = \texttt{AB}$.
+  This directly gives $L'(4) = 3$: the rightmost occurrence of $P[4\ldots5]$
+  inside $P$ ending strictly before $m$ ends at position $3$, preceded by
+  $P[1]=\texttt{C} \neq P[3]=\texttt{B}$.
+  GSR shift for a mismatch at position $4$: $m - L'(4) = 5 - 3 = 2$.
+\end{example}
+
 \aside{Reusing the Z-algorithm on $P^r$ means no new code is needed for
 GSR preprocessing: run the same routine on the reversed pattern.}
 
-\begin{center}
+Figure~\ref{fig:nj-zk-correspondence} shows the reversal correspondence
+between $Z_k(P^r)$ and $N_j(P)$ visually: a match of length $\ell$ starting
+at position $k$ in $P^r$ corresponds exactly to a suffix-match of length $\ell$
+ending at position $j$ in $P$.
+
+\begin{figure}[H]
+\centering
 \begin{tikzpicture}[
     scale=0.9,
     pbar/.style={draw, fill=blue!5, thick, rounded corners=2pt},
@@ -2392,22 +2483,36 @@ GSR preprocessing: run the same routine on the reversed pattern.}
     \draw[pbar] (0, 0) rectangle (6, 0.6);
     \node[left] at (0, 0.3) {$P^r$};
 
-    \draw[suffix] (2, 0) rectangle (3.5, 0.6) node[midway, font=\tiny] {$Z_k(P^r)$};
+    \draw[suffix] (2, 0) rectangle (3.5, 0.6) node[midway, font=\tiny] {$Z_k(P^r) = \ell$};
     \node[below] at (2, 0) {$k$};
 
     \draw[pbar] (0, -1.2) rectangle (6, -0.6);
     \node[left] at (0, -0.9) {$P$};
 
-    \draw[suffix] (2.5, -1.2) rectangle (4, -0.6) node[midway, font=\tiny] {$N_j(P)$};
+    \draw[suffix] (2.5, -1.2) rectangle (4, -0.6) node[midway, font=\tiny] {$N_j(P) = \ell$};
     \node[below] at (4, -1.2) {$j$};
 
     \draw[<->, thick, Stealth-Stealth, blue!60!black]
       (3, -0.1) -- (3, -0.5)
-      node[midway, right, font=\tiny\itshape] {reversal correspondence};
+      node[midway, right, font=\tiny\itshape] {$k = m{-}j{+}1$};
 \end{tikzpicture}
-\end{center}
+\caption{Reversal correspondence: $N_j(P) = Z_{m-j+1}(P^r)$.
+  A Z-match of length $\ell$ at position $k$ in the reversed pattern
+  corresponds to a suffix-match of length $\ell$ ending at position $j = m-k+1$
+  in the original pattern.}
+\label{fig:nj-zk-correspondence}
+\end{figure}
 
 \subsubsection{Algorithm Implementation}
+
+We now have all the ingredients.
+Both rules are precomputed in $\Oh{m}$ time:
+BCR uses the bad-character table $\mathrm{BC}(i, x)$ (position lists or 2-D table),
+and GSR uses the $N_j$ values derived from the Z-algorithm on $P^r$.
+At each alignment, Boyer-Moore scans right-to-left, and on a mismatch at
+position $j$ applies \emph{both} rules independently, then takes the
+\textbf{maximum} shift --- this is safe because each rule on its own
+guarantees not to skip any occurrence.
 
 The full Boyer-Moore algorithm combines the precomputed Bad Character and Good Suffix tables to determine the maximum possible shift at each step.
 
@@ -2437,23 +2542,51 @@ The full Boyer-Moore algorithm combines the precomputed Bad Character and Good S
 
 \subsubsection{Complexity}
 
-\begin{theorem}
+\begin{theorem}[Boyer-Moore worst case]
   In the worst case, Boyer-Moore runs in $\Oh{nm}$ time.
 \end{theorem}
 
-The classical worst case is $T = a^n$, $P = ba^{m-1}$: every alignment
-compares the entire pattern right-to-left, reaches the first character, and
-shifts by only one position.
+\begin{proof}[Proof sketch]
+  Consider $T = a^n$ and $P = ba^{m-1}$.
+  At every alignment the algorithm compares all $m$ characters right-to-left
+  (matching $m{-}1$ \texttt{a}'s before mismatching on \texttt{b}), and both
+  BCR and GSR produce a shift of only $1$.
+  There are $n - m + 1$ alignments, giving $(n-m+1)\cdot m = \Oh{nm}$ comparisons.
+\end{proof}
 
-In contrast, for a random text over a large alphabet, the algorithm
-frequently triggers the BCR skip, leading to an average-case complexity of
-$\Oh{n/m}$.
+\begin{remark}[Average-case behaviour]
+  For a random text over a large alphabet, BCR almost always triggers a skip
+  at the very first (rightmost) comparison, since a random character is
+  unlikely to appear in $P$.
+  The expected shift is $\Oh{m}$, leading to an average-case complexity of
+  $\Oh{n/m}$ --- sub-linear in $n$, which is why Boyer-Moore is so effective
+  in practice for natural-language or genomic texts.
+\end{remark}
 
 \subsubsection{Apostolico--Giancarlo Optimization}
 
-The Boyer-Moore algorithm can perform $\Oh{nm}$ comparisons in the worst case because it "forgets" matches made in previous alignments. The \textbf{Apostolico--Giancarlo} algorithm improves this to $\Oh{n}$ by maintaining an array $M$ where $M[k]$ is the length of the longest suffix of $P$ that matched $T$ ending at position $k$ in some previous alignment.
+\paragraph{Intuition.}
+Boyer-Moore's $\Oh{nm}$ worst case stems from \emph{forgetting}: after each
+alignment it discards all information about which text characters were compared,
+so the same characters can be re-examined from scratch at the next shift.
+This is the same problem KMP solved for single-pattern matching --- and the fix
+is the same idea: \emph{cache} the outcome of previous comparisons.
 
-When $P$ is aligned at shift $s$ and we are comparing $P[i]$ with $T[k]$ (where $k = s+i$), we check $w = M[k]$. Recall that $N_i(P)$ is the length of the longest suffix of $P[1\dots i]$ that is also a suffix of $P$.
+Apostolico and Giancarlo maintain an auxiliary array $M$ over the text.
+After each alignment, whenever a suffix of $P$ of length $\ell$ is matched
+against $T$ ending at position $k$, they store $M[k] = \ell$.
+At a future alignment, before comparing $P[i]$ against $T[k]$, the algorithm
+checks whether $M[k]$ already records how much of the pattern matches at $k$ ---
+and if so, skips those comparisons entirely.
+
+\begin{definition}[$M$ array]
+  $M[k]$ is the length of the longest suffix of $P$ that was matched against $T$
+  ending at position $k$ in some previous alignment. Initially $M[k] = 0$ for all $k$.
+\end{definition}
+
+When $P$ is aligned at shift $s$ and we are comparing $P[i]$ with $T[k]$ (where $k = s+i$),
+we check $w = M[k]$. Recall that $N_i(P)$ is the length of the longest suffix of $P[1\dots i]$
+that is also a suffix of $P$.
 
 There are four key cases when we encounter a previously matched segment ($w > 0$):
 \begin{enumerate}
@@ -2462,6 +2595,65 @@ There are four key cases when we encounter a previously matched segment ($w > 0$
   \item \textbf{Case 3: $w = N_i$.} The match in the text exactly matches the sub-occurrence of the suffix in $P$. We can skip $w$ comparisons and continue checking $P$ from position $i - w$.
   \item \textbf{Case 4: $w \ge N_i$ and $N_i = i$.} This corresponds to a prefix of $P$ matching the text. If $i=m$, we found a full match; otherwise, we can skip and continue.
 \end{enumerate}
+
+Figure~\ref{fig:ag-cases} summarises the four cases geometrically.
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[
+  cell/.style={rectangle, draw=gray!30, fill=gray!6, minimum width=7mm,
+               minimum height=5.5mm, font=\ttfamily\small, inner sep=0pt},
+  mch/.style ={cell, draw=green!55!black, fill=green!12},
+  skip/.style={cell, draw=blue!40, fill=blue!8, text=blue!50!black},
+  cur/.style ={cell, draw=orange!70!black, fill=orange!18},
+  bar/.style ={draw=gray!40, fill=gray!4, thick, rounded corners=2pt},
+  lbl/.style ={font=\scriptsize\sffamily, text=gray!70},
+]
+\def\cw{0.82}
+\def\rsp{2.1}   % row spacing
+
+% ── helper macro: draw a labelled P-bar of length 5 ───────────────
+% args: y-offset, case label, highlight cells (list: index/style pairs)
+
+% ── Case 1: w > N_i ───────────────────────────────────────────────
+\node[lbl, anchor=west] at (-1.2, 0) {\textbf{Case 1}: $w > N_i$ — mismatch at $i - N_i$, shift immediately};
+% P bar
+\foreach \x/\s in {1/mch,2/mch,3/mch,4/skip,5/cur}
+  \node[\s] at ({\x*\cw}, -0.4) {};
+\node[lbl] at ({3*\cw}, -0.4) {$N_i$};
+\node[lbl] at ({5*\cw}, -0.9) {$i$};
+\draw[<->, blue!50, thick] ({1.5*\cw},-0.9) -- ({3.5*\cw},-0.9)
+  node[midway, below, font=\tiny\sffamily] {$w > N_i$};
+
+% ── Case 2: w < N_i ───────────────────────────────────────────────
+\node[lbl, anchor=west] at (-1.2, {-\rsp}) {\textbf{Case 2}: $w < N_i$ — mismatch at $i - w$, shift};
+\foreach \x/\s in {1/cell,2/cell,3/mch,4/mch,5/cur}
+  \node[\s] at ({\x*\cw}, {-\rsp-0.4}) {};
+\node[lbl] at ({4.5*\cw}, {-\rsp-0.9}) {$w$};
+\draw[<->, blue!50, thick] ({3.5*\cw},{-\rsp-0.9}) -- ({4.9*\cw},{-\rsp-0.9})
+  node[midway, below, font=\tiny\sffamily] {$w < N_i$};
+
+% ── Case 3: w = N_i ───────────────────────────────────────────────
+\node[lbl, anchor=west] at (-1.2, {-2*\rsp}) {\textbf{Case 3}: $w = N_i$ — skip $w$ comparisons, continue at $i{-}w$};
+\foreach \x/\s in {1/cell,2/mch,3/mch,4/mch,5/cur}
+  \node[\s] at ({\x*\cw}, {-2*\rsp-0.4}) {};
+\draw[<->, green!55!black, thick] ({2.5*\cw},{-2*\rsp-0.9}) -- ({4.9*\cw},{-2*\rsp-0.9})
+  node[midway, below, font=\tiny\sffamily] {$w = N_i$, resume at $i{-}w$};
+
+% ── Case 4: w >= N_i and N_i = i ─────────────────────────────────
+\node[lbl, anchor=west] at (-1.2, {-3*\rsp}) {\textbf{Case 4}: $N_i = i$ (prefix match) — full or partial match declared};
+\foreach \x/\s in {1/mch,2/mch,3/mch,4/mch,5/cur}
+  \node[\s] at ({\x*\cw}, {-3*\rsp-0.4}) {};
+\draw[<->, green!55!black, thick] ({0.5*\cw},{-3*\rsp-0.9}) -- ({4.9*\cw},{-3*\rsp-0.9})
+  node[midway, below, font=\tiny\sffamily] {$N_i = i$: prefix of $P$ matches};
+
+\end{tikzpicture}
+\caption{The four cases of the Apostolico--Giancarlo algorithm.
+  \textcolor{green!55!black}{Green} cells are already known to match (from $M[k]$);
+  \textcolor{blue!50!black}{blue} cells are skipped;
+  \textcolor{orange!70!black}{orange} is the current comparison position $i$.}
+\label{fig:ag-cases}
+\end{figure}
 
 By using these rules, Apostolico--Giancarlo ensures that each character of the text is involved in at most a constant number of \emph{successful} comparisons, bringing the worst-case complexity down to $\Oh{n+m}$.
 
@@ -2606,6 +2798,25 @@ state in KMP, now for a whole set of patterns.}
           distinct labels, so the fan-out is at most $|\Sigma|$.
   \end{itemize}
 \end{observation}
+
+\begin{example}[Building a keyword tree]
+  Let $\mathcal{P} = \{\texttt{potato},\texttt{tatoo},\texttt{theater},\texttt{other}\}$.
+  We insert the patterns one by one from the root, sharing edges as long as
+  prefixes agree:
+  \begin{itemize}[noitemsep, topsep=2pt]
+    \item \texttt{potato} and no other pattern share a prefix → a chain of
+          6 edges labelled \texttt{p-o-t-a-t-o} from the root.
+    \item \texttt{tatoo} starts with \texttt{t}; no existing edge from the
+          root is labelled \texttt{t} → a new branch. At depth 1 the single
+          \texttt{t}-node branches further for \texttt{a} (continuing
+          \texttt{tatoo}) and later for \texttt{h} (from \texttt{theater}).
+    \item \texttt{theater} shares the prefix \texttt{t} with \texttt{tatoo};
+          at depth 1 they diverge (\texttt{a} vs \texttt{h}).
+    \item \texttt{other} starts with \texttt{o}; no existing root-edge is
+          labelled \texttt{o} → a new branch.
+  \end{itemize}
+  The resulting tree has $6{+}5{+}7{+}5 = 23$ edges (one per character of all patterns).
+\end{example}
 
 Figure~\ref{fig:keyword-tree} shows the keyword tree for
 $\mathcal{P} = \{\texttt{potato},\allowbreak\texttt{tatoo},\allowbreak
@@ -2892,8 +3103,39 @@ prefix-matching state for the whole set $\mathcal{P}$.}
 This already beats the naïve approach when patterns share long prefixes, but
 the worst-case cost per starting position is still $\Oh{m_{\max}}$, giving
 $\Oh{n \cdot m_{\max} + m}$ overall.
+
+\paragraph{Why the keyword tree alone is not enough.}
+Consider searching for $\mathcal{P} = \{\texttt{he},\texttt{she},\texttt{his},\texttt{hers}\}$
+in $T = \texttt{ushers}$.
+After reading \texttt{u} from the root we fail immediately (no \texttt{u}-edge),
+restart from the root, try \texttt{s} → \texttt{h} → \texttt{e} → leaf
+(\texttt{she} found). Now the \emph{naive} tree traversal restarts from the
+root, but the \texttt{e} we just read is itself the start of \texttt{he}!
+We missed a match because we threw away the suffix information.
+
+This is exactly the problem KMP solved for a single pattern with the $sp'$
+table: instead of restarting from scratch, jump to the longest proper border
+of the current prefix and continue from there.
+For multiple patterns the same idea generalises: at a mismatch (or after a
+full match) we follow a \textbf{failure link} from the current node to the
+node representing the longest proper suffix of the current prefix that is
+also a prefix of some pattern in $\mathcal{P}$.
+These failure links turn $K(\mathcal{P})$ into a finite automaton that
+processes $T$ in a single left-to-right pass, never re-reading any character.
+
+\begin{definition}[Failure link]
+  For a node $v$ in $K(\mathcal{P})$ representing a string $\alpha$, the
+  \textbf{failure link} of $v$ points to the node representing the longest
+  proper suffix of $\alpha$ that is a prefix of some pattern in $\mathcal{P}$
+  (or to the root if no such suffix exists).
+\end{definition}
+
+\aside{Failure links in $K(\mathcal{P})$ are the direct multi-pattern
+generalisation of the $sp'$ values in KMP: both encode ``the longest
+previously matched prefix you can fall back to''.}
+
 To achieve a true $\Oh{n + m}$ single pass we need to handle mismatches
 without restarting from the root --- the same challenge KMP solved for a
 single pattern.
-The solution is to equip $K(\mathcal{P})$ with \textbf{failure links},
+The solution is to equip $K(\mathcal{P})$ with failure links,
 leading to the \textbf{Aho--Corasick} automaton.
