@@ -2,7 +2,7 @@
 %  Suffix Trees & Ukkonen's Algorithm
 % ================================================================
 
-\subsection{Suffix Trees}
+\section{Suffix Trees}
 
 All the algorithms we have seen so far share a common pattern: we
 \emph{preprocess the pattern}~$P$ and then scan the text~$T$ in a single
@@ -24,7 +24,7 @@ prefix of some suffix of~$T$.
 So if we index \emph{all} suffixes, we can find any substring by walking
 down from the root.
 
-\subsubsection{Suffixes and Substrings}
+\subsection{Suffixes and Substrings}
 
 \begin{observation}
   Let $T = t_1 t_2 \cdots t_n$.
@@ -43,7 +43,7 @@ Walking from the root following the characters of a query string~$Q$
 either succeeds (meaning $Q$ is a substring of~$T$) or fails at some
 point (meaning $Q$ does not occur in~$T$).
 
-\subsubsection{Suffix Trie}
+\subsection{Suffix Trie}
 
 The first idea is the most direct one: build a trie that contains every
 suffix of~$T$.
@@ -189,7 +189,7 @@ Both building it and storing it takes $\Th{n^2}$ time and space --- the
 same as explicitly listing all substrings.
 We need a more compact representation.
 
-\subsubsection{From Suffix Trie to Suffix Tree: Compaction}
+\subsection{From Suffix Trie to Suffix Tree: Compaction}
 
 \aside{The same idea that turns a trie into a \emph{Patricia trie} /
 \emph{radix tree}: merge every chain of single-child internal nodes
@@ -334,7 +334,7 @@ state itself.
 Canonizing a reference pair means ``walking down'' from $s$, consuming
 full edges, until the remaining string fits within a single edge.
 
-\subsubsection{Online Construction of the Suffix Trie}
+\subsection{Online Construction of the Suffix Trie}
 
 Before tackling the linear-time suffix tree construction, it is
 instructive to see how the suffix trie can be built \emph{online}
@@ -576,7 +576,7 @@ until we reach a state that already has one.
   which is at most $\binom{n+1}{2} + 1 = \Oh{n^2}$.
 \end{proof}
 
-\subsubsection{Ukkonen's Linear-Time Construction}
+\subsection{Ukkonen's Linear-Time Construction}
 
 The quadratic construction above already contains the right algorithmic
 skeleton.
@@ -760,7 +760,7 @@ The variable $(s, k)$ tracks the active point across iterations.
   }
 \end{algorithm}
 
-\subsubsection{Worked Example}
+\subsection{Worked Example}
 
 Let us trace Ukkonen's algorithm on $T = \texttt{cacao\$}$, the same
 string from the paper.
@@ -939,7 +939,7 @@ After this phase, every suffix ends at its own leaf, and the
 construction is complete.
 The final tree is $\mathrm{STree}(\texttt{cacao\$})$.
 
-\subsubsection{Complexity Analysis}
+\subsection{Complexity Analysis}
 
 \begin{theorem}[Ukkonen, 1995]
   \label{thm:ukkonen-linear}
@@ -1025,7 +1025,7 @@ $\Oh{n}$ overall.
   of the text seen so far.
 \end{remark}
 
-\subsubsection{Applications of Suffix Trees}
+\subsection{Applications of Suffix Trees}
 
 Once $\mathrm{STree}(T)$ is built in $\Oh{n}$ time, many string
 problems that would otherwise require specialised algorithms become

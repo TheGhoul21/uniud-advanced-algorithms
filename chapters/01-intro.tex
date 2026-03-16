@@ -1,4 +1,4 @@
-\section{Introduction \& Exact Pattern Matching}
+\section{Exact Pattern Matching}
 
 % ── Section ──────────────────────────────────────────────
 \subsection{Definition}
@@ -285,9 +285,9 @@ of $T$ can trigger up to $\Oh{m}$ comparisons.
 
 This naive approach basically starts over from scratch at each shift, without leveraging precious information from previous comparisons.
 
-\subsection{Knuth-Morris-Pratt (KMP) algorithm}
+\section{Knuth-Morris-Pratt (KMP) algorithm}
 
-\subsubsection{Intuition}
+\subsection{Intuition}
 
 What if we could somehow "remember" the information from a previous comparison, and use it to skip some of the checks at the next shift?
 Let's introduce the intuition behind the Knuth-Morris-Pratt (KMP) algorithm, with an example.
@@ -443,7 +443,7 @@ But is this correct? Or do we miss some potential matches by jumping directly to
 
 Well, it turns out that this is indeed correct, and we won't miss any matches by doing this. The KMP algorithm is based on this very idea, and it guarantees that we will find all occurrences of $P$ in $T$ without missing any, while also achieving a much better time complexity than the naive approach.
 
-\subsubsection{Preprocessing: computing $sp$ values}
+\subsection{Preprocessing: computing $sp$ values}
 \label{sec:kmp-preprocessing}
 
 To exploit this idea, we need to precompute for every prefix $P[1\ldots i]$ its
@@ -680,7 +680,7 @@ The resulting algorithm is the following:
   \end{loopproof}
 \end{formaldetails}
 
-\subsubsection*{Step-by-step: Computing $sp$ values}
+\subsection*{Step-by-step: Computing $sp$ values}
 
 Let's trace the algorithm on $P = \texttt{ababaca}$.
 
@@ -937,7 +937,7 @@ so the invariant holds.
 
 \end{intermezzo}
 
-\subsubsection{Application to KMP preprocessing}
+\subsection{Application to KMP preprocessing}
 
 The $sp$-computation algorithm runs in $\Oh{m}$ total time despite the nested loops.
 We apply the credit method with $k$ as the potential: credits measure how much $k$
@@ -966,7 +966,7 @@ Together with the $\Oh{m}$ overhead of the outer loop, the total preprocessing t
   runs only once per outer iteration, for a total of $\Oh{m}$ time.
 \end{example}
 
-\subsubsection{The search phase}
+\subsection{The search phase}
 
 Once the $sp$ array is computed, we scan $T$ left-to-right, maintaining $j$: the number of
 characters of $P$ currently matched.
@@ -1115,10 +1115,10 @@ inner fallback strictly decreases $j \geq 0$, so the inner loop runs $\Oh{n}$ ti
 \end{theorem}
 
 % ══════════════════════════════════════════════════════════════════
-\subsection{Z-Algorithm}
+\section{Z-Algorithm}
 % ══════════════════════════════════════════════════════════════════
 
-\subsubsection{Definition}
+\subsection{Definition}
 
 The Z-algorithm is a second linear-time preprocessing approach.
 Where $\spi{i}$ looks \emph{backward} (longest prefix that is also a suffix of $P[1\ldots i]$),
@@ -1257,7 +1257,7 @@ The separator prevents $Z_i$ from exceeding $m$, so equality with $m$ detects al
   Indeed $T[1\ldots 3] = \texttt{aba}$ and $T[3\ldots 5] = \texttt{aba}$. \checkmark
 \end{example}
 
-\subsubsection{Computing Z values: the Z-box algorithm}
+\subsection{Computing Z values: the Z-box algorithm}
 
 A naive computation of all Z values costs $\Oh{n^2}$: for each $i$, compare
 character by character until a mismatch.
@@ -1701,7 +1701,7 @@ Every comparison in the \textbf{while} loops either advances $r$ (paid by the bu
 ends the step without advancing $r$ (at most one per outer step $i$).
 Hence the total number of comparisons is $\Oh{n}$.
 
-\subsubsection{From Z values to $sp$ values}
+\subsection{From Z values to $sp$ values}
 \label{sec:z-to-sp}
 
 The $sp$ values of $P$ can be read off directly from its Z-array.
@@ -1735,10 +1735,10 @@ The $sp$ values of $P$ can be read off directly from its Z-array.
 \end{exercise}
 
 % ══════════════════════════════════════════════════════════════════
-\subsection{Strong borders and real-time KMP}
+\section{Strong borders and real-time KMP}
 % ══════════════════════════════════════════════════════════════════
 
-\subsubsection{The real-time bottleneck}
+\subsection{The real-time bottleneck}
 
 KMP with plain $sp$ values is \emph{blind} (it never re-reads $T$) but not \emph{real-time}:
 a single new character of $T$ can trigger a fallback chain costing $\Oh{m}$ in the worst
@@ -1747,7 +1747,7 @@ The fix is to collapse the entire chain into a single precomputed lookup. We ach
 in two logical steps: first by skipping strictly useless borders, and then by precomputing 
 transitions for every possible character.
 
-\subsubsection{Strong border ($sp'$): Skipping useless fallbacks}
+\subsection{Strong border ($sp'$): Skipping useless fallbacks}
 
 \begin{definition}[Strong border]
   For $i \in \{1,\ldots,m-1\}$, define
@@ -1846,7 +1846,7 @@ single fallback state --- the longest ``safe'' border for the specific character
 For a completely arbitrary text character $x$, a fallback chain might still occur. To achieve 
 strict $\Oh{1}$ time per character, a full character-indexed table is needed.
 
-\subsubsection{Character-indexed borders and the DFA: True Real-Time}
+\subsection{Character-indexed borders and the DFA: True Real-Time}
 
 For a complete real-time solution we precompute, for each position $i$ and character
 $x \in \Sigma$, the longest border of $P[1\ldots i]$ whose next character is exactly $x$:
@@ -1931,12 +1931,12 @@ KMP truly \textbf{real-time}.
 
 
 % ══════════════════════════════════════════════════════════════════
-\subsection{A Comprehensive Trace: KMP and Z-Algorithm}
+\section{A Comprehensive Trace: KMP and Z-Algorithm}
 % ══════════════════════════════════════════════════════════════════
 
 To solidify these concepts, let's trace KMP and then contrast it directly with the Z-Algorithm.
 
-\subsubsection{KMP Step-by-Step}
+\subsection{KMP Step-by-Step}
 
 Consider the pattern $P = \texttt{ababa}$ and the text $T = \texttt{ababcababa}$.
 Here we trace the standard KMP behavior (using plain $sp$ values to illustrate the fallback mechanism that DFA optimizes).\aside[2ex]{For $i=4$, $P[1..4]=\texttt{abab}$. Proper prefix-suffixes are $\texttt{ab}$ (len 2) and $\texttt{a}$ (len 1). Max is 2.}
@@ -2016,13 +2016,13 @@ The complete trace is shown in Figure~\ref{fig:kmp-trace}.
 \label{fig:kmp-trace}
 \end{figure}
 
-\subsubsection{Online vs.\ Real-Time: Bridging the Gap}
+\subsection{Online vs.\ Real-Time: Bridging the Gap}
 
 The KMP trace above highlights a crucial property: KMP processes $T$ one character at a time without ever stepping backwards in $T$. This makes KMP an \textbf{online} algorithm. However, as seen in Steps 1-3, processing the single character $T[5]=\texttt{c}$ required multiple internal operations ($j$ falling back multiple times). If we had used the full DFA ($\mathrm{sp}_{i,x}$) discussed previously, those steps would collapse into $\Oh{1}$ worst-case time, upgrading the algorithm from merely online to strictly \textbf{real-time}.
 
 By contrast, the Z-algorithm is \emph{neither} real-time nor strictly online in the same way. The computation of the Z-box $[l,r]$ depends on reading characters ahead in the string. Let's trace it to see this structural difference in action.
 
-\subsubsection{Z-Algorithm Trace}
+\subsection{Z-Algorithm Trace}
 
 Let's compute the Z-values for the string $S = \texttt{aababca}$. 
 Notice how the algorithm looks ahead to establish the rightmost boundary $r$.
@@ -2053,7 +2053,7 @@ Notice how the algorithm looks ahead to establish the rightmost boundary $r$.
 \end{center}
 
 
-\subsection{Boyer-Moore Algorithm}
+\section{Boyer-Moore Algorithm}
 
 So far we have seen algorithms that scan the text strictly left to right,
 never revisiting a character once processed.
@@ -2067,7 +2067,7 @@ failures possible—they let the algorithm skip large portions of the text.
 \emph{last} character of the current alignment gives the most information
 about how far to jump.}
 
-\subsubsection{Intuition}
+\subsection{Intuition}
 
 The algorithm combines two independent heuristics.
 At every alignment it takes the \emph{maximum} shift allowed by either rule:
@@ -2090,7 +2090,7 @@ Both rules are correct in the sense that neither one ever skips a genuine
 occurrence of $P$.
 At each step Boyer-Moore applies whichever rule yields the larger shift.
 
-\subsubsection{Bad Character Rule}
+\subsection{Bad Character Rule}
 
 \begin{definition}[Bad Character table]
   For each position $1 \le i \le m$ and character $x \in \Sigma$, let
@@ -2271,7 +2271,7 @@ Depending on the alphabet size $|\Sigma|$ and pattern length $m$, different data
   While binary search on position lists costs $\Oh{\log m}$, the total pattern length $m$ is typically small enough that this overhead is negligible compared to the large shifts BCR provides.
 \end{remark}
 
-\subsubsection{Good Suffix Rule}
+\subsection{Good Suffix Rule}
 
 \paragraph{Intuition.}
 The Bad Character Rule ignores the characters we \emph{already matched}.
@@ -2281,13 +2281,124 @@ That information is precious: if $S$ appears again somewhere to the left in $P$,
 we can shift $P$ so that second occurrence lines up with the matched region in $T$
 and continue --- no re-reading of $T$ required.
 
-\begin{example}[GSR intuition]
-  Let $P = \texttt{CABAB}$ and suppose scanning right-to-left we match
-  $S = P[4\ldots5] = \texttt{AB}$ against $T$, then mismatch at $P[3]=\texttt{B}$.
-  The substring $\texttt{AB}$ also appears in $P$ at positions $2$--$3$, preceded
-  by $\texttt{C} \neq \texttt{B}$ (so the same mismatch cannot immediately
-  recur). We shift $P$ right by $2$ to realign that copy of $\texttt{AB}$
-  with the matched region of $T$.
+\begin{example}[GSR skip]
+  Search $P = \texttt{CABAB}$ in $T = \texttt{DCAAB\dots}$.
+  Aligning $P$ at position~$1$, we scan right-to-left:
+  $P[5]=\texttt{B}$ vs $T[5]=\texttt{B}$ matches,
+  $P[4]=\texttt{A}$ vs $T[4]=\texttt{A}$ matches,
+  $P[3]=\texttt{B}$ vs $T[3]=\texttt{A}$ is a mismatch.
+  The matched suffix is $S = \texttt{AB}$.
+  The same substring $\texttt{AB}$ also appears at $P[2\ldots3]$,
+  preceded by $P[1] = \texttt{C} \neq \texttt{B} = P[3]$ (safe!).
+  GSR shifts $P$ right by~$2$ so that the copy of $S$ aligns with
+  the matched region.
+
+\begin{center}
+\begin{tikzpicture}[
+  cell/.style={rectangle, draw=gray!30, fill=gray!5,
+    minimum width=8mm, minimum height=7mm,
+    font=\ttfamily, inner sep=0pt, rounded corners=1pt},
+  T/.style={cell},
+  MC/.style={cell, draw=green!55!black, fill=green!18, text=green!30!black},
+  XC/.style={cell, draw=red!65!black, fill=red!12, text=red!50!black},
+  P/.style={cell, draw=orange!60!black, fill=orange!10},
+  Pnew/.style={cell, draw=green!60!black, fill=green!10},
+  ghost/.style={cell, draw=gray!20, dashed, fill=none, text=gray!30},
+  gridline/.style={dashed, gray!15, thin},
+  suffbox/.style={draw=violet!60!black, thick, rounded corners=3pt, fill=violet!6},
+]
+\def\cw{0.9}
+
+% Vertical grid lines
+\foreach \x in {0,...,7} {
+  \draw[gridline] (\x*\cw, 0.5) -- (\x*\cw, -4.1);
+}
+
+% ── T row (y = 0) ────────────────────
+\node[font=\small\sffamily\bfseries, text=gray!60, anchor=east]
+  at ({-0.6*\cw}, 0) {$T$};
+\node[T] at ({0*\cw}, 0) {D};
+\node[T] at ({1*\cw}, 0) {C};
+\node[T] at ({2*\cw}, 0) {A};
+\node[T] at ({3*\cw}, 0) {A};
+\node[T] at ({4*\cw}, 0) {B};
+\node[T] at ({5*\cw}, 0) {D};
+\node[font=\small, text=gray!40] at ({6.2*\cw}, 0) {\dots};
+
+% ── scan direction (y = -0.6, between T and P) ─
+\draw[->, >=Stealth, thick, gray!50]
+  ({4.4*\cw}, -0.6) -- ({-0.2*\cw}, -0.6)
+  node[midway, above, font=\scriptsize\sffamily, text=gray!60]
+    {scan direction};
+
+% ── P row (y = -1.5) ────────────────
+\node[font=\small\sffamily\bfseries, text=gray!60, anchor=east]
+  at ({-0.6*\cw}, -1.5) {$P$};
+\node[P, text=gray!40] at ({0*\cw}, -1.5) {C};
+\node[P, text=gray!40] at ({1*\cw}, -1.5) {A};
+\node[XC] at ({2*\cw}, -1.5) {B};
+\node[MC] at ({3*\cw}, -1.5) {A};
+\node[MC] at ({4*\cw}, -1.5) {B};
+
+% ── "not compared" label ─────────────
+\node[font=\tiny\sffamily, text=gray!40] at ({0.5*\cw}, -1.88)
+  {not compared};
+
+% ── mismatch cross ───────────────────
+\node[red!70!black, font=\bfseries] at ({2*\cw}, -0.88) {$\times$};
+
+% ── matched suffix brace (y ≈ -2.0) ──
+\draw[violet!55!black, decorate,
+      decoration={brace, mirror, amplitude=3pt, raise=3pt}]
+  ({3*\cw-0.38}, -1.88) -- ({4*\cw+0.38}, -1.88)
+  node[midway, below=8pt, font=\scriptsize\sffamily, text=violet!55!black]
+    {$S = \texttt{AB}$};
+
+% ── copy-of-S brace ─────────────────
+\draw[violet!55!black, decorate,
+      decoration={brace, mirror, amplitude=3pt, raise=3pt}]
+  ({1*\cw-0.38}, -1.88) -- ({2*\cw+0.38}, -1.88)
+  node[midway, below=8pt, font=\scriptsize\sffamily, text=violet!55!black]
+    {copy of $S$};
+
+% ── shift arrow (y = -2.9) ──────────
+\draw[->, >=Stealth, thick, blue!60!black]
+  ({1.5*\cw}, -2.9) -- ({3.5*\cw}, -2.9)
+  node[midway, fill=white, inner sep=2pt,
+       font=\small\sffamily\bfseries, text=blue!70!black]
+    {shift +2};
+
+% ── P' row (y = -3.6) ───────────────
+\node[font=\small\sffamily\bfseries, text=gray!60, anchor=east]
+  at ({-0.6*\cw}, -3.6) {$P'$};
+
+% ghost (old position)
+\node[ghost] at ({0*\cw}, -3.6) {C};
+\node[ghost] at ({1*\cw}, -3.6) {A};
+\node[ghost] at ({2*\cw}, -3.6) {B};
+\node[ghost] at ({3*\cw}, -3.6) {A};
+\node[ghost] at ({4*\cw}, -3.6) {B};
+
+% new P' (shifted right by 2)
+\node[Pnew] at ({2*\cw}, -3.6) {C};
+\node[Pnew] at ({3*\cw}, -3.6) {A};
+\node[Pnew] at ({4*\cw}, -3.6) {B};
+\node[Pnew] at ({5*\cw}, -3.6) {A};
+\node[Pnew] at ({6*\cw}, -3.6) {B};
+
+% ── annotations ──────────────────────
+\node[font=\footnotesize\itshape, text=gray!60, anchor=west]
+  at ({7.5*\cw}, -0.75)
+  {\texttt{B}$\neq$\texttt{A}: mismatch at $P[3]$};
+\node[font=\footnotesize\itshape, text=gray!60, anchor=west]
+  at ({7.5*\cw}, -1.5)
+  {matched suffix $S = \texttt{AB}$};
+\node[font=\footnotesize\itshape, text=gray!60, anchor=west]
+  at ({7.5*\cw}, -3.6)
+  {realign copy of $S$};
+
+\end{tikzpicture}
+\end{center}
 \end{example}
 
 \aside{The Good Suffix Rule is the Boyer-Moore analogue of KMP's border
@@ -2335,17 +2446,20 @@ an immediate re-mismatch.
 
     \draw[suffix] (8, -0.3) rectangle (10, 0.3);
     \node[above] at (8, 0.3) {$i$};
-    \node[below] at (9, -0.3) {\small Suffix $S = P[i\ldots m]$};
 
     \draw[suffix] (3, -0.3) rectangle (5, 0.3);
     \node[above] at (5, 0.3) {$L'(i)$};
-    \node[below] at (4, -0.3) {\small Copy of $S$};
 
     \node[mismatch] at (7.6, 0) {$y$};
-    \node[below] at (7.6, -0.3) {\scalebox{0.8}{mismatch char}};
-
     \node[mismatch] at (2.6, 0) {$x$};
-    \node[below] at (2.6, -0.3) {\scalebox{0.8}{$x \neq y$: safe!}};
+
+    % ── row 1: box labels ──
+    \node[font=\small, anchor=north] at (4, -0.38) {copy of $S$};
+    \node[font=\small, anchor=north] at (9, -0.38) {suffix $S = P[i\ldots m]$};
+
+    % ── row 2: character annotations (staggered below) ──
+    \node[font=\scriptsize, text=red!60!black, anchor=north] at (2.6, -0.85) {$x \neq y$: safe};
+    \node[font=\scriptsize, text=red!60!black, anchor=north] at (7.6, -0.85) {mismatch char};
 
     \draw[<->, dashed, red!70!black, bend left=30]
       (2.6, 0.4) to node[midway, above, font=\tiny] {$x \neq y$} (7.6, 0.4);
@@ -2503,7 +2617,7 @@ ending at position $j$ in $P$.
 \label{fig:nj-zk-correspondence}
 \end{figure}
 
-\subsubsection{Algorithm Implementation}
+\subsection{Algorithm Implementation}
 
 We now have all the ingredients.
 Both rules are precomputed in $\Oh{m}$ time:
@@ -2540,7 +2654,7 @@ The full Boyer-Moore algorithm combines the precomputed Bad Character and Good S
   }
 \end{algorithm}
 
-\subsubsection{Complexity}
+\subsection{Complexity}
 
 \begin{theorem}[Boyer-Moore worst case]
   In the worst case, Boyer-Moore runs in $\Oh{nm}$ time.
@@ -2563,7 +2677,7 @@ The full Boyer-Moore algorithm combines the precomputed Bad Character and Good S
   in practice for natural-language or genomic texts.
 \end{remark}
 
-\subsubsection{Apostolico--Giancarlo Optimization}
+\subsection{Apostolico--Giancarlo Optimization}
 
 \paragraph{Intuition.}
 Boyer-Moore's $\Oh{nm}$ worst case stems from \emph{forgetting}: after each
@@ -2718,7 +2832,7 @@ $\lceil n/m \rceil$ character comparisons.
 
 
 
-\subsection{Generalization of the Problem: Multiple Patterns}
+\section{Generalization of the Problem: Multiple Patterns}
 The algorithms we have seen so far are designed to search for a single pattern $P$ in a text $T$.
 In many applications, we need to search for multiple patterns simultaneously.
 For example, in DNA sequencing, we might want to find all occurrences of a set of motifs in a long genome sequence.
@@ -2727,7 +2841,7 @@ For example, in DNA sequencing, we might want to find all occurrences of a set o
 Given a set of patterns $\mathcal{P} = \{P_1, P_2, \ldots, P_z\}$ and a text $T$, find all occurrences of all pattern in $\mathcal{P}$ within $T$.
 \end{definition}
 
-\subsubsection{Naïve Approach}
+\subsection{Naïve Approach}
 
 As usual, let's establish a baseline to compare against.
 The simplest idea is to run a single-pattern algorithm (e.g.\ KMP or the
@@ -2759,7 +2873,7 @@ then query it while performing a single left-to-right pass over $T$.
 The natural structure for organising a set of strings by their shared
 prefixes is a tree---specifically, a \textbf{keyword tree}.
 
-\subsubsection{Keyword Tree}
+\subsection{Keyword Tree}
 
 \begin{definition}[Keyword tree, $K(\mathcal{P})$]
   Given a set of patterns $\mathcal{P} = \{P_1, \ldots, P_z\}$ over alphabet
@@ -2944,7 +3058,7 @@ reflecting the shared prefix \texttt{t}.
 \end{figure}
 
 % ══════════════════════════════════════════════════════════════════
-\subsubsection{Using $K(\mathcal{P})$ on $T$}
+\subsection{Using $K(\mathcal{P})$ on $T$}
 % ══════════════════════════════════════════════════════════════════
 
 The tree is built once in $\Oh{m}$ time.
