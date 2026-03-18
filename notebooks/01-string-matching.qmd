@@ -1,0 +1,1227 @@
+---
+title: "String Matching — Interactive Companion"
+subtitle: "Interactive visualizations for Chapter 1 of the Advanced Algorithms notes"
+engine: knitr
+format:
+  live-html:
+    theme: cosmo
+    toc: true
+    toc-depth: 3
+    pyodide:
+      packages:
+        - matplotlib
+        - numpy
+        - networkx
+      cell-options:
+        autorun: true
+        edit: false
+        echo: false
+---
+
+All visualizations run directly in your browser via [Pyodide](https://pyodide.org) — no installation needed. Use the inputs and sliders to explore each algorithm step by step.
+
+```{pyodide}
+#| autorun: true
+#| edit: false
+#| output: false
+
+import matplotlib.pyplot as plt
+import matplotlib.patches as mpatches
+import numpy as np
+
+plt.rcParams.update({
+    "font.family": "monospace",
+    "font.size": 13,
+    "figure.facecolor": "#fafafa",
+    "figure.dpi": 120,
+    "savefig.dpi": 120,
+})
+
+COLORS = {
+    "match": "#4CAF50",
+    "mismatch": "#F44336",
+    "current": "#FFC107",
+    "skip": "#90CAF9",
+    "default": "#E0E0E0",
+    "pattern": "#BBDEFB",
+    "border": "#7E57C2",
+}
+
+
+def draw_string_row(ax, y, string, label="", highlights=None, offset=0):
+    """Draw a row of character boxes at vertical position y."""
+    highlights = highlights or {}
+    for i, ch in enumerate(string):
+        color = highlights.get(i, COLORS["default"])
+        rect = mpatches.FancyBboxPatch(
+            (i + offset, y), 0.9, 0.9,
+            boxstyle="round,pad=0.05",
+            facecolor=color, edgecolor="#555", linewidth=1.2,
+        )
+        ax.add_patch(rect)
+        ax.text(i + offset + 0.45, y + 0.45, ch,
+                ha="center", va="center", fontsize=14, fontweight="bold")
+    if label:
+        ax.text(offset - 0.3, y + 0.45, label,
+                ha="right", va="center", fontsize=12, color="#555")
+```
+
+---
+
+## 1. Naive String Matching
+
+Slide through every alignment of `P` against `T` and see which characters match.
+
+```{pyodide}
+#| autorun: true
+#| edit: false
+#| output: false
+
+def naive_trace(T, P):
+    """Return list of (shift, comparisons) where each comparison is (j, matched)."""
+    steps = []
+    for s in range(len(T) - len(P) + 1):
+        comps = []
+        for j in range(len(P)):
+            matched = T[s + j] == P[j]
+            comps.append((j, matched))
+            if not matched:
+                break
+        steps.append((s, comps))
+    return steps
+
+
+def draw_naive(T, P, step_idx):
+    steps = naive_trace(T, P)
+    n, m = len(T), len(P)
+    s, comps = steps[step_idx]
+    last_j, last_matched = comps[-1]
+    is_full_match = last_matched and last_j == m - 1
+
+    total_comps = sum(len(c) for _, c in steps[:step_idx + 1])
+    matches_found = [st[0] for st in steps[:step_idx + 1]
+                     if st[1][-1][1] and st[1][-1][0] == m - 1]
+
+    fig, axes = plt.subplots(2, 1, figsize=(max(n * 0.85, 10), 5.5),
+                              gridspec_kw={"height_ratios": [3, 2]})
+
+    ax = axes[0]
+    ax.set_xlim(-2.5, n + 1.5)
+    ax.set_ylim(-1.0, 3.2)
+    ax.set_aspect("equal")
+    ax.axis("off")
+
+    for i in range(n):
+        ax.text(i + 0.45, 2.7, str(i), ha="center", va="center", fontsize=9, color="#999")
+
+    t_hi = {}
+    for j, matched in comps:
+        t_hi[s + j] = COLORS["match"] if matched else COLORS["mismatch"]
+    draw_string_row(ax, 1.6, T, label="T", highlights=t_hi)
+
+    p_hi = {}
+    for j, matched in comps:
+        p_hi[j] = COLORS["match"] if matched else COLORS["mismatch"]
+    draw_string_row(ax, 0.3, P, label="P", highlights=p_hi, offset=s)
+
+    for j, matched in comps:
+        color = COLORS["match"] if matched else COLORS["mismatch"]
+        ax.plot([s + j + 0.45, s + j + 0.45], [1.6, 1.2], color=color, linewidth=1.5, alpha=0.5)
+
+    status = "MATCH!" if is_full_match else f"mismatch: T[{s+last_j}]='{T[s+last_j]}' != P[{last_j}]='{P[last_j]}'"
+    color = COLORS["match"] if is_full_match else COLORS["mismatch"]
+    ax.text(n + 0.5, 1.0, status, fontsize=10, color=color, va="center", fontweight="bold")
+
+    ax.set_title(f"Naive | shift s={s} | comparisons this step: {len(comps)} | "
+                 f"total comparisons: {total_comps} | matches: {len(matches_found)}",
+                 fontsize=11, pad=8)
+
+    ax2 = axes[1]
+    ax2.set_xlim(-0.5, len(steps))
+    ax2.set_ylim(-0.5, 1.5)
+    ax2.axis("off")
+
+    for idx, (ss, cc) in enumerate(steps):
+        last = cc[-1]
+        if last[1] and last[0] == m - 1:
+            c = COLORS["match"]
+        elif idx <= step_idx:
+            c = COLORS["mismatch"] if not last[1] else COLORS["default"]
+        else:
+            c = "#F5F5F5"
+        edgecolor = "#000" if idx == step_idx else "#999"
+        lw = 2.5 if idx == step_idx else 0.8
+        rect = mpatches.FancyBboxPatch(
+            (idx, 0.3), 0.8, 0.8, boxstyle="round,pad=0.03",
+            facecolor=c, edgecolor=edgecolor, linewidth=lw)
+        ax2.add_patch(rect)
+        ax2.text(idx + 0.4, 0.7, str(len(cc)), ha="center", va="center", fontsize=8, fontweight="bold")
+        ax2.text(idx + 0.4, 0.05, f"s={ss}", ha="center", va="center", fontsize=7, color="#777")
+
+    ax2.set_title("All shifts (number = comparisons at each shift, current = bold border)",
+                  fontsize=10, pad=5, loc="left")
+    plt.tight_layout()
+    plt.show()
+```
+
+```{ojs}
+//| echo: false
+viewof T_naive = Inputs.text({label: "T:", value: "abcaabcabcaab", width: 400})
+viewof P_naive = Inputs.text({label: "P:", value: "abcab", width: 400})
+```
+
+```{pyodide}
+#| autorun: true
+#| edit: false
+#| output: false
+#| input: [T_naive, P_naive]
+#| define: [naive_max_step]
+
+naive_max_step = max(len(T_naive) - len(P_naive), 0) if T_naive and P_naive and len(P_naive) <= len(T_naive) else 0
+```
+
+```{ojs}
+//| echo: false
+viewof step_naive = Inputs.range([0, naive_max_step], {step: 1, value: 0, label: "Step:"})
+```
+
+```{pyodide}
+#| autorun: true
+#| edit: false
+#| input: [T_naive, P_naive, step_naive]
+
+if T_naive and P_naive and len(P_naive) <= len(T_naive):
+    draw_naive(T_naive, P_naive, int(step_naive))
+```
+
+---
+
+## 2. KMP — Failure Function (sp values) & Search
+
+Visualize the `sp` (border) array computation and then step through the KMP search showing how mismatches use the failure function to skip alignments.
+
+```{pyodide}
+#| autorun: true
+#| edit: false
+#| output: false
+
+def compute_sp(P):
+    """Compute sp[j] = length of longest proper border of P[0..j]."""
+    m = len(P)
+    sp = [0] * m
+    k = 0
+    for j in range(1, m):
+        while k > 0 and P[k] != P[j]:
+            k = sp[k - 1]
+        if P[k] == P[j]:
+            k += 1
+        sp[j] = k
+    return sp
+
+
+def draw_sp_table(P):
+    """Draw the pattern with its sp (border) array underneath."""
+    sp = compute_sp(P)
+    m = len(P)
+
+    fig, ax = plt.subplots(figsize=(max(m * 0.85, 6), 3.2))
+    ax.set_xlim(-1.5, m + 0.5)
+    ax.set_ylim(-1.5, 2.5)
+    ax.set_aspect("equal")
+    ax.axis("off")
+
+    for i in range(m):
+        ax.text(i + 0.45, 2.1, str(i), ha="center", va="center",
+                fontsize=10, color="#999")
+
+    draw_string_row(ax, 1.0, P, label="P")
+
+    sp_hi = {}
+    for i in range(m):
+        if sp[i] > 0:
+            sp_hi[i] = COLORS["border"]
+    for i in range(m):
+        color = COLORS["border"] if sp[i] > 0 else "#F5F5F5"
+        rect = mpatches.FancyBboxPatch(
+            (i, -0.2), 0.9, 0.9,
+            boxstyle="round,pad=0.05",
+            facecolor=color, edgecolor="#555", linewidth=1.0,
+        )
+        ax.add_patch(rect)
+        ax.text(i + 0.45, 0.25, str(sp[i]),
+                ha="center", va="center", fontsize=14, fontweight="bold")
+    ax.text(-0.3, 0.25, "sp", ha="right", va="center", fontsize=12, color="#555")
+
+    if sp[-1] > 0:
+        for j in range(sp[-1]):
+            rect = mpatches.FancyBboxPatch(
+                (j, 1.0), 0.9, 0.9,
+                boxstyle="round,pad=0.05",
+                facecolor=COLORS["border"], edgecolor="#555", linewidth=1.5,
+            )
+            ax.add_patch(rect)
+            ax.text(j + 0.45, 1.45, P[j],
+                    ha="center", va="center", fontsize=14, fontweight="bold")
+        start = m - sp[-1]
+        for j in range(sp[-1]):
+            rect = mpatches.FancyBboxPatch(
+                (start + j, 1.0), 0.9, 0.9,
+                boxstyle="round,pad=0.05",
+                facecolor=COLORS["border"], edgecolor="#555", linewidth=1.5,
+            )
+            ax.add_patch(rect)
+            ax.text(start + j + 0.45, 1.45, P[start + j],
+                    ha="center", va="center", fontsize=14, fontweight="bold")
+
+    ax.set_title(f'sp (failure function) for P = "{P}"', fontsize=13, pad=10)
+    plt.tight_layout()
+    plt.show()
+```
+
+### Failure Function Table
+
+```{ojs}
+//| echo: false
+viewof P_sp = Inputs.text({label: "P:", value: "abcabcab", width: 400})
+```
+
+```{pyodide}
+#| autorun: true
+#| edit: false
+#| input: [P_sp]
+
+if P_sp:
+    draw_sp_table(P_sp)
+```
+
+### KMP Search — Step by Step
+
+Watch how KMP uses the failure function to avoid re-scanning characters. The arrow shows where `j` falls back to on a mismatch.
+
+```{pyodide}
+#| autorun: true
+#| edit: false
+#| output: false
+
+def kmp_trace(T, P):
+    """Return list of snapshots with full state."""
+    sp = compute_sp(P)
+    n, m = len(T), len(P)
+    snapshots = []
+    j = 0
+    total = 0
+    matches = []
+    for i in range(n):
+        while j > 0 and T[i] != P[j]:
+            total += 1
+            old_j = j
+            j = sp[j - 1]
+            snapshots.append({
+                "i": i, "j": old_j, "new_j": j, "event": "fallback",
+                "align": i - old_j, "new_align": i - j,
+                "total_comps": total, "matches": list(matches),
+                "sp_used": old_j - 1,
+            })
+        total += 1
+        if T[i] == P[j]:
+            snapshots.append({
+                "i": i, "j": j, "new_j": j, "event": "match_char",
+                "align": i - j, "new_align": i - j,
+                "total_comps": total, "matches": list(matches),
+            })
+            j += 1
+            if j == m:
+                matches.append(i - m + 1)
+                snapshots.append({
+                    "i": i, "j": j, "new_j": sp[j - 1], "event": "match_found",
+                    "align": i - m + 1, "new_align": i - sp[j - 1] + 1,
+                    "total_comps": total, "matches": list(matches),
+                    "sp_used": j - 1,
+                })
+                j = sp[j - 1]
+        else:
+            snapshots.append({
+                "i": i, "j": j, "new_j": j, "event": "mismatch",
+                "align": i - j, "new_align": i - j,
+                "total_comps": total, "matches": list(matches),
+            })
+    return snapshots
+
+
+def draw_kmp_step(T, P, step_idx):
+    sp = compute_sp(P)
+    snapshots = kmp_trace(T, P)
+    if not snapshots:
+        return
+    step_idx = min(step_idx, len(snapshots) - 1)
+    snap = snapshots[step_idx]
+    n, m = len(T), len(P)
+    i, j, new_j = snap["i"], snap["j"], snap["new_j"]
+    event = snap["event"]
+    align = snap["align"]
+
+    fig = plt.figure(figsize=(max(n * 0.85, 10), 8.5))
+    gs = fig.add_gridspec(3, 1, height_ratios=[3.5, 2.5, 2.5], hspace=0.35)
+
+    ax = fig.add_subplot(gs[0])
+    ax.set_xlim(-2.5, n + 2.0)
+    ax.set_ylim(-1.2, 4.0)
+    ax.set_aspect("equal")
+    ax.axis("off")
+
+    for idx in range(n):
+        ax.text(idx + 0.45, 3.5, str(idx), ha="center", fontsize=8, color="#999")
+
+    t_hi = {}
+    if event == "match_char":
+        t_hi[i] = COLORS["match"]
+    elif event == "mismatch":
+        t_hi[i] = COLORS["mismatch"]
+    elif event == "fallback":
+        t_hi[i] = COLORS["current"]
+    elif event == "match_found":
+        for k in range(m):
+            t_hi[align + k] = COLORS["match"]
+    draw_string_row(ax, 2.3, T, label="T", highlights=t_hi)
+
+    ax.annotate(f"i={i}", xy=(i + 0.45, 3.2), xytext=(i + 0.45, 3.7),
+                fontsize=9, ha="center", color="#1565C0", fontweight="bold",
+                arrowprops=dict(arrowstyle="->", color="#1565C0", lw=1.5))
+
+    p_hi = {}
+    if event == "match_char":
+        p_hi[j] = COLORS["match"]
+    elif event == "mismatch":
+        p_hi[j] = COLORS["mismatch"]
+    elif event == "fallback":
+        p_hi[j] = COLORS["mismatch"]
+        if new_j < j:
+            p_hi[new_j] = COLORS["current"]
+    elif event == "match_found":
+        for k in range(m):
+            p_hi[k] = COLORS["match"]
+    draw_string_row(ax, 0.7, P, label="P", highlights=p_hi, offset=align)
+
+    j_display = j if event != "match_found" else m - 1
+    ax.annotate(f"j={j}", xy=(align + j_display + 0.45, 0.7),
+                xytext=(align + j_display + 0.45, 0.1),
+                fontsize=9, ha="center", color="#C62828", fontweight="bold",
+                arrowprops=dict(arrowstyle="->", color="#C62828", lw=1.5))
+
+    if event == "fallback" and new_j != j:
+        ax.annotate("",
+                     xy=(align + new_j + 0.45, 0.65),
+                     xytext=(align + j + 0.45, 0.65),
+                     arrowprops=dict(arrowstyle="-|>", color=COLORS["border"],
+                                     lw=2.5, connectionstyle="arc3,rad=-0.4"))
+        mid_x = align + (j + new_j) / 2 + 0.45
+        ax.text(mid_x, -0.6,
+                f"sp[{j-1}]={new_j}", ha="center", fontsize=10,
+                color=COLORS["border"], fontweight="bold",
+                bbox=dict(boxstyle="round,pad=0.2", facecolor="white",
+                          edgecolor=COLORS["border"], alpha=0.9))
+
+    if event == "fallback":
+        info = f"FALLBACK: j={j} -> j=sp[{j-1}]={new_j} (T[{i}]='{T[i]}' != P[{j}]='{P[j]}')"
+    elif event == "match_found":
+        info = f"FULL MATCH at position {align}! Then j -> sp[{m-1}]={new_j}"
+    elif event == "match_char":
+        info = f"MATCH: T[{i}]=P[{j}]='{T[i]}', j -> {j+1}"
+    else:
+        info = f"MISMATCH: T[{i}]='{T[i]}' != P[{j}]='{P[j]}', j stays 0"
+
+    ax.set_title(f"KMP step {step_idx+1}/{len(snapshots)} | comps={snap['total_comps']} | "
+                 f"matches={snap['matches']}\n{info}", fontsize=10, pad=8)
+
+    ax2 = fig.add_subplot(gs[1])
+    ax2.set_xlim(-2.0, m + 0.5)
+    ax2.set_ylim(-0.5, 2.5)
+    ax2.set_aspect("equal")
+    ax2.axis("off")
+    ax2.set_title("Failure function sp[] (longest proper border of P[0..j])",
+                  fontsize=10, pad=5, loc="left")
+
+    for idx in range(m):
+        ax2.text(idx + 0.45, 2.2, str(idx), ha="center", fontsize=8, color="#999")
+
+    draw_string_row(ax2, 1.2, P, label="P")
+
+    sp_used = snap.get("sp_used", None)
+    for idx in range(m):
+        if sp_used is not None and idx == sp_used:
+            color = COLORS["current"]
+        elif sp[idx] > 0:
+            color = "#E8D5F5"
+        else:
+            color = "#F5F5F5"
+        rect = mpatches.FancyBboxPatch(
+            (idx, 0.0), 0.9, 0.9,
+            boxstyle="round,pad=0.05",
+            facecolor=color, edgecolor="#555", linewidth=1.0)
+        ax2.add_patch(rect)
+        ax2.text(idx + 0.45, 0.45, str(sp[idx]),
+                 ha="center", va="center", fontsize=12, fontweight="bold")
+    ax2.text(-0.3, 0.45, "sp", ha="right", va="center", fontsize=11, color="#555")
+
+    if sp_used is not None and 0 <= sp_used < m and sp[sp_used] > 0:
+        blen = sp[sp_used]
+        ax2.plot([0.1, blen - 0.1], [-0.25, -0.25], color=COLORS["match"], lw=2.5)
+        ax2.text(blen / 2, -0.45, "prefix", ha="center", fontsize=8, color=COLORS["match"])
+        start = sp_used - blen + 2
+        ax2.plot([start - 0.1, sp_used + 0.9], [-0.25, -0.25], color=COLORS["skip"], lw=2.5)
+        ax2.text((start + sp_used + 1) / 2, -0.45, "border", ha="center", fontsize=8, color="#1565C0")
+
+    ax3 = fig.add_subplot(gs[2])
+    ax3.set_xlim(-0.5, len(snapshots))
+    ax3.set_ylim(-0.3, 1.2)
+    ax3.axis("off")
+    ax3.set_title("Timeline (green=match, red=mismatch, yellow=fallback, star=full match)",
+                  fontsize=9, pad=3, loc="left")
+
+    event_colors = {
+        "match_char": COLORS["match"],
+        "mismatch": COLORS["mismatch"],
+        "fallback": COLORS["current"],
+        "match_found": "#2E7D32",
+    }
+    for idx, sn in enumerate(snapshots):
+        c = event_colors.get(sn["event"], "#DDD")
+        alpha = 1.0 if idx <= step_idx else 0.25
+        marker = "*" if sn["event"] == "match_found" else "s"
+        size = 80 if sn["event"] == "match_found" else 30
+        ax3.scatter(idx, 0.5, c=c, s=size, marker=marker, alpha=alpha, edgecolors="#555", linewidth=0.5)
+        if idx == step_idx:
+            ax3.scatter(idx, 0.5, c="none", s=120, marker="o", edgecolors="#000", linewidth=2)
+
+    plt.tight_layout()
+    plt.show()
+```
+
+```{ojs}
+//| echo: false
+viewof T_kmp = Inputs.text({label: "T:", value: "abcaabcabcaab", width: 400})
+viewof P_kmp = Inputs.text({label: "P:", value: "abcab", width: 400})
+```
+
+```{pyodide}
+#| autorun: true
+#| edit: false
+#| output: false
+#| input: [T_kmp, P_kmp]
+#| define: [kmp_max_step]
+
+if T_kmp and P_kmp and len(P_kmp) <= len(T_kmp):
+    kmp_max_step = max(len(kmp_trace(T_kmp, P_kmp)) - 1, 0)
+else:
+    kmp_max_step = 0
+```
+
+```{ojs}
+//| echo: false
+viewof step_kmp = Inputs.range([0, kmp_max_step], {step: 1, value: 0, label: "Step:"})
+```
+
+```{pyodide}
+#| autorun: true
+#| edit: false
+#| input: [T_kmp, P_kmp, step_kmp]
+
+if T_kmp and P_kmp and len(P_kmp) <= len(T_kmp):
+    draw_kmp_step(T_kmp, P_kmp, int(step_kmp))
+```
+
+---
+
+## 3. Z-Algorithm
+
+Visualize the Z-array: `Z[k]` = length of the longest substring starting at `k` that matches a prefix of `S`.
+
+```{pyodide}
+#| autorun: true
+#| edit: false
+#| output: false
+
+def compute_z(S):
+    """Compute Z-array for string S."""
+    n = len(S)
+    Z = [0] * n
+    Z[0] = n
+    l, r = 0, 0
+    for k in range(1, n):
+        if k < r:
+            Z[k] = min(r - k, Z[k - l])
+        while k + Z[k] < n and S[Z[k]] == S[k + Z[k]]:
+            Z[k] += 1
+        if k + Z[k] > r:
+            l, r = k, k + Z[k]
+    return Z
+
+
+def z_trace(S):
+    """Step-by-step Z computation returning full state at each k."""
+    n = len(S)
+    Z = [0] * n
+    Z[0] = n
+    snapshots = []
+    l, r = 0, 0
+    for k in range(1, n):
+        init_from_zbox = False
+        init_val = 0
+        if k < r:
+            init_val = min(r - k, Z[k - l])
+            Z[k] = init_val
+            init_from_zbox = True
+
+        explicit_comps = 0
+        while k + Z[k] < n and S[Z[k]] == S[k + Z[k]]:
+            Z[k] += 1
+            explicit_comps += 1
+
+        old_l, old_r = l, r
+        if k + Z[k] > r:
+            l, r = k, k + Z[k]
+
+        snapshots.append({
+            "k": k, "Z": list(Z), "l": l, "r": r,
+            "old_l": old_l, "old_r": old_r,
+            "init_from_zbox": init_from_zbox,
+            "init_val": init_val,
+            "explicit_comps": explicit_comps,
+            "zbox_updated": (l != old_l or r != old_r),
+        })
+    return snapshots
+
+
+def draw_z_step(S, step_idx):
+    snapshots = z_trace(S)
+    if not snapshots:
+        return
+    step_idx = min(step_idx, len(snapshots) - 1)
+    snap = snapshots[step_idx]
+    n = len(S)
+    k = snap["k"]
+    Z = snap["Z"]
+    l, r = snap["l"], snap["r"]
+    zk = Z[k]
+
+    fig = plt.figure(figsize=(max(n * 0.8, 10), 7.5))
+    gs = fig.add_gridspec(3, 1, height_ratios=[4, 2.5, 2], hspace=0.35)
+
+    ax = fig.add_subplot(gs[0])
+    ax.set_xlim(-2.0, n + 1.0)
+    ax.set_ylim(-2.5, 4.0)
+    ax.set_aspect("equal")
+    ax.axis("off")
+
+    for i in range(n):
+        ax.text(i + 0.45, 3.3, str(i), ha="center", fontsize=8, color="#999")
+
+    s_hi = {}
+    if zk > 0:
+        for j in range(zk):
+            s_hi[j] = COLORS["match"]
+            s_hi[k + j] = COLORS["skip"]
+        s_hi[k] = COLORS["current"]
+    else:
+        s_hi[k] = COLORS["current"]
+    draw_string_row(ax, 2.0, S, label="S", highlights=s_hi)
+
+    ax.annotate(f"k={k}", xy=(k + 0.45, 2.0), xytext=(k + 0.45, 1.4),
+                fontsize=10, ha="center", color="#C62828", fontweight="bold",
+                arrowprops=dict(arrowstyle="->", color="#C62828", lw=1.5))
+
+    if r > 0:
+        box_y = 3.6
+        ax.plot([l, r - 0.1], [box_y, box_y], color=COLORS["border"], lw=3, solid_capstyle="round")
+        ax.plot([l, l], [box_y - 0.15, box_y + 0.15], color=COLORS["border"], lw=2)
+        ax.plot([r - 0.1, r - 0.1], [box_y - 0.15, box_y + 0.15], color=COLORS["border"], lw=2)
+        ax.text((l + r) / 2, box_y + 0.3, f"Z-box [l={l}, r={r})",
+                ha="center", fontsize=9, color=COLORS["border"], fontweight="bold")
+
+    if zk > 0:
+        ax.annotate("", xy=(k, -0.3), xytext=(k + zk - 0.1, -0.3),
+                     arrowprops=dict(arrowstyle="<->", color="#1565C0", lw=2))
+        ax.text(k + zk / 2, -0.7, f"Z[{k}]={zk}", ha="center",
+                fontsize=11, color="#1565C0", fontweight="bold")
+        ax.annotate("", xy=(0, -0.3), xytext=(zk - 0.1, -0.3),
+                     arrowprops=dict(arrowstyle="<->", color=COLORS["match"], lw=1.5))
+        ax.text(zk / 2, -0.7, f"prefix[0..{zk-1}]", ha="center",
+                fontsize=9, color=COLORS["match"])
+
+    parts = []
+    if snap["init_from_zbox"]:
+        parts.append(f"Z-box reuse: Z[{k}-{l}]=Z[{k-l}]={Z[k-l]}, "
+                     f"min({snap['old_r']}-{k}, Z[{k-l}])={snap['init_val']}")
+    if snap["explicit_comps"] > 0:
+        parts.append(f"explicit comparisons: {snap['explicit_comps']}")
+    if snap["zbox_updated"]:
+        parts.append(f"Z-box updated: [{snap['old_l']},{snap['old_r']}) -> [{l},{r})")
+    info = " | ".join(parts) if parts else f"Z[{k}]=0, no prefix match"
+
+    ax.set_title(f"Z-Algorithm step {step_idx+1}/{len(snapshots)} | k={k} | Z[{k}]={zk}\n{info}",
+                 fontsize=10, pad=8)
+
+    ax2 = fig.add_subplot(gs[1])
+    ax2.set_xlim(-2.0, n + 0.5)
+    ax2.set_ylim(-0.3, 2.2)
+    ax2.set_aspect("equal")
+    ax2.axis("off")
+    ax2.set_title("Z-array (computed so far)", fontsize=10, pad=3, loc="left")
+
+    for i in range(n):
+        computed = i == 0 or i <= k
+        if i == k:
+            color = COLORS["current"]
+        elif computed and Z[i] > 0:
+            color = "#E8F5E9"
+        elif computed:
+            color = "#FAFAFA"
+        else:
+            color = "#F0F0F0"
+        rect = mpatches.FancyBboxPatch(
+            (i, 0.3), 0.9, 0.9, boxstyle="round,pad=0.05",
+            facecolor=color, edgecolor="#555" if computed else "#CCC",
+            linewidth=1.0 if computed else 0.5)
+        ax2.add_patch(rect)
+        val = str(Z[i]) if computed else "?"
+        ax2.text(i + 0.45, 0.75, val, ha="center", va="center", fontsize=11,
+                 fontweight="bold" if computed else "normal",
+                 color="#333" if computed else "#BBB")
+        ax2.text(i + 0.45, 0.05, str(i), ha="center", fontsize=7, color="#999")
+        ax2.text(i + 0.45, 1.55, S[i], ha="center", fontsize=10, fontfamily="monospace", color="#555")
+    ax2.text(-0.3, 0.75, "Z", ha="right", va="center", fontsize=11, color="#555")
+    ax2.text(-0.3, 1.55, "S", ha="right", va="center", fontsize=11, color="#555")
+
+    ax3 = fig.add_subplot(gs[2])
+    positions = list(range(n))
+    values = [Z[i] if i <= k else 0 for i in range(n)]
+    colors_bar = [COLORS["current"] if i == k else (COLORS["skip"] if i <= k and Z[i] > 0 else "#E0E0E0") for i in range(n)]
+    ax3.bar(positions, values, color=colors_bar, edgecolor="#777", width=0.7)
+    ax3.set_ylabel("Z[k]", fontsize=9)
+    ax3.set_xticks(positions)
+    ax3.set_xticklabels([str(i) for i in positions], fontsize=7)
+    ax3.set_title("Z-values bar chart", fontsize=9, loc="left")
+
+    plt.tight_layout()
+    plt.show()
+```
+
+```{ojs}
+//| echo: false
+viewof S_z = Inputs.text({label: "S:", value: "aabxaabxcaabxaabxay", width: 500})
+```
+
+```{pyodide}
+#| autorun: true
+#| edit: false
+#| output: false
+#| input: [S_z]
+#| define: [z_max_step]
+
+if S_z and len(S_z) >= 2:
+    z_max_step = max(len(z_trace(S_z)) - 1, 0)
+else:
+    z_max_step = 0
+```
+
+```{ojs}
+//| echo: false
+viewof step_z = Inputs.range([0, z_max_step], {step: 1, value: 0, label: "Step:"})
+```
+
+```{pyodide}
+#| autorun: true
+#| edit: false
+#| input: [S_z, step_z]
+
+if S_z and len(S_z) >= 2:
+    draw_z_step(S_z, int(step_z))
+```
+
+---
+
+## 4. Boyer-Moore — Bad Character Rule
+
+Step through the Boyer-Moore search. The algorithm scans the pattern **right-to-left** and uses the bad character rule to skip alignments.
+
+```{pyodide}
+#| autorun: true
+#| edit: false
+#| output: false
+
+def bm_bad_char_table(P):
+    """Last occurrence of each character in P (R function)."""
+    R = {}
+    for i, c in enumerate(P):
+        R[c] = i
+    return R
+
+
+def bm_trace(T, P):
+    """Boyer-Moore (bad character rule) returning detailed snapshots."""
+    n, m = len(T), len(P)
+    R = bm_bad_char_table(P)
+    snapshots = []
+    s = 0
+    total_comps = 0
+    matches = []
+    while s <= n - m:
+        comps = []
+        j = m - 1
+        while j >= 0 and P[j] == T[s + j]:
+            comps.append((j, True))
+            total_comps += 1
+            j -= 1
+        if j < 0:
+            comps = [(k, True) for k in range(m - 1, -1, -1)]
+            matches.append(s)
+            snapshots.append({
+                "s": s, "comps": comps, "event": "match_found", "shift": 1,
+                "bad_char": None, "bad_pos": None, "j_mismatch": None,
+                "total_comps": total_comps, "matches": list(matches),
+            })
+            s += 1
+        else:
+            total_comps += 1
+            comps.append((j, False))
+            bad_char = T[s + j]
+            bad_pos = R.get(bad_char, -1)
+            shift = max(1, j - bad_pos)
+            snapshots.append({
+                "s": s, "comps": comps, "event": "mismatch", "shift": shift,
+                "bad_char": bad_char, "bad_pos": bad_pos, "j_mismatch": j,
+                "total_comps": total_comps, "matches": list(matches),
+            })
+            s += shift
+    return snapshots
+
+
+def draw_bm_step(T, P, step_idx):
+    R = bm_bad_char_table(P)
+    snapshots = bm_trace(T, P)
+    if not snapshots:
+        return
+    step_idx = min(step_idx, len(snapshots) - 1)
+    snap = snapshots[step_idx]
+    n, m = len(T), len(P)
+    s = snap["s"]
+    comps = snap["comps"]
+
+    fig = plt.figure(figsize=(max(n * 0.85, 10), 8.0))
+    gs = fig.add_gridspec(3, 1, height_ratios=[4, 2.5, 2], hspace=0.35)
+
+    ax = fig.add_subplot(gs[0])
+    ax.set_xlim(-2.5, n + 2.0)
+    ax.set_ylim(-1.5, 3.5)
+    ax.set_aspect("equal")
+    ax.axis("off")
+
+    for idx in range(n):
+        ax.text(idx + 0.45, 3.0, str(idx), ha="center", fontsize=8, color="#999")
+
+    t_hi = {}
+    for j, matched in comps:
+        t_hi[s + j] = COLORS["match"] if matched else COLORS["mismatch"]
+    draw_string_row(ax, 1.8, T, label="T", highlights=t_hi)
+
+    p_hi = {}
+    for j, matched in comps:
+        p_hi[j] = COLORS["match"] if matched else COLORS["mismatch"]
+    draw_string_row(ax, 0.5, P, label="P", highlights=p_hi, offset=s)
+
+    ax.annotate("", xy=(s + 0.3, 0.1), xytext=(s + m - 0.4, 0.1),
+                arrowprops=dict(arrowstyle="<-", color="#999", lw=1.5, ls="--"))
+    ax.text(s + m / 2, -0.25, "scan: right to left", ha="center", fontsize=8, color="#999")
+
+    for order, (j, matched) in enumerate(comps):
+        ax.text(s + j + 0.45, 0.5 - 0.15, str(order + 1), ha="center",
+                fontsize=7, color="#999", style="italic")
+
+    if snap["event"] == "mismatch":
+        shift = snap["shift"]
+        ax.annotate("", xy=(s + shift + m / 2, -0.7), xytext=(s + m / 2, -0.7),
+                     arrowprops=dict(arrowstyle="->", color=COLORS["border"], lw=2.5))
+        ax.text(s + m / 2 + shift / 2, -1.1, f"shift by {shift}",
+                ha="center", fontsize=10, color=COLORS["border"], fontweight="bold")
+
+    if snap["event"] == "match_found":
+        info = f"FULL MATCH at position {s}"
+    else:
+        j_mm = snap["j_mismatch"]
+        bc = snap["bad_char"]
+        bp = snap["bad_pos"]
+        info = (f"Mismatch at j={j_mm}: T[{s+j_mm}]='{bc}' != P[{j_mm}]='{P[j_mm]}' | "
+                f"R('{bc}')={bp} | shift=max(1, {j_mm}-{bp})={snap['shift']}")
+
+    ax.set_title(f"Boyer-Moore step {step_idx+1}/{len(snapshots)} | s={s} | "
+                 f"comps={snap['total_comps']} | matches={snap['matches']}\n{info}",
+                 fontsize=10, pad=8)
+
+    ax2 = fig.add_subplot(gs[1])
+    ax2.axis("off")
+    ax2.set_title("Bad Character Table R(c) = rightmost position of c in P",
+                  fontsize=10, pad=5, loc="left")
+
+    all_chars = sorted(set(T + P))
+    nc = len(all_chars)
+    ax2.set_xlim(-0.5, nc + 0.5)
+    ax2.set_ylim(-0.5, 2.5)
+    ax2.set_aspect("equal")
+
+    for idx, c in enumerate(all_chars):
+        val = R.get(c, -1)
+        if snap["event"] == "mismatch" and c == snap["bad_char"]:
+            color = COLORS["mismatch"]
+        elif val >= 0:
+            color = "#E8F5E9"
+        else:
+            color = "#F5F5F5"
+        rect = mpatches.FancyBboxPatch(
+            (idx, 1.2), 0.9, 0.9, boxstyle="round,pad=0.05",
+            facecolor="#FAFAFA", edgecolor="#555", linewidth=1.0)
+        ax2.add_patch(rect)
+        ax2.text(idx + 0.45, 1.65, f"'{c}'", ha="center", va="center",
+                 fontsize=11, fontfamily="monospace")
+        rect2 = mpatches.FancyBboxPatch(
+            (idx, 0.0), 0.9, 0.9, boxstyle="round,pad=0.05",
+            facecolor=color, edgecolor="#555", linewidth=1.0)
+        ax2.add_patch(rect2)
+        ax2.text(idx + 0.45, 0.45, str(val), ha="center", va="center",
+                 fontsize=12, fontweight="bold")
+    ax2.text(-0.3, 1.65, "c", ha="right", va="center", fontsize=11, color="#555")
+    ax2.text(-0.3, 0.45, "R(c)", ha="right", va="center", fontsize=11, color="#555")
+
+    ax3 = fig.add_subplot(gs[2])
+    ax3.set_xlim(-0.5, len(snapshots))
+    ax3.set_ylim(-0.5, 1.5)
+    ax3.axis("off")
+    ax3.set_title("Alignments tried (number = comparisons, green = match found)",
+                  fontsize=9, pad=3, loc="left")
+
+    for idx, sn in enumerate(snapshots):
+        if sn["event"] == "match_found":
+            color = COLORS["match"]
+        elif idx <= step_idx:
+            color = COLORS["mismatch"]
+        else:
+            color = "#F0F0F0"
+        edgecolor = "#000" if idx == step_idx else "#999"
+        lw = 2.5 if idx == step_idx else 0.8
+        rect = mpatches.FancyBboxPatch(
+            (idx, 0.3), 0.8, 0.8, boxstyle="round,pad=0.03",
+            facecolor=color, edgecolor=edgecolor, linewidth=lw)
+        ax3.add_patch(rect)
+        ax3.text(idx + 0.4, 0.7, str(len(sn["comps"])),
+                 ha="center", va="center", fontsize=8, fontweight="bold")
+        ax3.text(idx + 0.4, 0.05, f"s={sn['s']}", ha="center", fontsize=7, color="#777")
+
+    plt.tight_layout()
+    plt.show()
+```
+
+```{ojs}
+//| echo: false
+viewof T_bm = Inputs.text({label: "T:", value: "abcaabcabcaab", width: 400})
+viewof P_bm = Inputs.text({label: "P:", value: "abcab", width: 400})
+```
+
+```{pyodide}
+#| autorun: true
+#| edit: false
+#| output: false
+#| input: [T_bm, P_bm]
+#| define: [bm_max_step]
+
+if T_bm and P_bm and len(P_bm) <= len(T_bm):
+    bm_max_step = max(len(bm_trace(T_bm, P_bm)) - 1, 0)
+else:
+    bm_max_step = 0
+```
+
+```{ojs}
+//| echo: false
+viewof step_bm = Inputs.range([0, bm_max_step], {step: 1, value: 0, label: "Step:"})
+```
+
+```{pyodide}
+#| autorun: true
+#| edit: false
+#| input: [T_bm, P_bm, step_bm]
+
+if T_bm and P_bm and len(P_bm) <= len(T_bm):
+    draw_bm_step(T_bm, P_bm, int(step_bm))
+```
+
+---
+
+## 5. Suffix Trie & Suffix Tree
+
+Build and visualize the suffix trie and its compacted suffix tree for any input string.
+
+```{pyodide}
+#| autorun: true
+#| edit: false
+#| output: false
+
+import networkx as nx
+
+
+def hierarchy_pos(G, root="root", width=2.0, vert_gap=1.0):
+    """Position nodes in a top-down tree layout (pure Python, no graphviz)."""
+    def _subtree_width(node):
+        children = list(G.successors(node))
+        if not children:
+            return 1
+        return sum(_subtree_width(c) for c in children)
+
+    def _assign(node, left, right, depth, pos):
+        pos[node] = ((left + right) / 2, -depth * vert_gap)
+        children = sorted(G.successors(node))
+        if not children:
+            return
+        total_w = sum(_subtree_width(c) for c in children)
+        x = left
+        for child in children:
+            w = _subtree_width(child)
+            child_right = x + (right - left) * w / total_w
+            _assign(child, x, child_right, depth + 1, pos)
+            x = child_right
+
+    pos = {}
+    _assign(root, 0, width, 0, pos)
+    return pos
+
+
+def build_suffix_trie_graph(T):
+    """Build a suffix trie as a networkx DiGraph."""
+    G = nx.DiGraph()
+    G.add_node("root", label="root")
+    node_id = 0
+    for i in range(len(T)):
+        cur = "root"
+        for j in range(i, len(T)):
+            ch = T[j]
+            nxt = None
+            for _, neighbor, data in G.out_edges(cur, data=True):
+                if data["label"] == ch:
+                    nxt = neighbor
+                    break
+            if nxt is None:
+                node_id += 1
+                name = f"n{node_id}"
+                is_leaf = j == len(T) - 1
+                G.add_node(name, label=str(i) if is_leaf else "")
+                G.add_edge(cur, name, label=ch)
+                cur = name
+            else:
+                cur = nxt
+    return G
+
+
+def build_suffix_tree_graph(T):
+    """Build a compacted suffix tree as a networkx DiGraph."""
+    class Node:
+        _id = 0
+        def __init__(self):
+            Node._id += 1
+            self.id = Node._id
+            self.children = {}
+            self.suffix_start = None
+
+    Node._id = 0
+    root = Node()
+    for i in range(len(T)):
+        cur = root
+        j = i
+        while j < len(T):
+            ch = T[j]
+            if ch in cur.children:
+                label, child = cur.children[ch]
+                k = 0
+                while k < len(label) and j + k < len(T) and label[k] == T[j + k]:
+                    k += 1
+                if k == len(label):
+                    cur = child
+                    j += k
+                else:
+                    mid = Node()
+                    mid.children[label[k]] = (label[k:], child)
+                    new_leaf = Node()
+                    new_leaf.suffix_start = i
+                    mid.children[T[j + k]] = (T[j + k:], new_leaf)
+                    cur.children[ch] = (label[:k], mid)
+                    break
+            else:
+                new_leaf = Node()
+                new_leaf.suffix_start = i
+                cur.children[ch] = (T[j:], new_leaf)
+                break
+        else:
+            cur.suffix_start = i
+
+    G = nx.DiGraph()
+
+    def add_nodes(node, name="root"):
+        is_leaf = len(node.children) == 0
+        lbl = str(node.suffix_start) if is_leaf and node.suffix_start is not None else ""
+        G.add_node(name, label=lbl, is_leaf=is_leaf)
+        for ch in sorted(node.children):
+            edge_label, child = node.children[ch]
+            child_name = f"n{child.id}"
+            add_nodes(child, child_name)
+            G.add_edge(name, child_name, label=edge_label)
+
+    add_nodes(root)
+    return G
+
+
+def draw_tree_graph(G, title=""):
+    """Draw a tree graph with edge labels."""
+    if len(G.nodes) > 80:
+        print("String too long for visualization (max ~8 chars).")
+        return
+
+    fig, ax = plt.subplots(figsize=(max(len(G.nodes) * 0.8, 6), max(len(G.nodes) * 0.5, 4)))
+
+    pos = hierarchy_pos(G, root="root", width=max(len(G.nodes) * 0.3, 2.0))
+
+    leaves = [n for n in G.nodes if G.nodes[n].get("is_leaf", False) or G.out_degree(n) == 0]
+    internals = [n for n in G.nodes if n not in leaves]
+
+    nx.draw_networkx_nodes(G, pos, nodelist=internals, ax=ax,
+                           node_color="#BBDEFB", node_size=350, edgecolors="#555")
+    nx.draw_networkx_nodes(G, pos, nodelist=leaves, ax=ax,
+                           node_color="#C8E6C9", node_size=350, edgecolors="#555",
+                           linewidths=2.0)
+
+    node_labels = {n: G.nodes[n].get("label", "") for n in G.nodes}
+    nx.draw_networkx_labels(G, pos, labels=node_labels, ax=ax, font_size=10, font_weight="bold")
+
+    nx.draw_networkx_edges(G, pos, ax=ax, edge_color="#777",
+                           arrows=True, arrowsize=12, width=1.5)
+
+    edge_labels = {(u, v): d["label"] for u, v, d in G.edges(data=True)}
+    nx.draw_networkx_edge_labels(G, pos, edge_labels=edge_labels, ax=ax,
+                                  font_size=11, font_color="#9C27B0", font_family="monospace")
+
+    ax.set_title(title, fontsize=13, pad=12)
+    ax.axis("off")
+    plt.tight_layout()
+    plt.show()
+```
+
+```{ojs}
+//| echo: false
+viewof T_tree = Inputs.text({label: "T:", value: "cacao$", width: 300})
+viewof tree_view = Inputs.radio(["Suffix Trie", "Suffix Tree"], {value: "Suffix Trie", label: "View:"})
+```
+
+```{pyodide}
+#| autorun: true
+#| edit: false
+#| input: [T_tree, tree_view]
+
+if T_tree and len(T_tree) <= 10:
+    if tree_view == "Suffix Trie":
+        G = build_suffix_trie_graph(T_tree)
+        draw_tree_graph(G, title=f'Suffix Trie of "{T_tree}"')
+    else:
+        G = build_suffix_tree_graph(T_tree)
+        draw_tree_graph(G, title=f'Suffix Tree of "{T_tree}"')
+else:
+    print("Keep |T| <= 10 for readable visualization.")
+```
+
+---
+
+## 6. Algorithm Comparison
+
+Run all algorithms on the same input and compare the number of character comparisons.
+
+```{pyodide}
+#| autorun: true
+#| edit: false
+#| output: false
+
+def count_naive(T, P):
+    count = 0
+    for s in range(len(T) - len(P) + 1):
+        for j in range(len(P)):
+            count += 1
+            if T[s + j] != P[j]:
+                break
+    return count
+
+
+def count_kmp(T, P):
+    sp = compute_sp(P)
+    count = 0
+    j = 0
+    for i in range(len(T)):
+        while j > 0 and T[i] != P[j]:
+            count += 1
+            j = sp[j - 1]
+        count += 1
+        if T[i] == P[j]:
+            j += 1
+            if j == len(P):
+                j = sp[j - 1]
+    return count
+
+
+def count_bm(T, P):
+    n, m = len(T), len(P)
+    R = bm_bad_char_table(P)
+    count = 0
+    s = 0
+    while s <= n - m:
+        j = m - 1
+        while j >= 0:
+            count += 1
+            if P[j] != T[s + j]:
+                break
+            j -= 1
+        if j < 0:
+            s += 1
+        else:
+            bad = R.get(T[s + j], -1)
+            s += max(1, j - bad)
+    return count
+
+
+def draw_comparison(T, P):
+    naive_c = count_naive(T, P)
+    kmp_c = count_kmp(T, P)
+    bm_c = count_bm(T, P)
+
+    algos = ["Naive", "KMP", "Boyer-Moore"]
+    counts = [naive_c, kmp_c, bm_c]
+    colors = ["#EF9A9A", "#90CAF9", "#A5D6A7"]
+
+    fig, ax = plt.subplots(figsize=(7, 3.5))
+    bars = ax.barh(algos, counts, color=colors, edgecolor="#555", height=0.55)
+    for bar, c in zip(bars, counts):
+        ax.text(bar.get_width() + 0.5, bar.get_y() + bar.get_height() / 2,
+                str(c), va="center", fontsize=13, fontweight="bold")
+
+    ax.set_xlabel("Character comparisons", fontsize=12)
+    ax.set_title(f'T = "{T}"   P = "{P}"   |T|={len(T)}  |P|={len(P)}', fontsize=12)
+    ax.set_xlim(0, max(counts) * 1.2)
+    plt.tight_layout()
+    plt.show()
+```
+
+```{ojs}
+//| echo: false
+viewof T_cmp = Inputs.text({label: "T:", value: "abcaabcabcaab", width: 500})
+viewof P_cmp = Inputs.text({label: "P:", value: "abcab", width: 500})
+```
+
+```{pyodide}
+#| autorun: true
+#| edit: false
+#| input: [T_cmp, P_cmp]
+
+if T_cmp and P_cmp and len(P_cmp) <= len(T_cmp):
+    draw_comparison(T_cmp, P_cmp)
+```

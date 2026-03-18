@@ -1,0 +1,18 @@
+project:
+  type: website
+  output-dir: _site
+
+website:
+  title: "Advanced Algorithms — UniUD"
+  navbar:
+    left:
+      - text: "Home"
+        href: index.qmd
+      - text: "String Matching"
+        href: notebooks/01-string-matching.qmd
+
+format:
+  html:
+    theme: cosmo
+    toc: true
+    toc-depth: 3

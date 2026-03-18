@@ -1,0 +1,11 @@
+---
+title: "Advanced Algorithms — Interactive Companions"
+---
+
+Interactive visualizations for the **Advanced Algorithms** course at the University of Udine.
+
+Each notebook lets you step through classic algorithms with sliders and custom inputs — all running directly in your browser via [Pyodide](https://pyodide.org), no installation required.
+
+## Notebooks
+
+- [**String Matching**](notebooks/01-string-matching.qmd) — Naive, KMP, Z-Algorithm, Boyer-Moore, Suffix Trie & Tree
