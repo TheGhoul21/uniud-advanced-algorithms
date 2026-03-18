@@ -1,12 +1,5 @@
 [
   {
-    "objectID": "notebooks/01-string-matching.html",
-    "href": "notebooks/01-string-matching.html",
-    "title": "String Matching — Interactive Companion",
-    "section": "",
-    "text": "All visualizations run directly in your browser via Pyodide — no installation needed. Use the inputs and sliders to explore each algorithm step by step."
-  },
-  {
     "objectID": "notebooks/01-string-matching.html#naive-string-matching",
     "href": "notebooks/01-string-matching.html#naive-string-matching",
     "title": "String Matching — Interactive Companion",
