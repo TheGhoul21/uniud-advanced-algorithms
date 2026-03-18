@@ -1,0 +1,65 @@
+[
+  {
+    "objectID": "notebooks/01-string-matching.html",
+    "href": "notebooks/01-string-matching.html",
+    "title": "String Matching — Interactive Companion",
+    "section": "",
+    "text": "All visualizations run directly in your browser via Pyodide — no installation needed. Use the inputs and sliders to explore each algorithm step by step."
+  },
+  {
+    "objectID": "notebooks/01-string-matching.html#naive-string-matching",
+    "href": "notebooks/01-string-matching.html#naive-string-matching",
+    "title": "String Matching — Interactive Companion",
+    "section": "1. Naive String Matching",
+    "text": "1. Naive String Matching\nSlide through every alignment of P against T and see which characters match.\n\n\n\n\n\n\n\n\n\nviewof T_naive = Inputs.text({label: \"T:\", value: \"abcaabcabcaab\", width: 400})\nviewof P_naive = Inputs.text({label: \"P:\", value: \"abcab\", width: 400})\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nviewof step_naive = Inputs.range([0, naive_max_step], {step: 1, value: 0, label: \"Step:\"})"
+  },
+  {
+    "objectID": "notebooks/01-string-matching.html#kmp-failure-function-sp-values-search",
+    "href": "notebooks/01-string-matching.html#kmp-failure-function-sp-values-search",
+    "title": "String Matching — Interactive Companion",
+    "section": "2. KMP — Failure Function (sp values) & Search",
+    "text": "2. KMP — Failure Function (sp values) & Search\nVisualize the sp (border) array computation and then step through the KMP search showing how mismatches use the failure function to skip alignments.\n\n\n\n\n\n\n\n\n\nFailure Function Table\n\nviewof P_sp = Inputs.text({label: \"P:\", value: \"abcabcab\", width: 400})\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nKMP Search — Step by Step\nWatch how KMP uses the failure function to avoid re-scanning characters. The arrow shows where j falls back to on a mismatch.\n\n\n\n\n\n\n\n\n\nviewof T_kmp = Inputs.text({label: \"T:\", value: \"abcaabcabcaab\", width: 400})\nviewof P_kmp = Inputs.text({label: \"P:\", value: \"abcab\", width: 400})\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nviewof step_kmp = Inputs.range([0, kmp_max_step], {step: 1, value: 0, label: \"Step:\"})"
+  },
+  {
+    "objectID": "notebooks/01-string-matching.html#z-algorithm",
+    "href": "notebooks/01-string-matching.html#z-algorithm",
+    "title": "String Matching — Interactive Companion",
+    "section": "3. Z-Algorithm",
+    "text": "3. Z-Algorithm\nVisualize the Z-array: Z[k] = length of the longest substring starting at k that matches a prefix of S.\n\n\n\n\n\n\n\n\n\nviewof S_z = Inputs.text({label: \"S:\", value: \"aabxaabxcaabxaabxay\", width: 500})\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nviewof step_z = Inputs.range([0, z_max_step], {step: 1, value: 0, label: \"Step:\"})"
+  },
+  {
+    "objectID": "notebooks/01-string-matching.html#boyer-moore-bad-character-rule",
+    "href": "notebooks/01-string-matching.html#boyer-moore-bad-character-rule",
+    "title": "String Matching — Interactive Companion",
+    "section": "4. Boyer-Moore — Bad Character Rule",
+    "text": "4. Boyer-Moore — Bad Character Rule\nStep through the Boyer-Moore search. The algorithm scans the pattern right-to-left and uses the bad character rule to skip alignments.\n\n\n\n\n\n\n\n\n\nviewof T_bm = Inputs.text({label: \"T:\", value: \"abcaabcabcaab\", width: 400})\nviewof P_bm = Inputs.text({label: \"P:\", value: \"abcab\", width: 400})\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nviewof step_bm = Inputs.range([0, bm_max_step], {step: 1, value: 0, label: \"Step:\"})"
+  },
+  {
+    "objectID": "notebooks/01-string-matching.html#suffix-trie-suffix-tree",
+    "href": "notebooks/01-string-matching.html#suffix-trie-suffix-tree",
+    "title": "String Matching — Interactive Companion",
+    "section": "5. Suffix Trie & Suffix Tree",
+    "text": "5. Suffix Trie & Suffix Tree\nBuild and visualize the suffix trie and its compacted suffix tree for any input string.\n\n\n\n\n\n\n\n\n\nviewof T_tree = Inputs.text({label: \"T:\", value: \"cacao$\", width: 300})\nviewof tree_view = Inputs.radio([\"Suffix Trie\", \"Suffix Tree\"], {value: \"Suffix Trie\", label: \"View:\"})"
+  },
+  {
+    "objectID": "notebooks/01-string-matching.html#algorithm-comparison",
+    "href": "notebooks/01-string-matching.html#algorithm-comparison",
+    "title": "String Matching — Interactive Companion",
+    "section": "6. Algorithm Comparison",
+    "text": "6. Algorithm Comparison\nRun all algorithms on the same input and compare the number of character comparisons.\n\n\n\n\n\n\n\n\n\nviewof T_cmp = Inputs.text({label: \"T:\", value: \"abcaabcabcaab\", width: 500})\nviewof P_cmp = Inputs.text({label: \"P:\", value: \"abcab\", width: 500})"
+  },
+  {
+    "objectID": "index.html",
+    "href": "index.html",
+    "title": "Advanced Algorithms — Interactive Companions",
+    "section": "",
+    "text": "Interactive visualizations for the Advanced Algorithms course at the University of Udine.\nEach notebook lets you step through classic algorithms with sliders and custom inputs — all running directly in your browser via Pyodide, no installation required."
+  },
+  {
+    "objectID": "index.html#notebooks",
+    "href": "index.html#notebooks",
+    "title": "Advanced Algorithms — Interactive Companions",
+    "section": "Notebooks",
+    "text": "Notebooks\n\nString Matching — Naive, KMP, Z-Algorithm, Boyer-Moore, Suffix Trie & Tree"
+  }
+]
