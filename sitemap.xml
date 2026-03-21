@@ -1,11 +1,39 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
+    <loc>https://TheGhoul21.github.io/uniud-advanced-algorithms/notebooks/04-boyer-moore.html</loc>
+    <lastmod>2026-03-21T07:56:23.825Z</lastmod>
+  </url>
+  <url>
     <loc>https://TheGhoul21.github.io/uniud-advanced-algorithms/notebooks/01-string-matching.html</loc>
-    <lastmod>2026-03-18T13:04:27.295Z</lastmod>
+    <lastmod>2026-03-21T07:56:23.822Z</lastmod>
+  </url>
+  <url>
+    <loc>https://TheGhoul21.github.io/uniud-advanced-algorithms/notebooks/03-z-algorithm.html</loc>
+    <lastmod>2026-03-21T07:56:23.824Z</lastmod>
+  </url>
+  <url>
+    <loc>https://TheGhoul21.github.io/uniud-advanced-algorithms/notebooks/06-algorithm-comparison.html</loc>
+    <lastmod>2026-03-21T07:56:23.828Z</lastmod>
   </url>
   <url>
     <loc>https://TheGhoul21.github.io/uniud-advanced-algorithms/index.html</loc>
-    <lastmod>2026-03-18T13:04:27.287Z</lastmod>
+    <lastmod>2026-03-21T07:56:23.813Z</lastmod>
+  </url>
+  <url>
+    <loc>https://TheGhoul21.github.io/uniud-advanced-algorithms/notebooks/01-naive.html</loc>
+    <lastmod>2026-03-21T07:56:23.822Z</lastmod>
+  </url>
+  <url>
+    <loc>https://TheGhoul21.github.io/uniud-advanced-algorithms/notebooks/02-kmp.html</loc>
+    <lastmod>2026-03-21T07:56:23.823Z</lastmod>
+  </url>
+  <url>
+    <loc>https://TheGhoul21.github.io/uniud-advanced-algorithms/notebooks/07-keyword-tree.html</loc>
+    <lastmod>2026-03-21T07:56:23.832Z</lastmod>
+  </url>
+  <url>
+    <loc>https://TheGhoul21.github.io/uniud-advanced-algorithms/notebooks/05-suffix-structures.html</loc>
+    <lastmod>2026-03-21T07:56:23.827Z</lastmod>
   </url>
 </urlset>
