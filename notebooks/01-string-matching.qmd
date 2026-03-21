@@ -1223,3 +1223,381 @@ viewof P_cmp = Inputs.text({label: "P:", value: "abcab", width: 500})
 if T_cmp and P_cmp and len(P_cmp) <= len(T_cmp):
     draw_comparison(T_cmp, P_cmp)
 ```
+
+---
+
+## 7. Keyword Tree — Multiple Pattern Matching
+
+### 7a. Building the Keyword Tree
+
+Enter a comma-separated list of patterns and see the resulting keyword tree.
+The stats panel shows size (number of edges), height (longest pattern),
+and maximum fan-out.
+
+```{pyodide}
+#| autorun: true
+#| edit: false
+#| output: false
+
+def build_keyword_tree(patterns):
+    """Build a keyword tree as a networkx DiGraph from a list of patterns."""
+    G = nx.DiGraph()
+    G.add_node("root", label="", depth=0)
+    for idx, P in enumerate(patterns):
+        cur = "root"
+        for j, ch in enumerate(P):
+            # Check if edge with this label already exists
+            nxt = None
+            for _, neighbor, data in G.out_edges(cur, data=True):
+                if data["label"] == ch:
+                    nxt = neighbor
+                    break
+            if nxt is None:
+                name = f"{cur}_{ch}"
+                # Avoid collisions by appending index if needed
+                while name in G.nodes:
+                    name = name + "'"
+                is_leaf = (j == len(P) - 1)
+                node_label = P if is_leaf else ""
+                G.add_node(name, label=node_label, is_leaf=is_leaf,
+                           depth=j + 1, pattern=P if is_leaf else "")
+                G.add_edge(cur, name, label=ch)
+                cur = name
+            else:
+                cur = nxt
+                # If this is the last character, mark as leaf too
+                if j == len(P) - 1:
+                    G.nodes[cur]["is_leaf"] = True
+                    G.nodes[cur]["label"] = P
+                    G.nodes[cur]["pattern"] = P
+    return G
+
+
+def draw_keyword_tree(G, patterns, title=""):
+    """Draw keyword tree with stats panel."""
+    n_edges = G.number_of_edges()
+    depths = [G.nodes[n].get("depth", 0) for n in G.nodes]
+    height = max(depths) if depths else 0
+    fan_outs = [G.out_degree(n) for n in G.nodes]
+    max_fan = max(fan_outs) if fan_outs else 0
+
+    fig, (ax, ax_stats) = plt.subplots(
+        1, 2, figsize=(max(len(G.nodes) * 0.7, 8), max(height * 1.1, 4)),
+        gridspec_kw={"width_ratios": [3, 1]})
+
+    # Draw tree
+    pos = hierarchy_pos(G, root="root", width=max(len(G.nodes) * 0.3, 2.0))
+
+    leaves = [n for n in G.nodes if G.nodes[n].get("is_leaf", False)]
+    internals = [n for n in G.nodes if n not in leaves]
+
+    nx.draw_networkx_nodes(G, pos, nodelist=internals, ax=ax,
+                           node_color="#BBDEFB", node_size=400, edgecolors="#555")
+    nx.draw_networkx_nodes(G, pos, nodelist=leaves, ax=ax,
+                           node_color="#FFCC80", node_size=400, edgecolors="#E65100",
+                           linewidths=2.0)
+
+    nx.draw_networkx_edges(G, pos, ax=ax, edge_color="#777",
+                           arrows=True, arrowsize=12, width=1.5)
+
+    edge_labels = {(u, v): d["label"] for u, v, d in G.edges(data=True)}
+    nx.draw_networkx_edge_labels(G, pos, edge_labels=edge_labels, ax=ax,
+                                  font_size=12, font_color="#9C27B0",
+                                  font_family="monospace")
+
+    # Leaf labels (pattern names below leaves)
+    for n in leaves:
+        x, y = pos[n]
+        pat = G.nodes[n].get("pattern", "")
+        if pat:
+            ax.text(x, y - 0.35, pat, ha="center", va="top",
+                    fontsize=9, fontstyle="italic", color="#E65100",
+                    fontfamily="monospace")
+
+    # Root label
+    rx, ry = pos["root"]
+    ax.text(rx, ry + 0.3, "root", ha="center", va="bottom",
+            fontsize=9, color="#999")
+
+    ax.set_title(title or "Keyword Tree", fontsize=13, pad=12)
+    ax.axis("off")
+
+    # Stats panel
+    ax_stats.axis("off")
+    stats_text = (
+        f"Patterns:  {len(patterns)}\n\n"
+        f"Size (edges):  {n_edges}\n\n"
+        f"Height:  {height}\n\n"
+        f"Max fan-out:  {max_fan}\n\n"
+        f"Σ |Pᵢ| = {sum(len(p) for p in patterns)}"
+    )
+    ax_stats.text(0.1, 0.7, stats_text, fontsize=12, fontfamily="monospace",
+                  va="top", ha="left",
+                  bbox=dict(boxstyle="round,pad=0.5", facecolor="#F5F5F5",
+                            edgecolor="#CCC"))
+    ax_stats.set_title("Stats", fontsize=13, pad=12)
+
+    plt.tight_layout()
+    plt.show()
+```
+
+```{ojs}
+//| echo: false
+viewof patterns_input = Inputs.text({
+  label: "Patterns (comma-separated):",
+  value: "potato, tatoo, theater, other",
+  width: 500
+})
+```
+
+```{pyodide}
+#| autorun: true
+#| edit: false
+#| input: [patterns_input]
+
+if patterns_input:
+    pats = [p.strip() for p in patterns_input.split(",") if p.strip()]
+    if pats and len(pats) <= 20 and sum(len(p) for p in pats) <= 100:
+        G_kw = build_keyword_tree(pats)
+        draw_keyword_tree(G_kw, pats,
+                          title=f'K(P) for P = {{{", ".join(pats)}}}')
+    else:
+        print("Keep total pattern length <= 100 and at most 20 patterns.")
+```
+
+---
+
+### 7b. Searching with the Keyword Tree
+
+Enter a text and patterns. Step through each starting position to see
+the descent from the root: active edges light up, non-matching branches
+are grayed out.
+
+```{pyodide}
+#| autorun: true
+#| edit: false
+#| output: false
+
+def keyword_search_trace(T, patterns):
+    """Trace the keyword-tree search: one step per starting position s.
+    Returns list of (s, path_edges, matched_pattern_or_None)."""
+    G = build_keyword_tree(patterns)
+    steps = []
+    for s in range(len(T)):
+        cur = "root"
+        path_edges = []
+        matched = None
+        for j in range(s, len(T)):
+            ch = T[j]
+            nxt = None
+            for _, neighbor, data in G.out_edges(cur, data=True):
+                if data["label"] == ch:
+                    nxt = neighbor
+                    path_edges.append((cur, neighbor))
+                    break
+            if nxt is None:
+                break  # mismatch
+            cur = nxt
+            if G.nodes[cur].get("is_leaf", False):
+                matched = G.nodes[cur].get("pattern", "")
+                break
+        steps.append((s, path_edges, matched))
+    return G, steps
+
+
+def draw_keyword_search_step(T, G, steps, step_idx):
+    """Draw one step of keyword-tree search over T."""
+    s, path_edges, matched = steps[step_idx]
+    path_edge_set = set(path_edges)
+    path_node_set = {"root"}
+    for u, v in path_edges:
+        path_node_set.add(u)
+        path_node_set.add(v)
+
+    matches_so_far = [(st[0], st[2]) for st in steps[:step_idx + 1] if st[2]]
+
+    fig, (ax_text, ax_tree) = plt.subplots(
+        2, 1, figsize=(max(len(T) * 0.85, 10), max(len(G.nodes) * 0.4, 5)),
+        gridspec_kw={"height_ratios": [1, 3]})
+
+    # ── Text row ──
+    ax_text.set_xlim(-2.5, len(T) + 1.5)
+    ax_text.set_ylim(-0.5, 2.5)
+    ax_text.set_aspect("equal")
+    ax_text.axis("off")
+
+    for i in range(len(T)):
+        ax_text.text(i + 0.45, 2.2, str(i), ha="center", va="center",
+                     fontsize=9, color="#999")
+
+    depth_reached = len(path_edges)
+    t_hi = {}
+    for j in range(len(T)):
+        if j == s and depth_reached == 0:
+            t_hi[j] = COLORS["mismatch"]
+        elif s <= j < s + depth_reached:
+            t_hi[j] = COLORS["match"] if matched else COLORS["current"]
+        elif j == s + depth_reached and not matched and depth_reached > 0:
+            t_hi[j] = COLORS["mismatch"]
+
+    draw_string_row(ax_text, 0.8, T, label="T", highlights=t_hi)
+
+    # Pointer for current s
+    ax_text.annotate("s=" + str(s), xy=(s + 0.45, 0.8),
+                     xytext=(s + 0.45, 0.15), fontsize=10, color="#555",
+                     ha="center", fontweight="bold",
+                     arrowprops=dict(arrowstyle="->", color="#555", lw=1.5))
+
+    if matched:
+        status = f'MATCH: "{matched}" at position {s}'
+        ax_text.text(len(T) + 0.5, 1.2, status, fontsize=10,
+                     color=COLORS["match"], va="center", fontweight="bold")
+    elif depth_reached == 0:
+        ax_text.text(len(T) + 0.5, 1.2,
+                     f"no edge for '{T[s]}'" if s < len(T) else "",
+                     fontsize=10, color=COLORS["mismatch"], va="center")
+    else:
+        mismatch_pos = s + depth_reached
+        if mismatch_pos < len(T):
+            ax_text.text(len(T) + 0.5, 1.2,
+                         f"stuck at '{T[mismatch_pos]}'",
+                         fontsize=10, color=COLORS["mismatch"], va="center")
+
+    ax_text.set_title(
+        f"Step {step_idx + 1}/{len(steps)}  |  "
+        f"matches found: {len(matches_so_far)}",
+        fontsize=11, pad=8)
+
+    # ── Tree ──
+    pos = hierarchy_pos(G, root="root", width=max(len(G.nodes) * 0.3, 2.0))
+
+    # Classify nodes
+    active_internals = [n for n in G.nodes if n in path_node_set
+                        and not G.nodes[n].get("is_leaf", False)]
+    active_leaves = [n for n in G.nodes if n in path_node_set
+                     and G.nodes[n].get("is_leaf", False)]
+    dim_internals = [n for n in G.nodes if n not in path_node_set
+                     and not G.nodes[n].get("is_leaf", False)]
+    dim_leaves = [n for n in G.nodes if n not in path_node_set
+                  and G.nodes[n].get("is_leaf", False)]
+
+    # Dim nodes
+    if dim_internals:
+        nx.draw_networkx_nodes(G, pos, nodelist=dim_internals, ax=ax_tree,
+                               node_color="#E8E8E8", node_size=350,
+                               edgecolors="#CCC", alpha=0.4)
+    if dim_leaves:
+        nx.draw_networkx_nodes(G, pos, nodelist=dim_leaves, ax=ax_tree,
+                               node_color="#F0E0D0", node_size=350,
+                               edgecolors="#CCC", linewidths=1.5, alpha=0.4)
+
+    # Active nodes
+    if active_internals:
+        nx.draw_networkx_nodes(G, pos, nodelist=active_internals, ax=ax_tree,
+                               node_color="#BBDEFB", node_size=450,
+                               edgecolors="#1565C0", linewidths=2.0)
+    if active_leaves:
+        match_color = "#66BB6A" if matched else "#FFCC80"
+        edge_color = "#2E7D32" if matched else "#E65100"
+        nx.draw_networkx_nodes(G, pos, nodelist=active_leaves, ax=ax_tree,
+                               node_color=match_color, node_size=450,
+                               edgecolors=edge_color, linewidths=2.5)
+
+    # Dim edges
+    dim_edges = [(u, v) for u, v in G.edges() if (u, v) not in path_edge_set]
+    if dim_edges:
+        nx.draw_networkx_edges(G, pos, edgelist=dim_edges, ax=ax_tree,
+                               edge_color="#DDD", arrows=True, arrowsize=10,
+                               width=1.0, alpha=0.4)
+
+    # Active edges
+    if path_edges:
+        edge_c = COLORS["match"] if matched else "#1565C0"
+        nx.draw_networkx_edges(G, pos, edgelist=path_edges, ax=ax_tree,
+                               edge_color=edge_c, arrows=True, arrowsize=14,
+                               width=3.0)
+
+    # Edge labels: active bold, dim faded
+    active_elabels = {(u, v): d["label"] for u, v, d in G.edges(data=True)
+                      if (u, v) in path_edge_set}
+    dim_elabels = {(u, v): d["label"] for u, v, d in G.edges(data=True)
+                   if (u, v) not in path_edge_set}
+
+    if dim_elabels:
+        nx.draw_networkx_edge_labels(G, pos, edge_labels=dim_elabels,
+                                      ax=ax_tree, font_size=10,
+                                      font_color="#CCC",
+                                      font_family="monospace")
+    if active_elabels:
+        nx.draw_networkx_edge_labels(G, pos, edge_labels=active_elabels,
+                                      ax=ax_tree, font_size=13,
+                                      font_color="#9C27B0",
+                                      font_family="monospace",
+                                      font_weight="bold")
+
+    # Leaf pattern labels
+    for n in G.nodes:
+        if G.nodes[n].get("is_leaf", False):
+            x, y = pos[n]
+            pat = G.nodes[n].get("pattern", "")
+            if pat:
+                alpha = 1.0 if n in path_node_set else 0.35
+                ax_tree.text(x, y - 0.35, pat, ha="center", va="top",
+                             fontsize=9, fontstyle="italic",
+                             color="#E65100", fontfamily="monospace",
+                             alpha=alpha)
+
+    # Root label
+    rx, ry = pos["root"]
+    ax_tree.text(rx, ry + 0.3, "root", ha="center", va="bottom",
+                 fontsize=9, color="#999")
+
+    ax_tree.axis("off")
+    plt.tight_layout()
+    plt.show()
+```
+
+```{ojs}
+//| echo: false
+viewof T_kw_search = Inputs.text({
+  label: "T:",
+  value: "a]potato that was put in a theater",
+  width: 500
+})
+viewof P_kw_search = Inputs.text({
+  label: "Patterns (comma-separated):",
+  value: "potato, tatoo, theater, other",
+  width: 500
+})
+```
+
+```{pyodide}
+#| autorun: true
+#| edit: false
+#| output: false
+#| input: [T_kw_search, P_kw_search]
+#| define: [kw_max_step]
+
+kw_max_step = 0
+if T_kw_search and P_kw_search:
+    _pats = [p.strip() for p in P_kw_search.split(",") if p.strip()]
+    if _pats and len(T_kw_search) > 0:
+        kw_max_step = max(len(T_kw_search) - 1, 0)
+```
+
+```{ojs}
+//| echo: false
+viewof step_kw = Inputs.range([0, kw_max_step], {step: 1, value: 0, label: "Step (starting position):"})
+```
+
+```{pyodide}
+#| autorun: true
+#| edit: false
+#| input: [T_kw_search, P_kw_search, step_kw]
+
+if T_kw_search and P_kw_search:
+    _pats = [p.strip() for p in P_kw_search.split(",") if p.strip()]
+    if _pats and len(T_kw_search) > 0:
+        _G_kw, _steps_kw = keyword_search_trace(T_kw_search, _pats)
+        draw_keyword_search_step(T_kw_search, _G_kw, _steps_kw, int(step_kw))
+```
