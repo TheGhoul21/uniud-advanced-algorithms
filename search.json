@@ -4,7 +4,7 @@
     "href": "notebooks/04-boyer-moore.html#boyer-moore-bad-character-rule",
     "title": "Boyer-Moore — Bad Character Rule",
     "section": "Boyer-Moore — Bad Character Rule",
-    "text": "Boyer-Moore — Bad Character Rule\nStep through the Boyer-Moore search. The algorithm scans the pattern right-to-left and uses the bad character rule to skip alignments.\n\n\n\n\n\n\n\n\n\n\nCode\nviewof T_bm = Inputs.text({label: \"T:\", value: \"abcaabcabcaab\", width: 400})\nviewof P_bm = Inputs.text({label: \"P:\", value: \"abcab\", width: 400})\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nCode\nviewof step_bm = Inputs.range([0, bm_max_step], {step: 1, value: 0, label: \"Step:\"})"
+    "text": "Boyer-Moore — Bad Character Rule\nStep through the Boyer-Moore search. The algorithm scans the pattern right-to-left and uses the bad character rule to skip alignments.\n\n\n\n\n\n\n\n\n\nviewof T_bm = Inputs.text({label: \"T:\", value: \"abcaabcabcaab\", width: 400})\nviewof P_bm = Inputs.text({label: \"P:\", value: \"abcab\", width: 400})\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nviewof step_bm = Inputs.range([0, bm_max_step], {step: 1, value: 0, label: \"Step:\"})"
   },
   {
     "objectID": "notebooks/01-string-matching.html#naive-string-matching",
@@ -49,18 +49,25 @@
     "text": "6. Algorithm Comparison\nRun all algorithms on the same input and compare the number of character comparisons.\n\n\n\n\n\n\n\n\n\nviewof T_cmp = Inputs.text({label: \"T:\", value: \"abcaabcabcaab\", width: 500})\nviewof P_cmp = Inputs.text({label: \"P:\", value: \"abcab\", width: 500})"
   },
   {
+    "objectID": "notebooks/01-string-matching.html#keyword-tree-multiple-pattern-matching",
+    "href": "notebooks/01-string-matching.html#keyword-tree-multiple-pattern-matching",
+    "title": "String Matching — Interactive Companion",
+    "section": "7. Keyword Tree — Multiple Pattern Matching",
+    "text": "7. Keyword Tree — Multiple Pattern Matching\n\n7a. Building the Keyword Tree\nEnter a comma-separated list of patterns and see the resulting keyword tree. The stats panel shows size (number of edges), height (longest pattern), and maximum fan-out.\n\n\n\n\n\n\n\n\n\nviewof patterns_input = Inputs.text({\n  label: \"Patterns (comma-separated):\",\n  value: \"potato, tatoo, theater, other\",\n  width: 500\n})\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n7b. Searching with the Keyword Tree\nEnter a text and patterns. Step through each starting position to see the descent from the root: active edges light up, non-matching branches are grayed out.\n\n\n\n\n\n\n\n\n\nviewof T_kw_search = Inputs.text({\n  label: \"T:\",\n  value: \"a]potato that was put in a theater\",\n  width: 500\n})\nviewof P_kw_search = Inputs.text({\n  label: \"Patterns (comma-separated):\",\n  value: \"potato, tatoo, theater, other\",\n  width: 500\n})\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nviewof step_kw = Inputs.range([0, kw_max_step], {step: 1, value: 0, label: \"Step (starting position):\"})"
+  },
+  {
     "objectID": "notebooks/03-z-algorithm.html#z-algorithm",
     "href": "notebooks/03-z-algorithm.html#z-algorithm",
     "title": "Z-Algorithm",
     "section": "Z-Algorithm",
-    "text": "Z-Algorithm\nVisualize the Z-array: Z[k] = length of the longest substring starting at k that matches a prefix of S.\n\n\n\n\n\n\n\n\n\n\nCode\nviewof S_z = Inputs.text({label: \"S:\", value: \"aabxaabxcaabxaabxay\", width: 500})\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nCode\nviewof step_z = Inputs.range([0, z_max_step], {step: 1, value: 0, label: \"Step:\"})"
+    "text": "Z-Algorithm\nVisualize the Z-array: Z[k] = length of the longest substring starting at k that matches a prefix of S.\n\n\n\n\n\n\n\n\n\nviewof S_z = Inputs.text({label: \"S:\", value: \"aabxaabxcaabxaabxay\", width: 500})\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nviewof step_z = Inputs.range([0, z_max_step], {step: 1, value: 0, label: \"Step:\"})"
   },
   {
     "objectID": "notebooks/06-algorithm-comparison.html#algorithm-comparison",
     "href": "notebooks/06-algorithm-comparison.html#algorithm-comparison",
     "title": "Algorithm Comparison",
     "section": "Algorithm Comparison",
-    "text": "Algorithm Comparison\nRun all algorithms on the same input and compare the number of character comparisons.\n\n\n\n\n\n\n\n\n\n\nCode\nviewof T_cmp = Inputs.text({label: \"T:\", value: \"abcaabcabcaab\", width: 500})\nviewof P_cmp = Inputs.text({label: \"P:\", value: \"abcab\", width: 500})"
+    "text": "Algorithm Comparison\nRun all algorithms on the same input and compare the number of character comparisons.\n\n\n\n\n\n\n\n\n\nviewof T_cmp = Inputs.text({label: \"T:\", value: \"abcaabcabcaab\", width: 500})\nviewof P_cmp = Inputs.text({label: \"P:\", value: \"abcab\", width: 500})"
   },
   {
     "objectID": "index.html",
@@ -81,34 +88,34 @@
     "href": "notebooks/01-naive.html#naive-string-matching",
     "title": "Naive String Matching",
     "section": "Naive String Matching",
-    "text": "Naive String Matching\nSlide through every alignment of P against T and see which characters match.\n\n\n\n\n\n\n\n\n\n\nCode\nviewof T_naive = Inputs.text({label: \"T:\", value: \"abcaabcabcaab\", width: 400})\nviewof P_naive = Inputs.text({label: \"P:\", value: \"abcab\", width: 400})\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nCode\nviewof step_naive = Inputs.range([0, naive_max_step], {step: 1, value: 0, label: \"Step:\"})"
+    "text": "Naive String Matching\nSlide through every alignment of P against T and see which characters match.\n\n\n\n\n\n\n\n\n\nviewof T_naive = Inputs.text({label: \"T:\", value: \"abcaabcabcaab\", width: 400})\nviewof P_naive = Inputs.text({label: \"P:\", value: \"abcab\", width: 400})\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nviewof step_naive = Inputs.range([0, naive_max_step], {step: 1, value: 0, label: \"Step:\"})"
   },
   {
     "objectID": "notebooks/02-kmp.html#kmp-failure-function-sp-values-search",
     "href": "notebooks/02-kmp.html#kmp-failure-function-sp-values-search",
     "title": "KMP — Failure Function & Search",
     "section": "KMP — Failure Function (sp values) & Search",
-    "text": "KMP — Failure Function (sp values) & Search\nVisualize the sp (border) array computation and then step through the KMP search showing how mismatches use the failure function to skip alignments.\n\n\n\n\n\n\n\n\n\nFailure Function Table\n\n\nCode\nviewof P_sp = Inputs.text({label: \"P:\", value: \"abcabcab\", width: 400})\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nKMP Search — Step by Step\nWatch how KMP uses the failure function to avoid re-scanning characters. The arrow shows where j falls back to on a mismatch.\n\n\n\n\n\n\n\n\n\n\nCode\nviewof T_kmp = Inputs.text({label: \"T:\", value: \"abcaabcabcaab\", width: 400})\nviewof P_kmp = Inputs.text({label: \"P:\", value: \"abcab\", width: 400})\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nCode\nviewof step_kmp = Inputs.range([0, kmp_max_step], {step: 1, value: 0, label: \"Step:\"})"
+    "text": "KMP — Failure Function (sp values) & Search\nVisualize the sp (border) array computation and then step through the KMP search showing how mismatches use the failure function to skip alignments.\n\n\n\n\n\n\n\n\n\nFailure Function Table\n\nviewof P_sp = Inputs.text({label: \"P:\", value: \"abcabcab\", width: 400})\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nKMP Search — Step by Step\nWatch how KMP uses the failure function to avoid re-scanning characters. The arrow shows where j falls back to on a mismatch.\n\n\n\n\n\n\n\n\n\nviewof T_kmp = Inputs.text({label: \"T:\", value: \"abcaabcabcaab\", width: 400})\nviewof P_kmp = Inputs.text({label: \"P:\", value: \"abcab\", width: 400})\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nviewof step_kmp = Inputs.range([0, kmp_max_step], {step: 1, value: 0, label: \"Step:\"})"
   },
   {
     "objectID": "notebooks/07-keyword-tree.html#building-the-keyword-tree",
     "href": "notebooks/07-keyword-tree.html#building-the-keyword-tree",
     "title": "Keyword Tree — Multiple Pattern Matching",
     "section": "Building the Keyword Tree",
-    "text": "Building the Keyword Tree\nEnter a comma-separated list of patterns and see the resulting keyword tree. The stats panel shows size (number of edges), height (longest pattern), and maximum fan-out.\n\n\n\n\n\n\n\n\n\n\nCode\nviewof patterns_input = Inputs.text({\n  label: \"Patterns (comma-separated):\",\n  value: \"potato, tatoo, theater, other\",\n  width: 500\n})"
+    "text": "Building the Keyword Tree\nEnter a comma-separated list of patterns and see the resulting keyword tree. The stats panel shows size (number of edges), height (longest pattern), and maximum fan-out.\n\n\n\n\n\n\n\n\n\nviewof patterns_input = Inputs.text({\n  label: \"Patterns (comma-separated):\",\n  value: \"potato, tatoo, theater, other\",\n  width: 500\n})"
   },
   {
     "objectID": "notebooks/07-keyword-tree.html#searching-with-the-keyword-tree",
     "href": "notebooks/07-keyword-tree.html#searching-with-the-keyword-tree",
     "title": "Keyword Tree — Multiple Pattern Matching",
     "section": "Searching with the Keyword Tree",
-    "text": "Searching with the Keyword Tree\nEnter a text and patterns. Step through each starting position to see the descent from the root: active edges light up, non-matching branches are grayed out.\n\n\n\n\n\n\n\n\n\n\nCode\nviewof T_kw_search = Inputs.text({\n  label: \"T:\",\n  value: \"a]potato that was put in a theater\",\n  width: 500\n})\nviewof P_kw_search = Inputs.text({\n  label: \"Patterns (comma-separated):\",\n  value: \"potato, tatoo, theater, other\",\n  width: 500\n})\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nCode\nviewof step_kw = Inputs.range([0, kw_max_step], {step: 1, value: 0, label: \"Step (starting position):\"})"
+    "text": "Searching with the Keyword Tree\nEnter a text and patterns. Step through each starting position to see the descent from the root: active edges light up, non-matching branches are grayed out.\n\n\n\n\n\n\n\n\n\nviewof T_kw_search = Inputs.text({\n  label: \"T:\",\n  value: \"a]potato that was put in a theater\",\n  width: 500\n})\nviewof P_kw_search = Inputs.text({\n  label: \"Patterns (comma-separated):\",\n  value: \"potato, tatoo, theater, other\",\n  width: 500\n})\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nviewof step_kw = Inputs.range([0, kw_max_step], {step: 1, value: 0, label: \"Step (starting position):\"})"
   },
   {
     "objectID": "notebooks/05-suffix-structures.html#suffix-trie-suffix-tree",
     "href": "notebooks/05-suffix-structures.html#suffix-trie-suffix-tree",
     "title": "Suffix Trie & Suffix Tree",
     "section": "Suffix Trie & Suffix Tree",
-    "text": "Suffix Trie & Suffix Tree\nBuild and visualize the suffix trie and its compacted suffix tree for any input string.\n\n\n\n\n\n\n\n\n\n\nCode\nviewof T_tree = Inputs.text({label: \"T:\", value: \"cacao$\", width: 300})\nviewof tree_view = Inputs.radio([\"Suffix Trie\", \"Suffix Tree\"], {value: \"Suffix Trie\", label: \"View:\"})"
+    "text": "Suffix Trie & Suffix Tree\nBuild and visualize the suffix trie and its compacted suffix tree for any input string.\n\n\n\n\n\n\n\n\n\nviewof T_tree = Inputs.text({label: \"T:\", value: \"cacao$\", width: 300})\nviewof tree_view = Inputs.radio([\"Suffix Trie\", \"Suffix Tree\"], {value: \"Suffix Trie\", label: \"View:\"})"
   }
 ]
