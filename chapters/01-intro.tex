@@ -2887,6 +2887,17 @@ prefixes is a tree---specifically, a \textbf{keyword tree}.
   \end{enumerate}
 \end{definition}
 
+Property~(i) is reflected in Example~\ref{ex:keyword-tree} by the fact
+that every node has at most one outgoing edge per character: for instance,
+the root has three children labelled \texttt{p}, \texttt{t}, and
+\texttt{o}, all distinct, and the depth-1 node reached via \texttt{t}
+branches into \texttt{a} (toward \texttt{tatoo}) and \texttt{h} (toward
+\texttt{theater}), again with distinct labels.
+Property~(ii) is witnessed by the four leaves, one per pattern: each
+root-to-leaf path spells exactly one $P_i \in \mathcal{P}$, and
+conversely every pattern in $\mathcal{P}$ corresponds to exactly one such
+path.
+
 \begin{remark}[Simplifying assumption]
   Throughout this section we assume no $P_i$ is a proper prefix of another
   $P_j$.
@@ -2913,8 +2924,8 @@ state in KMP, now for a whole set of patterns.}
   \end{itemize}
 \end{observation}
 
-\begin{example}[Building a keyword tree]
-  Let $\mathcal{P} = \{\texttt{potato},\texttt{tatoo},\texttt{theater},\texttt{other}\}$.
+\begin{example}[Building a keyword tree]\label{ex:keyword-tree}
+  Let $\mathcal{P} = \{\texttt{potato},\allowbreak\texttt{tatoo},\allowbreak\texttt{theater},\allowbreak\texttt{other}\}$.
   We insert the patterns one by one from the root, sharing edges as long as
   prefixes agree:
   \begin{itemize}[noitemsep, topsep=2pt]
@@ -3037,14 +3048,17 @@ reflecting the shared prefix \texttt{t}.
   \node[ll, below=5pt] at (nTHEATER.south) {\texttt{theater}};
   \node[ll, below=5pt] at (nOTHER.south)   {\texttt{other}};
 
-  %% ── SHARED-PREFIX BRACE ──────────────────────────────────────
-  % Span across nTA and nTH (sibling depth-2 nodes under ndT)
-  % mirror → brace opens downward; label sits below the two subtrees
-  \draw[blue!35, thick, decorate,
-        decoration={brace, mirror, raise=5pt, amplitude=5pt}]
-    (nTA.west) -- (nTH.east)
-    node[midway, below=13pt, font=\tiny\sffamily, text=blue!55!black]
-      {share prefix \texttt{t} $\to$ tracked by one node};
+  %% ── SHARED-PREFIX ANNOTATION ────────────────────────────────
+  % Placed to the right of the tree, connected by a thin leader line
+  \node[font=\tiny\sffamily, text=blue!55!black, align=left,
+        anchor=west, draw=blue!25, fill=blue!4, rounded corners=3pt,
+        inner sep=4pt]
+    (sharedlabel) at (5.5, -1.2)
+      {\texttt{tatoo} and \texttt{theater}\\
+       share prefix \texttt{t}\\
+       (one parent node)};
+  \draw[blue!30, thin, -Stealth, shorten >=2pt]
+    (sharedlabel.west) -- (ndT);
 
 \end{tikzpicture}
 \caption{%
@@ -3061,17 +3075,41 @@ reflecting the shared prefix \texttt{t}.
 \subsection{Using $K(\mathcal{P})$ on $T$}
 % ══════════════════════════════════════════════════════════════════
 
-The tree is built once in $\Oh{m}$ time.
-We then make a \emph{single} left-to-right pass over $T$: at each starting
-position $s$ we descend $K(\mathcal{P})$ from the root following edge-labels
-$T[s], T[s+1], \ldots$; reaching a leaf at depth $m_i$ reports an occurrence
-of $P_i$ ending at $T[s + m_i - 1]$.
+The tree is built once in $\Oh{m}$ time (we simply insert each pattern
+character by character, sharing edges whenever possible, exactly as in
+Example~\ref{ex:keyword-tree}).
 
-\aside{The key gain: all patterns sharing a common prefix are tracked
-\emph{in parallel} by a single internal node.
-As long as the text characters keep matching a shared prefix, no extra
-work is done for any of them --- the tree compresses the joint
-prefix-matching state for the whole set $\mathcal{P}$.}
+Once the tree is ready, the search works much like the naïve
+single-pattern algorithm: we try every starting position
+$s = 1, 2, \ldots, n$ in $T$, one after the other.
+For a given $s$ we place a pointer at the root of $K(\mathcal{P})$ and
+start reading $T[s], T[s{+}1], T[s{+}2], \ldots$\,, following the
+corresponding edges downward.
+Two things can happen:
+\begin{itemize}[leftmargin=1.6em, itemsep=2pt]
+  \item We reach a \textbf{leaf} at some depth $m_i$.
+        This means we have matched every character of some pattern $P_i$,
+        so we report an occurrence of $P_i$ starting at position $s$ in $T$.
+  \item We get \textbf{stuck}: the current node has no outgoing edge for the
+        next character of $T$.
+        No pattern in $\mathcal{P}$ begins with the piece of $T$ we have
+        read so far, so we give up on this starting position.
+\end{itemize}
+Either way, we move to starting position $s{+}1$ and go back to the root
+to try again.
+
+The important difference with respect to the single-pattern naïve approach
+is what happens \emph{during} each descent.
+Because the tree merges all patterns that share a common prefix into the
+same path, a single walk from the root simultaneously checks all of those
+patterns at once.
+For instance, in Example~\ref{ex:keyword-tree}, reading \texttt{t} from
+the root is enough to know that both \texttt{tatoo} and \texttt{theater}
+are still candidates --- we do not need separate passes for each of them.
+Only when we reach the branching point (depth~2, where one path continues
+with \texttt{a} and the other with \texttt{h}) do the two patterns
+diverge, and the tree automatically ``picks'' the right one based on
+the next character of $T$.
 
 % ── Figure: single pass over T via K(P) ──────────────────────────
 \begin{figure}[H]
@@ -3219,23 +3257,59 @@ the worst-case cost per starting position is still $\Oh{m_{\max}}$, giving
 $\Oh{n \cdot m_{\max} + m}$ overall.
 
 \paragraph{Why the keyword tree alone is not enough.}
-Consider searching for $\mathcal{P} = \{\texttt{he},\texttt{she},\texttt{his},\texttt{hers}\}$
-in $T = \texttt{ushers}$.
-After reading \texttt{u} from the root we fail immediately (no \texttt{u}-edge),
-restart from the root, try \texttt{s} → \texttt{h} → \texttt{e} → leaf
-(\texttt{she} found). Now the \emph{naive} tree traversal restarts from the
-root, but the \texttt{e} we just read is itself the start of \texttt{he}!
-We missed a match because we threw away the suffix information.
+The algorithm above is correct --- it will find every occurrence of every
+pattern.
+The problem is that it wastes work.
+Every time a descent ends (whether in a match or a mismatch), we go back
+to the root and start over from position $s{+}1$, re-reading characters
+of $T$ that we have already seen.
+
+Consider
+$\mathcal{P} = \{\texttt{he},\texttt{she},\texttt{his},\texttt{hers}\}$
+and $T = \texttt{ushers}$.
+Starting at $s = 2$ we descend from the root following
+\texttt{s} $\to$ \texttt{h} $\to$ \texttt{e} and reach the leaf for
+\texttt{she} --- match found.
+Now we restart from the root at $s = 3$ and read \texttt{h} $\to$
+\texttt{e} --- we find \texttt{he}, good.
+But notice: the \texttt{h} and \texttt{e} we just read at positions~3
+and~4 are the \emph{same characters} we already consumed during the
+previous descent for \texttt{she}.
+We already knew that $T[3{,}4] = \texttt{he}$; going back to the root
+and re-reading them is redundant work.
+
+There is a second issue lurking in this example.
+Notice that \texttt{he} is a proper prefix of \texttt{hers}: when we
+descend from the root following \texttt{h} $\to$ \texttt{e}, we have
+matched \texttt{he} in full --- but \texttt{hers} keeps going with
+\texttt{r} $\to$ \texttt{s} along the same path.
+Under our simplifying assumption (no pattern is a prefix of another),
+this situation cannot arise, because every pattern ends at a leaf and
+there is nothing ``beyond'' it.
+But in general it does arise, and the plain keyword tree has no way to
+report \texttt{he} at an internal node --- it only reports matches at
+leaves.
+The Aho--Corasick automaton will handle both problems: it eliminates the
+redundant re-reading \emph{and} correctly reports matches at internal
+nodes.
+
+In general, the worst-case cost per starting position is $\Oh{m_{\max}}$
+(we may descend all the way to the deepest leaf before failing or
+matching), giving $\Oh{n \cdot m_{\max} + m}$ overall.
+We would like to do better: scan $T$ once, reading each character exactly
+once, and still find every match.
 
 This is exactly the problem KMP solved for a single pattern with the $sp'$
-table: instead of restarting from scratch, jump to the longest proper border
-of the current prefix and continue from there.
-For multiple patterns the same idea generalises: at a mismatch (or after a
-full match) we follow a \textbf{failure link} from the current node to the
-node representing the longest proper suffix of the current prefix that is
-also a prefix of some pattern in $\mathcal{P}$.
+table: instead of restarting from scratch, jump to the longest proper
+suffix of what we have matched so far that is itself a prefix of some
+pattern, and continue from there.
+For multiple patterns the same idea generalises: after a match or a
+mismatch we follow a \textbf{failure link} to the node in
+$K(\mathcal{P})$ that represents the longest proper suffix of the current
+path that is also a prefix of some pattern in $\mathcal{P}$.
 These failure links turn $K(\mathcal{P})$ into a finite automaton that
-processes $T$ in a single left-to-right pass, never re-reading any character.
+processes $T$ in a single left-to-right pass, never re-reading any
+character.
 
 \begin{definition}[Failure link]
   For a node $v$ in $K(\mathcal{P})$ representing a string $\alpha$, the

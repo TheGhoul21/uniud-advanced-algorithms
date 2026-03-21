@@ -1,0 +1,270 @@
+---
+title: "Z-Algorithm"
+subtitle: "Interactive visualizations for Chapter 1 of the Advanced Algorithms notes"
+engine: knitr
+format:
+  live-html:
+    theme: cosmo
+    toc: true
+    toc-depth: 3
+    pyodide:
+      packages:
+        - matplotlib
+        - numpy
+      cell-options:
+        autorun: true
+        edit: false
+        code-fold: true
+---
+
+```{pyodide}
+#| autorun: true
+#| edit: false
+#| output: false
+
+import matplotlib.pyplot as plt
+import matplotlib.patches as mpatches
+import numpy as np
+
+plt.rcParams.update({
+    "font.family": "monospace",
+    "font.size": 13,
+    "figure.facecolor": "#fafafa",
+    "figure.dpi": 120,
+    "savefig.dpi": 120,
+})
+
+COLORS = {
+    "match": "#4CAF50",
+    "mismatch": "#F44336",
+    "current": "#FFC107",
+    "skip": "#90CAF9",
+    "default": "#E0E0E0",
+    "pattern": "#BBDEFB",
+    "border": "#7E57C2",
+}
+
+
+def draw_string_row(ax, y, string, label="", highlights=None, offset=0):
+    """Draw a row of character boxes at vertical position y."""
+    highlights = highlights or {}
+    for i, ch in enumerate(string):
+        color = highlights.get(i, COLORS["default"])
+        rect = mpatches.FancyBboxPatch(
+            (i + offset, y), 0.9, 0.9,
+            boxstyle="round,pad=0.05",
+            facecolor=color, edgecolor="#555", linewidth=1.2,
+        )
+        ax.add_patch(rect)
+        ax.text(i + offset + 0.45, y + 0.45, ch,
+                ha="center", va="center", fontsize=14, fontweight="bold")
+    if label:
+        ax.text(offset - 0.3, y + 0.45, label,
+                ha="right", va="center", fontsize=12, color="#555")
+```
+
+## Z-Algorithm
+
+Visualize the Z-array: `Z[k]` = length of the longest substring starting at `k` that matches a prefix of `S`.
+
+```{pyodide}
+#| autorun: true
+#| edit: false
+#| output: false
+
+def compute_z(S):
+    """Compute Z-array for string S."""
+    n = len(S)
+    Z = [0] * n
+    Z[0] = n
+    l, r = 0, 0
+    for k in range(1, n):
+        if k < r:
+            Z[k] = min(r - k, Z[k - l])
+        while k + Z[k] < n and S[Z[k]] == S[k + Z[k]]:
+            Z[k] += 1
+        if k + Z[k] > r:
+            l, r = k, k + Z[k]
+    return Z
+
+
+def z_trace(S):
+    """Step-by-step Z computation returning full state at each k."""
+    n = len(S)
+    Z = [0] * n
+    Z[0] = n
+    snapshots = []
+    l, r = 0, 0
+    for k in range(1, n):
+        init_from_zbox = False
+        init_val = 0
+        if k < r:
+            init_val = min(r - k, Z[k - l])
+            Z[k] = init_val
+            init_from_zbox = True
+
+        explicit_comps = 0
+        while k + Z[k] < n and S[Z[k]] == S[k + Z[k]]:
+            Z[k] += 1
+            explicit_comps += 1
+
+        old_l, old_r = l, r
+        if k + Z[k] > r:
+            l, r = k, k + Z[k]
+
+        snapshots.append({
+            "k": k, "Z": list(Z), "l": l, "r": r,
+            "old_l": old_l, "old_r": old_r,
+            "init_from_zbox": init_from_zbox,
+            "init_val": init_val,
+            "explicit_comps": explicit_comps,
+            "zbox_updated": (l != old_l or r != old_r),
+        })
+    return snapshots
+
+
+def draw_z_step(S, step_idx):
+    snapshots = z_trace(S)
+    if not snapshots:
+        return
+    step_idx = min(step_idx, len(snapshots) - 1)
+    snap = snapshots[step_idx]
+    n = len(S)
+    k = snap["k"]
+    Z = snap["Z"]
+    l, r = snap["l"], snap["r"]
+    zk = Z[k]
+
+    fig = plt.figure(figsize=(max(n * 0.8, 10), 7.5))
+    gs = fig.add_gridspec(3, 1, height_ratios=[4, 2.5, 2], hspace=0.35)
+
+    ax = fig.add_subplot(gs[0])
+    ax.set_xlim(-2.0, n + 1.0)
+    ax.set_ylim(-2.5, 4.0)
+    ax.set_aspect("equal")
+    ax.axis("off")
+
+    for i in range(n):
+        ax.text(i + 0.45, 3.3, str(i), ha="center", fontsize=8, color="#999")
+
+    s_hi = {}
+    if zk > 0:
+        for j in range(zk):
+            s_hi[j] = COLORS["match"]
+            s_hi[k + j] = COLORS["skip"]
+        s_hi[k] = COLORS["current"]
+    else:
+        s_hi[k] = COLORS["current"]
+    draw_string_row(ax, 2.0, S, label="S", highlights=s_hi)
+
+    ax.annotate(f"k={k}", xy=(k + 0.45, 2.0), xytext=(k + 0.45, 1.4),
+                fontsize=10, ha="center", color="#C62828", fontweight="bold",
+                arrowprops=dict(arrowstyle="->", color="#C62828", lw=1.5))
+
+    if r > 0:
+        box_y = 3.6
+        ax.plot([l, r - 0.1], [box_y, box_y], color=COLORS["border"], lw=3, solid_capstyle="round")
+        ax.plot([l, l], [box_y - 0.15, box_y + 0.15], color=COLORS["border"], lw=2)
+        ax.plot([r - 0.1, r - 0.1], [box_y - 0.15, box_y + 0.15], color=COLORS["border"], lw=2)
+        ax.text((l + r) / 2, box_y + 0.3, f"Z-box [l={l}, r={r})",
+                ha="center", fontsize=9, color=COLORS["border"], fontweight="bold")
+
+    if zk > 0:
+        ax.annotate("", xy=(k, -0.3), xytext=(k + zk - 0.1, -0.3),
+                     arrowprops=dict(arrowstyle="<->", color="#1565C0", lw=2))
+        ax.text(k + zk / 2, -0.7, f"Z[{k}]={zk}", ha="center",
+                fontsize=11, color="#1565C0", fontweight="bold")
+        ax.annotate("", xy=(0, -0.3), xytext=(zk - 0.1, -0.3),
+                     arrowprops=dict(arrowstyle="<->", color=COLORS["match"], lw=1.5))
+        ax.text(zk / 2, -0.7, f"prefix[0..{zk-1}]", ha="center",
+                fontsize=9, color=COLORS["match"])
+
+    parts = []
+    if snap["init_from_zbox"]:
+        parts.append(f"Z-box reuse: Z[{k}-{l}]=Z[{k-l}]={Z[k-l]}, "
+                     f"min({snap['old_r']}-{k}, Z[{k-l}])={snap['init_val']}")
+    if snap["explicit_comps"] > 0:
+        parts.append(f"explicit comparisons: {snap['explicit_comps']}")
+    if snap["zbox_updated"]:
+        parts.append(f"Z-box updated: [{snap['old_l']},{snap['old_r']}) -> [{l},{r})")
+    info = " | ".join(parts) if parts else f"Z[{k}]=0, no prefix match"
+
+    ax.set_title(f"Z-Algorithm step {step_idx+1}/{len(snapshots)} | k={k} | Z[{k}]={zk}\n{info}",
+                 fontsize=10, pad=8)
+
+    ax2 = fig.add_subplot(gs[1])
+    ax2.set_xlim(-2.0, n + 0.5)
+    ax2.set_ylim(-0.3, 2.2)
+    ax2.set_aspect("equal")
+    ax2.axis("off")
+    ax2.set_title("Z-array (computed so far)", fontsize=10, pad=3, loc="left")
+
+    for i in range(n):
+        computed = i == 0 or i <= k
+        if i == k:
+            color = COLORS["current"]
+        elif computed and Z[i] > 0:
+            color = "#E8F5E9"
+        elif computed:
+            color = "#FAFAFA"
+        else:
+            color = "#F0F0F0"
+        rect = mpatches.FancyBboxPatch(
+            (i, 0.3), 0.9, 0.9, boxstyle="round,pad=0.05",
+            facecolor=color, edgecolor="#555" if computed else "#CCC",
+            linewidth=1.0 if computed else 0.5)
+        ax2.add_patch(rect)
+        val = str(Z[i]) if computed else "?"
+        ax2.text(i + 0.45, 0.75, val, ha="center", va="center", fontsize=11,
+                 fontweight="bold" if computed else "normal",
+                 color="#333" if computed else "#BBB")
+        ax2.text(i + 0.45, 0.05, str(i), ha="center", fontsize=7, color="#999")
+        ax2.text(i + 0.45, 1.55, S[i], ha="center", fontsize=10, fontfamily="monospace", color="#555")
+    ax2.text(-0.3, 0.75, "Z", ha="right", va="center", fontsize=11, color="#555")
+    ax2.text(-0.3, 1.55, "S", ha="right", va="center", fontsize=11, color="#555")
+
+    ax3 = fig.add_subplot(gs[2])
+    positions = list(range(n))
+    values = [Z[i] if i <= k else 0 for i in range(n)]
+    colors_bar = [COLORS["current"] if i == k else (COLORS["skip"] if i <= k and Z[i] > 0 else "#E0E0E0") for i in range(n)]
+    ax3.bar(positions, values, color=colors_bar, edgecolor="#777", width=0.7)
+    ax3.set_ylabel("Z[k]", fontsize=9)
+    ax3.set_xticks(positions)
+    ax3.set_xticklabels([str(i) for i in positions], fontsize=7)
+    ax3.set_title("Z-values bar chart", fontsize=9, loc="left")
+
+    plt.tight_layout()
+    plt.show()
+```
+
+```{ojs}
+//| echo: false
+viewof S_z = Inputs.text({label: "S:", value: "aabxaabxcaabxaabxay", width: 500})
+```
+
+```{pyodide}
+#| autorun: true
+#| edit: false
+#| output: false
+#| input: [S_z]
+#| define: [z_max_step]
+
+if S_z and len(S_z) >= 2:
+    z_max_step = max(len(z_trace(S_z)) - 1, 0)
+else:
+    z_max_step = 0
+```
+
+```{ojs}
+//| echo: false
+viewof step_z = Inputs.range([0, z_max_step], {step: 1, value: 0, label: "Step:"})
+```
+
+```{pyodide}
+#| autorun: true
+#| edit: false
+#| input: [S_z, step_z]
+
+if S_z and len(S_z) >= 2:
+    draw_z_step(S_z, int(step_z))
+```

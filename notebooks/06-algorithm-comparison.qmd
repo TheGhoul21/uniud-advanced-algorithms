@@ -1,0 +1,178 @@
+---
+title: "Algorithm Comparison"
+subtitle: "Interactive visualizations for Chapter 1 of the Advanced Algorithms notes"
+engine: knitr
+format:
+  live-html:
+    theme: cosmo
+    toc: true
+    toc-depth: 3
+    pyodide:
+      packages:
+        - matplotlib
+        - numpy
+      cell-options:
+        autorun: true
+        edit: false
+        code-fold: true
+---
+
+```{pyodide}
+#| autorun: true
+#| edit: false
+#| output: false
+
+import matplotlib.pyplot as plt
+import matplotlib.patches as mpatches
+import numpy as np
+
+plt.rcParams.update({
+    "font.family": "monospace",
+    "font.size": 13,
+    "figure.facecolor": "#fafafa",
+    "figure.dpi": 120,
+    "savefig.dpi": 120,
+})
+
+COLORS = {
+    "match": "#4CAF50",
+    "mismatch": "#F44336",
+    "current": "#FFC107",
+    "skip": "#90CAF9",
+    "default": "#E0E0E0",
+    "pattern": "#BBDEFB",
+    "border": "#7E57C2",
+}
+
+
+def draw_string_row(ax, y, string, label="", highlights=None, offset=0):
+    """Draw a row of character boxes at vertical position y."""
+    highlights = highlights or {}
+    for i, ch in enumerate(string):
+        color = highlights.get(i, COLORS["default"])
+        rect = mpatches.FancyBboxPatch(
+            (i + offset, y), 0.9, 0.9,
+            boxstyle="round,pad=0.05",
+            facecolor=color, edgecolor="#555", linewidth=1.2,
+        )
+        ax.add_patch(rect)
+        ax.text(i + offset + 0.45, y + 0.45, ch,
+                ha="center", va="center", fontsize=14, fontweight="bold")
+    if label:
+        ax.text(offset - 0.3, y + 0.45, label,
+                ha="right", va="center", fontsize=12, color="#555")
+```
+
+## Algorithm Comparison
+
+Run all algorithms on the same input and compare the number of character comparisons.
+
+```{pyodide}
+#| autorun: true
+#| edit: false
+#| output: false
+
+def compute_sp(P):
+    """Compute sp[j] = length of longest proper border of P[0..j]."""
+    m = len(P)
+    sp = [0] * m
+    k = 0
+    for j in range(1, m):
+        while k > 0 and P[k] != P[j]:
+            k = sp[k - 1]
+        if P[k] == P[j]:
+            k += 1
+        sp[j] = k
+    return sp
+
+
+def bm_bad_char_table(P):
+    """Last occurrence of each character in P (R function)."""
+    R = {}
+    for i, c in enumerate(P):
+        R[c] = i
+    return R
+
+
+def count_naive(T, P):
+    count = 0
+    for s in range(len(T) - len(P) + 1):
+        for j in range(len(P)):
+            count += 1
+            if T[s + j] != P[j]:
+                break
+    return count
+
+
+def count_kmp(T, P):
+    sp = compute_sp(P)
+    count = 0
+    j = 0
+    for i in range(len(T)):
+        while j > 0 and T[i] != P[j]:
+            count += 1
+            j = sp[j - 1]
+        count += 1
+        if T[i] == P[j]:
+            j += 1
+            if j == len(P):
+                j = sp[j - 1]
+    return count
+
+
+def count_bm(T, P):
+    n, m = len(T), len(P)
+    R = bm_bad_char_table(P)
+    count = 0
+    s = 0
+    while s <= n - m:
+        j = m - 1
+        while j >= 0:
+            count += 1
+            if P[j] != T[s + j]:
+                break
+            j -= 1
+        if j < 0:
+            s += 1
+        else:
+            bad = R.get(T[s + j], -1)
+            s += max(1, j - bad)
+    return count
+
+
+def draw_comparison(T, P):
+    naive_c = count_naive(T, P)
+    kmp_c = count_kmp(T, P)
+    bm_c = count_bm(T, P)
+
+    algos = ["Naive", "KMP", "Boyer-Moore"]
+    counts = [naive_c, kmp_c, bm_c]
+    colors = ["#EF9A9A", "#90CAF9", "#A5D6A7"]
+
+    fig, ax = plt.subplots(figsize=(7, 3.5))
+    bars = ax.barh(algos, counts, color=colors, edgecolor="#555", height=0.55)
+    for bar, c in zip(bars, counts):
+        ax.text(bar.get_width() + 0.5, bar.get_y() + bar.get_height() / 2,
+                str(c), va="center", fontsize=13, fontweight="bold")
+
+    ax.set_xlabel("Character comparisons", fontsize=12)
+    ax.set_title(f'T = "{T}"   P = "{P}"   |T|={len(T)}  |P|={len(P)}', fontsize=12)
+    ax.set_xlim(0, max(counts) * 1.2)
+    plt.tight_layout()
+    plt.show()
+```
+
+```{ojs}
+//| echo: false
+viewof T_cmp = Inputs.text({label: "T:", value: "abcaabcabcaab", width: 500})
+viewof P_cmp = Inputs.text({label: "P:", value: "abcab", width: 500})
+```
+
+```{pyodide}
+#| autorun: true
+#| edit: false
+#| input: [T_cmp, P_cmp]
+
+if T_cmp and P_cmp and len(P_cmp) <= len(T_cmp):
+    draw_comparison(T_cmp, P_cmp)
+```

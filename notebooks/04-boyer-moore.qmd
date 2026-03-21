@@ -1,0 +1,276 @@
+---
+title: "Boyer-Moore — Bad Character Rule"
+subtitle: "Interactive visualizations for Chapter 1 of the Advanced Algorithms notes"
+engine: knitr
+format:
+  live-html:
+    theme: cosmo
+    toc: true
+    toc-depth: 3
+    pyodide:
+      packages:
+        - matplotlib
+        - numpy
+      cell-options:
+        autorun: true
+        edit: false
+        code-fold: true
+---
+
+```{pyodide}
+#| autorun: true
+#| edit: false
+#| output: false
+
+import matplotlib.pyplot as plt
+import matplotlib.patches as mpatches
+import numpy as np
+
+plt.rcParams.update({
+    "font.family": "monospace",
+    "font.size": 13,
+    "figure.facecolor": "#fafafa",
+    "figure.dpi": 120,
+    "savefig.dpi": 120,
+})
+
+COLORS = {
+    "match": "#4CAF50",
+    "mismatch": "#F44336",
+    "current": "#FFC107",
+    "skip": "#90CAF9",
+    "default": "#E0E0E0",
+    "pattern": "#BBDEFB",
+    "border": "#7E57C2",
+}
+
+
+def draw_string_row(ax, y, string, label="", highlights=None, offset=0):
+    """Draw a row of character boxes at vertical position y."""
+    highlights = highlights or {}
+    for i, ch in enumerate(string):
+        color = highlights.get(i, COLORS["default"])
+        rect = mpatches.FancyBboxPatch(
+            (i + offset, y), 0.9, 0.9,
+            boxstyle="round,pad=0.05",
+            facecolor=color, edgecolor="#555", linewidth=1.2,
+        )
+        ax.add_patch(rect)
+        ax.text(i + offset + 0.45, y + 0.45, ch,
+                ha="center", va="center", fontsize=14, fontweight="bold")
+    if label:
+        ax.text(offset - 0.3, y + 0.45, label,
+                ha="right", va="center", fontsize=12, color="#555")
+```
+
+## Boyer-Moore — Bad Character Rule
+
+Step through the Boyer-Moore search. The algorithm scans the pattern **right-to-left** and uses the bad character rule to skip alignments.
+
+```{pyodide}
+#| autorun: true
+#| edit: false
+#| output: false
+
+def bm_bad_char_table(P):
+    """Last occurrence of each character in P (R function)."""
+    R = {}
+    for i, c in enumerate(P):
+        R[c] = i
+    return R
+
+
+def bm_trace(T, P):
+    """Boyer-Moore (bad character rule) returning detailed snapshots."""
+    n, m = len(T), len(P)
+    R = bm_bad_char_table(P)
+    snapshots = []
+    s = 0
+    total_comps = 0
+    matches = []
+    while s <= n - m:
+        comps = []
+        j = m - 1
+        while j >= 0 and P[j] == T[s + j]:
+            comps.append((j, True))
+            total_comps += 1
+            j -= 1
+        if j < 0:
+            comps = [(k, True) for k in range(m - 1, -1, -1)]
+            matches.append(s)
+            snapshots.append({
+                "s": s, "comps": comps, "event": "match_found", "shift": 1,
+                "bad_char": None, "bad_pos": None, "j_mismatch": None,
+                "total_comps": total_comps, "matches": list(matches),
+            })
+            s += 1
+        else:
+            total_comps += 1
+            comps.append((j, False))
+            bad_char = T[s + j]
+            bad_pos = R.get(bad_char, -1)
+            shift = max(1, j - bad_pos)
+            snapshots.append({
+                "s": s, "comps": comps, "event": "mismatch", "shift": shift,
+                "bad_char": bad_char, "bad_pos": bad_pos, "j_mismatch": j,
+                "total_comps": total_comps, "matches": list(matches),
+            })
+            s += shift
+    return snapshots
+
+
+def draw_bm_step(T, P, step_idx):
+    R = bm_bad_char_table(P)
+    snapshots = bm_trace(T, P)
+    if not snapshots:
+        return
+    step_idx = min(step_idx, len(snapshots) - 1)
+    snap = snapshots[step_idx]
+    n, m = len(T), len(P)
+    s = snap["s"]
+    comps = snap["comps"]
+
+    fig = plt.figure(figsize=(max(n * 0.85, 10), 8.0))
+    gs = fig.add_gridspec(3, 1, height_ratios=[4, 2.5, 2], hspace=0.35)
+
+    ax = fig.add_subplot(gs[0])
+    ax.set_xlim(-2.5, n + 2.0)
+    ax.set_ylim(-1.5, 3.5)
+    ax.set_aspect("equal")
+    ax.axis("off")
+
+    for idx in range(n):
+        ax.text(idx + 0.45, 3.0, str(idx), ha="center", fontsize=8, color="#999")
+
+    t_hi = {}
+    for j, matched in comps:
+        t_hi[s + j] = COLORS["match"] if matched else COLORS["mismatch"]
+    draw_string_row(ax, 1.8, T, label="T", highlights=t_hi)
+
+    p_hi = {}
+    for j, matched in comps:
+        p_hi[j] = COLORS["match"] if matched else COLORS["mismatch"]
+    draw_string_row(ax, 0.5, P, label="P", highlights=p_hi, offset=s)
+
+    ax.annotate("", xy=(s + 0.3, 0.1), xytext=(s + m - 0.4, 0.1),
+                arrowprops=dict(arrowstyle="<-", color="#999", lw=1.5, ls="--"))
+    ax.text(s + m / 2, -0.25, "scan: right to left", ha="center", fontsize=8, color="#999")
+
+    for order, (j, matched) in enumerate(comps):
+        ax.text(s + j + 0.45, 0.5 - 0.15, str(order + 1), ha="center",
+                fontsize=7, color="#999", style="italic")
+
+    if snap["event"] == "mismatch":
+        shift = snap["shift"]
+        ax.annotate("", xy=(s + shift + m / 2, -0.7), xytext=(s + m / 2, -0.7),
+                     arrowprops=dict(arrowstyle="->", color=COLORS["border"], lw=2.5))
+        ax.text(s + m / 2 + shift / 2, -1.1, f"shift by {shift}",
+                ha="center", fontsize=10, color=COLORS["border"], fontweight="bold")
+
+    if snap["event"] == "match_found":
+        info = f"FULL MATCH at position {s}"
+    else:
+        j_mm = snap["j_mismatch"]
+        bc = snap["bad_char"]
+        bp = snap["bad_pos"]
+        info = (f"Mismatch at j={j_mm}: T[{s+j_mm}]='{bc}' != P[{j_mm}]='{P[j_mm]}' | "
+                f"R('{bc}')={bp} | shift=max(1, {j_mm}-{bp})={snap['shift']}")
+
+    ax.set_title(f"Boyer-Moore step {step_idx+1}/{len(snapshots)} | s={s} | "
+                 f"comps={snap['total_comps']} | matches={snap['matches']}\n{info}",
+                 fontsize=10, pad=8)
+
+    ax2 = fig.add_subplot(gs[1])
+    ax2.axis("off")
+    ax2.set_title("Bad Character Table R(c) = rightmost position of c in P",
+                  fontsize=10, pad=5, loc="left")
+
+    all_chars = sorted(set(T + P))
+    nc = len(all_chars)
+    ax2.set_xlim(-0.5, nc + 0.5)
+    ax2.set_ylim(-0.5, 2.5)
+    ax2.set_aspect("equal")
+
+    for idx, c in enumerate(all_chars):
+        val = R.get(c, -1)
+        if snap["event"] == "mismatch" and c == snap["bad_char"]:
+            color = COLORS["mismatch"]
+        elif val >= 0:
+            color = "#E8F5E9"
+        else:
+            color = "#F5F5F5"
+        rect = mpatches.FancyBboxPatch(
+            (idx, 1.2), 0.9, 0.9, boxstyle="round,pad=0.05",
+            facecolor="#FAFAFA", edgecolor="#555", linewidth=1.0)
+        ax2.add_patch(rect)
+        ax2.text(idx + 0.45, 1.65, f"'{c}'", ha="center", va="center",
+                 fontsize=11, fontfamily="monospace")
+        rect2 = mpatches.FancyBboxPatch(
+            (idx, 0.0), 0.9, 0.9, boxstyle="round,pad=0.05",
+            facecolor=color, edgecolor="#555", linewidth=1.0)
+        ax2.add_patch(rect2)
+        ax2.text(idx + 0.45, 0.45, str(val), ha="center", va="center",
+                 fontsize=12, fontweight="bold")
+    ax2.text(-0.3, 1.65, "c", ha="right", va="center", fontsize=11, color="#555")
+    ax2.text(-0.3, 0.45, "R(c)", ha="right", va="center", fontsize=11, color="#555")
+
+    ax3 = fig.add_subplot(gs[2])
+    ax3.set_xlim(-0.5, len(snapshots))
+    ax3.set_ylim(-0.5, 1.5)
+    ax3.axis("off")
+    ax3.set_title("Alignments tried (number = comparisons, green = match found)",
+                  fontsize=9, pad=3, loc="left")
+
+    for idx, sn in enumerate(snapshots):
+        if sn["event"] == "match_found":
+            color = COLORS["match"]
+        elif idx <= step_idx:
+            color = COLORS["mismatch"]
+        else:
+            color = "#F0F0F0"
+        edgecolor = "#000" if idx == step_idx else "#999"
+        lw = 2.5 if idx == step_idx else 0.8
+        rect = mpatches.FancyBboxPatch(
+            (idx, 0.3), 0.8, 0.8, boxstyle="round,pad=0.03",
+            facecolor=color, edgecolor=edgecolor, linewidth=lw)
+        ax3.add_patch(rect)
+        ax3.text(idx + 0.4, 0.7, str(len(sn["comps"])),
+                 ha="center", va="center", fontsize=8, fontweight="bold")
+        ax3.text(idx + 0.4, 0.05, f"s={sn['s']}", ha="center", fontsize=7, color="#777")
+
+    plt.tight_layout()
+    plt.show()
+```
+
+```{ojs}
+//| echo: false
+viewof T_bm = Inputs.text({label: "T:", value: "abcaabcabcaab", width: 400})
+viewof P_bm = Inputs.text({label: "P:", value: "abcab", width: 400})
+```
+
+```{pyodide}
+#| autorun: true
+#| edit: false
+#| output: false
+#| input: [T_bm, P_bm]
+#| define: [bm_max_step]
+
+if T_bm and P_bm and len(P_bm) <= len(T_bm):
+    bm_max_step = max(len(bm_trace(T_bm, P_bm)) - 1, 0)
+else:
+    bm_max_step = 0
+```
+
+```{ojs}
+//| echo: false
+viewof step_bm = Inputs.range([0, bm_max_step], {step: 1, value: 0, label: "Step:"})
+```
+
+```{pyodide}
+#| autorun: true
+#| edit: false
+#| input: [T_bm, P_bm, step_bm]
+
+if T_bm and P_bm and len(P_bm) <= len(T_bm):
+    draw_bm_step(T_bm, P_bm, int(step_bm))
+```

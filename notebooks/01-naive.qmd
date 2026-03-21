@@ -1,0 +1,190 @@
+---
+title: "Naive String Matching"
+subtitle: "Interactive visualizations for Chapter 1 of the Advanced Algorithms notes"
+engine: knitr
+format:
+  live-html:
+    theme: cosmo
+    toc: true
+    toc-depth: 3
+    pyodide:
+      packages:
+        - matplotlib
+        - numpy
+      cell-options:
+        autorun: true
+        edit: false
+        code-fold: true
+---
+
+```{pyodide}
+#| autorun: true
+#| edit: false
+#| output: false
+
+import matplotlib.pyplot as plt
+import matplotlib.patches as mpatches
+import numpy as np
+
+plt.rcParams.update({
+    "font.family": "monospace",
+    "font.size": 13,
+    "figure.facecolor": "#fafafa",
+    "figure.dpi": 120,
+    "savefig.dpi": 120,
+})
+
+COLORS = {
+    "match": "#4CAF50",
+    "mismatch": "#F44336",
+    "current": "#FFC107",
+    "skip": "#90CAF9",
+    "default": "#E0E0E0",
+    "pattern": "#BBDEFB",
+    "border": "#7E57C2",
+}
+
+
+def draw_string_row(ax, y, string, label="", highlights=None, offset=0):
+    """Draw a row of character boxes at vertical position y."""
+    highlights = highlights or {}
+    for i, ch in enumerate(string):
+        color = highlights.get(i, COLORS["default"])
+        rect = mpatches.FancyBboxPatch(
+            (i + offset, y), 0.9, 0.9,
+            boxstyle="round,pad=0.05",
+            facecolor=color, edgecolor="#555", linewidth=1.2,
+        )
+        ax.add_patch(rect)
+        ax.text(i + offset + 0.45, y + 0.45, ch,
+                ha="center", va="center", fontsize=14, fontweight="bold")
+    if label:
+        ax.text(offset - 0.3, y + 0.45, label,
+                ha="right", va="center", fontsize=12, color="#555")
+```
+
+## Naive String Matching
+
+Slide through every alignment of `P` against `T` and see which characters match.
+
+```{pyodide}
+#| autorun: true
+#| edit: false
+#| output: false
+
+def naive_trace(T, P):
+    """Return list of (shift, comparisons) where each comparison is (j, matched)."""
+    steps = []
+    for s in range(len(T) - len(P) + 1):
+        comps = []
+        for j in range(len(P)):
+            matched = T[s + j] == P[j]
+            comps.append((j, matched))
+            if not matched:
+                break
+        steps.append((s, comps))
+    return steps
+
+
+def draw_naive(T, P, step_idx):
+    steps = naive_trace(T, P)
+    n, m = len(T), len(P)
+    s, comps = steps[step_idx]
+    last_j, last_matched = comps[-1]
+    is_full_match = last_matched and last_j == m - 1
+
+    total_comps = sum(len(c) for _, c in steps[:step_idx + 1])
+    matches_found = [st[0] for st in steps[:step_idx + 1]
+                     if st[1][-1][1] and st[1][-1][0] == m - 1]
+
+    fig, axes = plt.subplots(2, 1, figsize=(max(n * 0.85, 10), 5.5),
+                              gridspec_kw={"height_ratios": [3, 2]})
+
+    ax = axes[0]
+    ax.set_xlim(-2.5, n + 1.5)
+    ax.set_ylim(-1.0, 3.2)
+    ax.set_aspect("equal")
+    ax.axis("off")
+
+    for i in range(n):
+        ax.text(i + 0.45, 2.7, str(i), ha="center", va="center", fontsize=9, color="#999")
+
+    t_hi = {}
+    for j, matched in comps:
+        t_hi[s + j] = COLORS["match"] if matched else COLORS["mismatch"]
+    draw_string_row(ax, 1.6, T, label="T", highlights=t_hi)
+
+    p_hi = {}
+    for j, matched in comps:
+        p_hi[j] = COLORS["match"] if matched else COLORS["mismatch"]
+    draw_string_row(ax, 0.3, P, label="P", highlights=p_hi, offset=s)
+
+    for j, matched in comps:
+        color = COLORS["match"] if matched else COLORS["mismatch"]
+        ax.plot([s + j + 0.45, s + j + 0.45], [1.6, 1.2], color=color, linewidth=1.5, alpha=0.5)
+
+    status = "MATCH!" if is_full_match else f"mismatch: T[{s+last_j}]='{T[s+last_j]}' != P[{last_j}]='{P[last_j]}'"
+    color = COLORS["match"] if is_full_match else COLORS["mismatch"]
+    ax.text(n + 0.5, 1.0, status, fontsize=10, color=color, va="center", fontweight="bold")
+
+    ax.set_title(f"Naive | shift s={s} | comparisons this step: {len(comps)} | "
+                 f"total comparisons: {total_comps} | matches: {len(matches_found)}",
+                 fontsize=11, pad=8)
+
+    ax2 = axes[1]
+    ax2.set_xlim(-0.5, len(steps))
+    ax2.set_ylim(-0.5, 1.5)
+    ax2.axis("off")
+
+    for idx, (ss, cc) in enumerate(steps):
+        last = cc[-1]
+        if last[1] and last[0] == m - 1:
+            c = COLORS["match"]
+        elif idx <= step_idx:
+            c = COLORS["mismatch"] if not last[1] else COLORS["default"]
+        else:
+            c = "#F5F5F5"
+        edgecolor = "#000" if idx == step_idx else "#999"
+        lw = 2.5 if idx == step_idx else 0.8
+        rect = mpatches.FancyBboxPatch(
+            (idx, 0.3), 0.8, 0.8, boxstyle="round,pad=0.03",
+            facecolor=c, edgecolor=edgecolor, linewidth=lw)
+        ax2.add_patch(rect)
+        ax2.text(idx + 0.4, 0.7, str(len(cc)), ha="center", va="center", fontsize=8, fontweight="bold")
+        ax2.text(idx + 0.4, 0.05, f"s={ss}", ha="center", va="center", fontsize=7, color="#777")
+
+    ax2.set_title("All shifts (number = comparisons at each shift, current = bold border)",
+                  fontsize=10, pad=5, loc="left")
+    plt.tight_layout()
+    plt.show()
+```
+
+```{ojs}
+//| echo: false
+viewof T_naive = Inputs.text({label: "T:", value: "abcaabcabcaab", width: 400})
+viewof P_naive = Inputs.text({label: "P:", value: "abcab", width: 400})
+```
+
+```{pyodide}
+#| autorun: true
+#| edit: false
+#| output: false
+#| input: [T_naive, P_naive]
+#| define: [naive_max_step]
+
+naive_max_step = max(len(T_naive) - len(P_naive), 0) if T_naive and P_naive and len(P_naive) <= len(T_naive) else 0
+```
+
+```{ojs}
+//| echo: false
+viewof step_naive = Inputs.range([0, naive_max_step], {step: 1, value: 0, label: "Step:"})
+```
+
+```{pyodide}
+#| autorun: true
+#| edit: false
+#| input: [T_naive, P_naive, step_naive]
+
+if T_naive and P_naive and len(P_naive) <= len(T_naive):
+    draw_naive(T_naive, P_naive, int(step_naive))
+```

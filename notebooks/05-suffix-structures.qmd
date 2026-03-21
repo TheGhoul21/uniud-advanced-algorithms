@@ -1,0 +1,243 @@
+---
+title: "Suffix Trie & Suffix Tree"
+subtitle: "Interactive visualizations for Chapter 1 of the Advanced Algorithms notes"
+engine: knitr
+format:
+  live-html:
+    theme: cosmo
+    toc: true
+    toc-depth: 3
+    pyodide:
+      packages:
+        - matplotlib
+        - numpy
+        - networkx
+      cell-options:
+        autorun: true
+        edit: false
+        code-fold: true
+---
+
+```{pyodide}
+#| autorun: true
+#| edit: false
+#| output: false
+
+import matplotlib.pyplot as plt
+import matplotlib.patches as mpatches
+import numpy as np
+
+plt.rcParams.update({
+    "font.family": "monospace",
+    "font.size": 13,
+    "figure.facecolor": "#fafafa",
+    "figure.dpi": 120,
+    "savefig.dpi": 120,
+})
+
+COLORS = {
+    "match": "#4CAF50",
+    "mismatch": "#F44336",
+    "current": "#FFC107",
+    "skip": "#90CAF9",
+    "default": "#E0E0E0",
+    "pattern": "#BBDEFB",
+    "border": "#7E57C2",
+}
+
+
+def draw_string_row(ax, y, string, label="", highlights=None, offset=0):
+    """Draw a row of character boxes at vertical position y."""
+    highlights = highlights or {}
+    for i, ch in enumerate(string):
+        color = highlights.get(i, COLORS["default"])
+        rect = mpatches.FancyBboxPatch(
+            (i + offset, y), 0.9, 0.9,
+            boxstyle="round,pad=0.05",
+            facecolor=color, edgecolor="#555", linewidth=1.2,
+        )
+        ax.add_patch(rect)
+        ax.text(i + offset + 0.45, y + 0.45, ch,
+                ha="center", va="center", fontsize=14, fontweight="bold")
+    if label:
+        ax.text(offset - 0.3, y + 0.45, label,
+                ha="right", va="center", fontsize=12, color="#555")
+```
+
+## Suffix Trie & Suffix Tree
+
+Build and visualize the suffix trie and its compacted suffix tree for any input string.
+
+```{pyodide}
+#| autorun: true
+#| edit: false
+#| output: false
+
+import networkx as nx
+
+
+def hierarchy_pos(G, root="root", width=2.0, vert_gap=1.0):
+    """Position nodes in a top-down tree layout (pure Python, no graphviz)."""
+    def _subtree_width(node):
+        children = list(G.successors(node))
+        if not children:
+            return 1
+        return sum(_subtree_width(c) for c in children)
+
+    def _assign(node, left, right, depth, pos):
+        pos[node] = ((left + right) / 2, -depth * vert_gap)
+        children = sorted(G.successors(node))
+        if not children:
+            return
+        total_w = sum(_subtree_width(c) for c in children)
+        x = left
+        for child in children:
+            w = _subtree_width(child)
+            child_right = x + (right - left) * w / total_w
+            _assign(child, x, child_right, depth + 1, pos)
+            x = child_right
+
+    pos = {}
+    _assign(root, 0, width, 0, pos)
+    return pos
+
+
+def build_suffix_trie_graph(T):
+    """Build a suffix trie as a networkx DiGraph."""
+    G = nx.DiGraph()
+    G.add_node("root", label="root")
+    node_id = 0
+    for i in range(len(T)):
+        cur = "root"
+        for j in range(i, len(T)):
+            ch = T[j]
+            nxt = None
+            for _, neighbor, data in G.out_edges(cur, data=True):
+                if data["label"] == ch:
+                    nxt = neighbor
+                    break
+            if nxt is None:
+                node_id += 1
+                name = f"n{node_id}"
+                is_leaf = j == len(T) - 1
+                G.add_node(name, label=str(i) if is_leaf else "")
+                G.add_edge(cur, name, label=ch)
+                cur = name
+            else:
+                cur = nxt
+    return G
+
+
+def build_suffix_tree_graph(T):
+    """Build a compacted suffix tree as a networkx DiGraph."""
+    class Node:
+        _id = 0
+        def __init__(self):
+            Node._id += 1
+            self.id = Node._id
+            self.children = {}
+            self.suffix_start = None
+
+    Node._id = 0
+    root = Node()
+    for i in range(len(T)):
+        cur = root
+        j = i
+        while j < len(T):
+            ch = T[j]
+            if ch in cur.children:
+                label, child = cur.children[ch]
+                k = 0
+                while k < len(label) and j + k < len(T) and label[k] == T[j + k]:
+                    k += 1
+                if k == len(label):
+                    cur = child
+                    j += k
+                else:
+                    mid = Node()
+                    mid.children[label[k]] = (label[k:], child)
+                    new_leaf = Node()
+                    new_leaf.suffix_start = i
+                    mid.children[T[j + k]] = (T[j + k:], new_leaf)
+                    cur.children[ch] = (label[:k], mid)
+                    break
+            else:
+                new_leaf = Node()
+                new_leaf.suffix_start = i
+                cur.children[ch] = (T[j:], new_leaf)
+                break
+        else:
+            cur.suffix_start = i
+
+    G = nx.DiGraph()
+
+    def add_nodes(node, name="root"):
+        is_leaf = len(node.children) == 0
+        lbl = str(node.suffix_start) if is_leaf and node.suffix_start is not None else ""
+        G.add_node(name, label=lbl, is_leaf=is_leaf)
+        for ch in sorted(node.children):
+            edge_label, child = node.children[ch]
+            child_name = f"n{child.id}"
+            add_nodes(child, child_name)
+            G.add_edge(name, child_name, label=edge_label)
+
+    add_nodes(root)
+    return G
+
+
+def draw_tree_graph(G, title=""):
+    """Draw a tree graph with edge labels."""
+    if len(G.nodes) > 80:
+        print("String too long for visualization (max ~8 chars).")
+        return
+
+    fig, ax = plt.subplots(figsize=(max(len(G.nodes) * 0.8, 6), max(len(G.nodes) * 0.5, 4)))
+
+    pos = hierarchy_pos(G, root="root", width=max(len(G.nodes) * 0.3, 2.0))
+
+    leaves = [n for n in G.nodes if G.nodes[n].get("is_leaf", False) or G.out_degree(n) == 0]
+    internals = [n for n in G.nodes if n not in leaves]
+
+    nx.draw_networkx_nodes(G, pos, nodelist=internals, ax=ax,
+                           node_color="#BBDEFB", node_size=350, edgecolors="#555")
+    nx.draw_networkx_nodes(G, pos, nodelist=leaves, ax=ax,
+                           node_color="#C8E6C9", node_size=350, edgecolors="#555",
+                           linewidths=2.0)
+
+    node_labels = {n: G.nodes[n].get("label", "") for n in G.nodes}
+    nx.draw_networkx_labels(G, pos, labels=node_labels, ax=ax, font_size=10, font_weight="bold")
+
+    nx.draw_networkx_edges(G, pos, ax=ax, edge_color="#777",
+                           arrows=True, arrowsize=12, width=1.5)
+
+    edge_labels = {(u, v): d["label"] for u, v, d in G.edges(data=True)}
+    nx.draw_networkx_edge_labels(G, pos, edge_labels=edge_labels, ax=ax,
+                                  font_size=11, font_color="#9C27B0", font_family="monospace")
+
+    ax.set_title(title, fontsize=13, pad=12)
+    ax.axis("off")
+    plt.tight_layout()
+    plt.show()
+```
+
+```{ojs}
+//| echo: false
+viewof T_tree = Inputs.text({label: "T:", value: "cacao$", width: 300})
+viewof tree_view = Inputs.radio(["Suffix Trie", "Suffix Tree"], {value: "Suffix Trie", label: "View:"})
+```
+
+```{pyodide}
+#| autorun: true
+#| edit: false
+#| input: [T_tree, tree_view]
+
+if T_tree and len(T_tree) <= 10:
+    if tree_view == "Suffix Trie":
+        G = build_suffix_trie_graph(T_tree)
+        draw_tree_graph(G, title=f'Suffix Trie of "{T_tree}"')
+    else:
+        G = build_suffix_tree_graph(T_tree)
+        draw_tree_graph(G, title=f'Suffix Tree of "{T_tree}"')
+else:
+    print("Keep |T| <= 10 for readable visualization.")
+```
