@@ -287,6 +287,13 @@ This naive approach basically starts over from scratch at each shift, without le
 
 \section{Knuth-Morris-Pratt (KMP) algorithm}
 
+\aside{The algorithm is named after Donald Knuth, James Morris, and
+Vaughan Pratt, who discovered it independently around 1970.
+Morris came up with the idea while writing a text editor; Knuth and Pratt
+arrived at it through theoretical analysis.
+The three joined forces, but the paper was not published until 1977 ---
+seven years later.}
+
 \subsection{Intuition}
 
 What if we could somehow "remember" the information from a previous comparison, and use it to skip some of the checks at the next shift?
@@ -2067,6 +2074,12 @@ failures possible—they let the algorithm skip large portions of the text.
 \emph{last} character of the current alignment gives the most information
 about how far to jump.}
 
+\aside{Why learn Boyer-Moore if KMP already achieves $\Oh{n+m}$?
+In practice, Boyer-Moore is often \emph{faster} than KMP on natural
+language and large alphabets: its right-to-left scan frequently skips
+large chunks of the text without even looking at them.
+KMP guarantees a tight worst case; Boyer-Moore wins on average.}
+
 \subsection{Intuition}
 
 The algorithm combines two independent heuristics.
@@ -2830,6 +2843,33 @@ On the other hand, in favourable inputs (e.g.\ $T = c^n$,
 $P = a^{m-1}c$) the original Boyer-Moore already scans the text in as few as
 $\lceil n/m \rceil$ character comparisons.
 
+% ══════════════════════════════════════════════════════════════════
+\subsection*{Single-Pattern Algorithms at a Glance}
+% ══════════════════════════════════════════════════════════════════
+
+Before moving on, here is a quick reference table comparing the
+single-pattern algorithms we have seen so far.
+
+\begin{table}[H]
+\centering
+\renewcommand{\arraystretch}{1.3}
+\begin{tabular}{l c c l}
+  \toprule
+  \textbf{Algorithm} & \textbf{Worst case} & \textbf{Preprocessing} & \textbf{Key idea} \\
+  \midrule
+  Naïve             & $\Oh{nm}$   & ---         & Try every alignment \\
+  KMP               & $\Oh{n+m}$  & $\Oh{m}$    & Never re-read $T$; use border table \\
+  Z-Algorithm       & $\Oh{n+m}$  & $\Oh{n+m}$  & Z-box reuse avoids redundant comparisons \\
+  Boyer-Moore       & $\Oh{nm}$\rlap{$^*$}  & $\Oh{m+|\Sigma|}$ & Right-to-left scan; skip on mismatch \\
+  \bottomrule
+\end{tabular}
+\smallskip
+
+{\footnotesize $^*$\,With the Apostolico--Giancarlo optimisation,
+Boyer-Moore achieves $\Oh{n+m}$ worst case and $\Oh{n/m}$ best case.}
+\caption{Comparison of single-pattern exact matching algorithms.}
+\label{tab:single-pattern-summary}
+\end{table}
 
 
 \section{Generalization of the Problem: Multiple Patterns}
@@ -3320,10 +3360,124 @@ character.
 
 \aside{Failure links in $K(\mathcal{P})$ are the direct multi-pattern
 generalisation of the $sp'$ values in KMP: both encode ``the longest
-previously matched prefix you can fall back to''.}
+previously matched prefix you can fall back to''.
+The resulting automaton was published by Alfred Aho and Margaret Corasick
+in 1975, and was originally built for \texttt{fgrep}, the Unix tool for
+searching a file for multiple fixed strings at once --- so every time
+you run \texttt{grep -F} with several patterns, you are using a direct
+descendant of this construction.}
 
 To achieve a true $\Oh{n + m}$ single pass we need to handle mismatches
 without restarting from the root --- the same challenge KMP solved for a
 single pattern.
 The solution is to equip $K(\mathcal{P})$ with failure links,
 leading to the \textbf{Aho--Corasick} automaton.
+
+Figure~\ref{fig:keyword-tree-failure} previews the idea for the example
+$\mathcal{P} = \{\texttt{he},\texttt{she},\texttt{his},\texttt{hers}\}$.
+Dashed arrows are failure links: when the descent in the tree gets stuck
+or reaches a leaf, we follow the failure link instead of restarting from
+the root, and continue matching from there.
+
+% ── Figure: keyword tree with failure links ──────────────────────
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[
+    scale=0.90,
+    rnd/.style={circle, draw=gray!60,          fill=gray!12,    inner sep=0pt,
+                minimum size=12pt, thick},
+    tnd/.style={circle, draw=blue!55!black,    fill=blue!7,     inner sep=0pt,
+                minimum size=9pt,  thick},
+    lnd/.style={circle, draw=orange!65!black,  fill=orange!18,  inner sep=0pt,
+                minimum size=9pt,  thick},
+    eg/.style={-Stealth, draw=gray!50, thin, shorten >=2pt, shorten <=2pt},
+    el/.style={font=\small\ttfamily, inner sep=1.5pt, text=gray!70},
+    fl/.style={-Stealth, draw=red!50!black, dashed, thin,
+               shorten >=3pt, shorten <=3pt},
+    ll/.style={font=\scriptsize\sffamily\itshape, text=orange!55!black},
+    nl/.style={font=\tiny\sffamily, text=blue!40!black},
+]
+
+  %% ── NODES ──────────────────────────────────────────────────────
+  \node[rnd] (root) at (4, 0) {};
+  \node[above=4pt, font=\tiny\sffamily, text=gray!45] at (root.north) {root};
+
+  % h branch
+  \node[tnd] (h)    at (2, -1.4) {};
+  \node[lnd] (he)   at (0.8, -2.8) {};
+  \node[tnd] (hi)   at (3.2, -2.8) {};
+  \node[lnd] (his)  at (3.2, -4.2) {};
+  \node[tnd] (her)  at (0.8, -4.2) {};
+  \node[lnd] (hers) at (0.8, -5.6) {};
+
+  % s branch
+  \node[tnd] (s)    at (6, -1.4) {};
+  \node[tnd] (sh)   at (6, -2.8) {};
+  \node[lnd] (she)  at (6, -4.2) {};
+
+  %% ── TREE EDGES ────────────────────────────────────────────────
+  \draw[eg] (root) -- (h)   node[midway, above left, el] {h};
+  \draw[eg] (root) -- (s)   node[midway, above right, el] {s};
+  \draw[eg] (h)    -- (he)  node[midway, above left, el] {e};
+  \draw[eg] (h)    -- (hi)  node[midway, above right, el] {i};
+  \draw[eg] (he)   -- (her) node[midway, right, el] {r};
+  \draw[eg] (her)  -- (hers) node[midway, right, el] {s};
+  \draw[eg] (hi)   -- (his) node[midway, right, el] {s};
+  \draw[eg] (s)    -- (sh)  node[midway, right, el] {h};
+  \draw[eg] (sh)   -- (she) node[midway, right, el] {e};
+
+  %% ── LEAF LABELS ───────────────────────────────────────────────
+  \node[ll, below=4pt] at (he.south west)  {\texttt{he}};
+  \node[ll, below=4pt] at (his.south)  {\texttt{his}};
+  \node[ll, below=4pt] at (hers.south) {\texttt{hers}};
+  \node[ll, below=4pt] at (she.south)  {\texttt{she}};
+
+  %% ── NODE LABELS (strings spelled) ─────────────────────────────
+  \node[nl, left=3pt]  at (h.west)   {h};
+  \node[nl, right=3pt] at (s.east)   {s};
+  \node[nl, right=3pt] at (sh.east)  {sh};
+  \node[nl, left=3pt]  at (hi.west)  {hi};
+  \node[nl, left=3pt]  at (her.west) {her};
+
+  %% ── FAILURE LINKS (dashed red arrows) ─────────────────────────
+  % sh → h : longest proper suffix of "sh" that is a prefix of some pattern
+  \draw[fl, bend left=25] (sh) to
+    node[midway, above, font=\tiny\sffamily, text=red!50!black] {} (h);
+
+  % she → he : "he" is the longest proper suffix of "she" that starts a pattern
+  \draw[fl, bend left=20] (she) to (he);
+
+  % her → root : no proper suffix of "her" is a prefix of any pattern
+  % (actually "er" and "r" are not prefixes of any pattern)
+
+  % his → s : "s" is the longest proper suffix of "his" that is a prefix
+  \draw[fl, bend right=30] (his) to (s);
+
+  % hers → s : "s" is the longest proper suffix of "hers" that is a prefix
+  \draw[fl, bend left=35] (hers) to (s);
+
+  % h → root, s → root, he → root, hi → root (all go to root)
+  % (omitted for clarity — only non-root failure links shown)
+
+  %% ── LEGEND ────────────────────────────────────────────────────
+  \node[anchor=north west, font=\footnotesize\sffamily] at (7.5, -1.0) {
+    \begin{tabular}{@{}l@{}}
+      \textcolor{gray!50}{$\longrightarrow$\;tree edge} \\[2pt]
+      \textcolor{red!50!black}{$\dashrightarrow$\;failure link}
+    \end{tabular}
+  };
+
+\end{tikzpicture}
+\caption{%
+  Keyword tree for
+  $\mathcal{P} = \{\texttt{he},\,\texttt{she},\,\texttt{his},\,\texttt{hers}\}$
+  with failure links (dashed).
+  For example, after matching \texttt{she} the failure link from the
+  \texttt{she}-node leads to the \texttt{he}-node, so the automaton
+  knows that \texttt{he} has also been matched --- without re-reading
+  any character.
+  Only non-root failure links are shown; all other nodes fall back to
+  the root.
+}
+\label{fig:keyword-tree-failure}
+\end{figure}
