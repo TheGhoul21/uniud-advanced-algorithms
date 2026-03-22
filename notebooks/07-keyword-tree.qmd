@@ -464,3 +464,207 @@ if T_kw_search and P_kw_search:
         _G_kw, _steps_kw = keyword_search_trace(T_kw_search, _pats)
         draw_keyword_search_step(T_kw_search, _G_kw, _steps_kw, int(step_kw))
 ```
+
+---
+
+## Aho-Corasick: Failure Links & Output Links
+
+The keyword tree alone restarts from the root at every position.
+The **Aho-Corasick automaton** adds two types of pointers:
+
+- **Failure links** (red dashed): when the descent gets stuck, jump to the longest proper suffix of the current path that is also a prefix of some pattern.
+- **Output links** (green dotted): chain together all patterns that end along the failure-link path, so patterns ending at internal nodes are not missed.
+
+```{pyodide}
+#| autorun: true
+#| edit: false
+#| output: false
+
+def compute_failure_links(G):
+    """Compute failure links for keyword tree G using BFS."""
+    from collections import deque
+    fail = {}
+    fail["root"] = "root"
+
+    # Map each node to the string it represents
+    node_string = {"root": ""}
+    for n in nx.topological_sort(G):
+        if n == "root":
+            continue
+        for parent, child, data in G.in_edges(n, data=True):
+            node_string[n] = node_string[parent] + data["label"]
+
+    # BFS by depth
+    queue = deque()
+    for _, child, data in G.out_edges("root", data=True):
+        fail[child] = "root"
+        queue.append(child)
+
+    while queue:
+        v = queue.popleft()
+        for _, child, data in G.out_edges(v, data=True):
+            ch = data["label"]
+            # Follow failure links from v to find failure for child
+            x = fail[v]
+            while x != "root":
+                # Check if x has edge labeled ch
+                found = None
+                for _, nb, d in G.out_edges(x, data=True):
+                    if d["label"] == ch:
+                        found = nb
+                        break
+                if found:
+                    fail[child] = found
+                    break
+                x = fail[x]
+            else:
+                # Check root
+                found = None
+                for _, nb, d in G.out_edges("root", data=True):
+                    if d["label"] == ch:
+                        found = nb
+                        break
+                fail[child] = found if found and found != child else "root"
+            queue.append(child)
+
+    return fail, node_string
+
+
+def compute_output_links(G, fail):
+    """Compute output links: nearest pattern reachable via failure links."""
+    from collections import deque
+    output = {}
+    for n in G.nodes:
+        output[n] = None
+
+    # BFS
+    queue = deque()
+    for _, child in G.out_edges("root"):
+        queue.append(child)
+        # Check if failure target is a pattern
+        f = fail.get(child, "root")
+        if f != "root" and G.nodes[f].get("is_leaf", False):
+            output[child] = f
+        else:
+            output[child] = output.get(f)
+
+    while queue:
+        v = queue.popleft()
+        for _, child in G.out_edges(v):
+            f = fail.get(child, "root")
+            if f != "root" and G.nodes[f].get("is_leaf", False):
+                output[child] = f
+            else:
+                output[child] = output.get(f)
+            queue.append(child)
+
+    return output
+
+
+def draw_aho_corasick(G, patterns, fail, output, node_string):
+    """Draw keyword tree with failure links and output links."""
+    pos = hierarchy_pos(G, root="root", width=max(len(G.nodes) * 0.3, 2.0))
+
+    leaves = [n for n in G.nodes if G.nodes[n].get("is_leaf", False)]
+    internals = [n for n in G.nodes if n not in leaves]
+
+    depths = [G.nodes[n].get("depth", 0) for n in G.nodes]
+    height = max(depths) if depths else 0
+
+    fig, ax = plt.subplots(figsize=(max(len(G.nodes) * 0.8, 8),
+                                     max(height * 1.2, 5)))
+
+    # Draw nodes
+    nx.draw_networkx_nodes(G, pos, nodelist=internals, ax=ax,
+                           node_color="#BBDEFB", node_size=450, edgecolors="#555")
+    nx.draw_networkx_nodes(G, pos, nodelist=leaves, ax=ax,
+                           node_color="#FFCC80", node_size=450, edgecolors="#E65100",
+                           linewidths=2.0)
+
+    # Tree edges
+    nx.draw_networkx_edges(G, pos, ax=ax, edge_color="#777",
+                           arrows=True, arrowsize=12, width=1.5)
+
+    # Edge labels
+    edge_labels = {(u, v): d["label"] for u, v, d in G.edges(data=True)}
+    nx.draw_networkx_edge_labels(G, pos, edge_labels=edge_labels, ax=ax,
+                                  font_size=12, font_color="#9C27B0",
+                                  font_family="monospace")
+
+    # Failure links (red dashed)
+    fail_edges = []
+    for n, f in fail.items():
+        if n != "root" and f != "root":
+            fail_edges.append((n, f))
+    if fail_edges:
+        nx.draw_networkx_edges(G, pos, edgelist=fail_edges, ax=ax,
+                               edge_color="#C62828", style="dashed",
+                               arrows=True, arrowsize=10, width=1.5,
+                               connectionstyle="arc3,rad=0.3", alpha=0.7)
+
+    # Output links (green dotted)
+    out_edges = []
+    for n, o in output.items():
+        if o is not None:
+            out_edges.append((n, o))
+    if out_edges:
+        nx.draw_networkx_edges(G, pos, edgelist=out_edges, ax=ax,
+                               edge_color="#2E7D32", style="dotted",
+                               arrows=True, arrowsize=10, width=2.5,
+                               connectionstyle="arc3,rad=-0.3", alpha=0.8)
+
+    # Node labels (string spelled)
+    for n in G.nodes:
+        x, y = pos[n]
+        s = node_string.get(n, "")
+        if G.nodes[n].get("is_leaf", False):
+            pat = G.nodes[n].get("pattern", s)
+            ax.text(x, y - 0.35, pat, ha="center", va="top",
+                    fontsize=9, fontstyle="italic", color="#E65100",
+                    fontfamily="monospace")
+        elif n != "root" and s:
+            ax.text(x, y + 0.3, s, ha="center", va="bottom",
+                    fontsize=7, color="#666", fontfamily="monospace")
+
+    # Root label
+    rx, ry = pos["root"]
+    ax.text(rx, ry + 0.3, "root", ha="center", va="bottom",
+            fontsize=9, color="#999")
+
+    # Legend
+    ax.plot([], [], color="#777", linewidth=1.5, label="tree edge")
+    ax.plot([], [], color="#C62828", linewidth=1.5, linestyle="dashed",
+            label="failure link")
+    ax.plot([], [], color="#2E7D32", linewidth=2.5, linestyle="dotted",
+            label="output link")
+    ax.legend(loc="upper right", fontsize=9, framealpha=0.9)
+
+    ax.set_title(f'Aho-Corasick automaton for {{{", ".join(patterns)}}}',
+                 fontsize=13, pad=12)
+    ax.axis("off")
+    plt.tight_layout()
+    plt.show()
+```
+
+```{ojs}
+//| echo: false
+viewof P_ac = Inputs.text({
+  label: "Patterns (comma-separated):",
+  value: "he, she, his, hers",
+  width: 500
+})
+```
+
+```{pyodide}
+#| autorun: true
+#| edit: false
+#| input: [P_ac]
+
+if P_ac:
+    _pats_ac = [p.strip() for p in P_ac.split(",") if p.strip()]
+    if _pats_ac and len(_pats_ac) <= 20:
+        _G_ac = build_keyword_tree(_pats_ac)
+        _fail, _nstr = compute_failure_links(_G_ac)
+        _output = compute_output_links(_G_ac, _fail)
+        draw_aho_corasick(_G_ac, _pats_ac, _fail, _output, _nstr)
+```

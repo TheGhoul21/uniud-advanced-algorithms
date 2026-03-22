@@ -2213,8 +2213,8 @@ At each step Boyer-Moore applies whichever rule yields the larger shift.
 \node[red!70!black, font=\bfseries] at ({3*\cw}, -0.6) {$\times$};
 
 % Right-to-left scan arrow above P
-\draw[->, >=Stealth, thick, gray!50] ({3.4*\cw}, -0.85) -- ({-0.2*\cw}, -0.85)
-  node[midway, above, font=\scriptsize\sffamily, text=gray!60] {scan direction};
+\draw[->, >=Stealth, very thick, red!60!black] ({3.4*\cw}, -0.85) -- ({-0.2*\cw}, -0.85)
+  node[midway, above, font=\scriptsize\sffamily\bfseries, text=red!60!black] {scan direction $\longleftarrow$};
 
 % Level P' with Ghosting
 \node[font=\small\sffamily\bfseries, text=gray!60, anchor=east] at ({-0.6*\cw}, -2.6) {$P'$};
@@ -2391,10 +2391,10 @@ and continue --- no re-reading of $T$ required.
 \node[font=\small, text=gray!40] at ({6.2*\cw}, 0) {\dots};
 
 % ── scan direction (y = -0.6, between T and P) ─
-\draw[->, >=Stealth, thick, gray!50]
+\draw[->, >=Stealth, very thick, red!60!black]
   ({4.4*\cw}, -0.6) -- ({-0.2*\cw}, -0.6)
-  node[midway, above, font=\scriptsize\sffamily, text=gray!60]
-    {scan direction};
+  node[midway, above, font=\scriptsize\sffamily\bfseries, text=red!60!black]
+    {scan direction $\longleftarrow$};
 
 % ── P row (y = -1.5) ────────────────
 \node[font=\small\sffamily\bfseries, text=gray!60, anchor=east]
@@ -2672,30 +2672,103 @@ ending at position $j$ in $P$.
 \begin{figure}[H]
 \centering
 \begin{tikzpicture}[
-    scale=0.9,
-    pbar/.style={draw, fill=blue!5, thick, rounded corners=2pt},
-    suffix/.style={fill=orange!20, draw=orange!70, thick},
+    scale=0.85,
+    cell/.style={minimum width=7mm, minimum height=7mm, font=\ttfamily\small,
+                 inner sep=0pt, text centered, rounded corners=1.5pt},
+    C/.style={cell, draw=gray!40, fill=gray!6},
+    Zm/.style={cell, draw=violet!60, fill=violet!12, text=violet!70!black},
+    Nm/.style={cell, draw=orange!60, fill=orange!15, text=orange!70!black},
+    Pf/.style={cell, draw=violet!60, fill=violet!12, text=violet!70!black},
 ]
-    \draw[pbar] (0, 0) rectangle (6, 0.6);
-    \node[left] at (0, 0.3) {$P^r$};
+\def\cw{0.82}
+\def\m{6}  % length of P = abcabc
 
-    \draw[suffix] (2, 0) rectangle (3.5, 0.6) node[midway, font=\tiny] {$Z_k(P^r) = \ell$};
-    \node[below] at (2, 0) {$k$};
+%% ── P row ────────────────────────────────────────────────────
+\node[font=\small\sffamily\bfseries, text=gray!60, anchor=east]
+  at ({-0.6*\cw}, 1.8) {$P$};
+\foreach \i/\c in {1/a, 2/b, 3/c, 4/a, 5/b, 6/c}
+  \node[C] (P\i) at ({\i*\cw}, 1.8) {\c};
+% Position labels
+\foreach \i in {1,...,6}
+  \node[font=\tiny\sffamily, text=gray!50, above=2pt] at ({\i*\cw}, 2.2) {\i};
 
-    \draw[pbar] (0, -1.2) rectangle (6, -0.6);
-    \node[left] at (0, -0.9) {$P$};
+% Highlight N_3 suffix: positions 1..3 match suffix of P (positions 4..6)
+\foreach \i/\c in {4/a, 5/b, 6/c}
+  \node[Nm] at ({\i*\cw}, 1.8) {\c};
+% The matching suffix of P itself (last 3 chars)
+\foreach \i/\c in {4/a, 5/b, 6/c}
+  \node[font=\tiny, text=orange!60!black, below=1pt] at ({\i*\cw}, 1.35) {};
 
-    \draw[suffix] (2.5, -1.2) rectangle (4, -0.6) node[midway, font=\tiny] {$N_j(P) = \ell$};
-    \node[below] at (4, -1.2) {$j$};
+% Brace under positions 1..3 showing the suffix match
+\draw[orange!50!black, thick, decorate,
+      decoration={brace, mirror, raise=4pt, amplitude=4pt}]
+  ({0.6*\cw}, 1.35) -- ({3.4*\cw}, 1.35)
+  node[midway, below=10pt, font=\scriptsize\sffamily, text=orange!60!black]
+    {$P[1..3] = \texttt{abc}$};
 
-    \draw[<->, thick, Stealth-Stealth, blue!60!black]
-      (3, -0.1) -- (3, -0.5)
-      node[midway, right, font=\tiny\itshape] {$k = m{-}j{+}1$};
+% Brace under positions 4..6
+\draw[orange!50!black, thick, decorate,
+      decoration={brace, mirror, raise=4pt, amplitude=4pt}]
+  ({3.6*\cw}, 1.35) -- ({6.4*\cw}, 1.35)
+  node[midway, below=10pt, font=\scriptsize\sffamily, text=orange!60!black]
+    {$P[4..6] = \texttt{abc}$};
+
+% Curved arrow connecting the two
+\draw[-Stealth, orange!50!black, thick, dashed]
+  ({2*\cw}, 0.85) to[bend right=25] ({5*\cw}, 0.85);
+\node[font=\scriptsize\sffamily, text=orange!60!black] at ({3.5*\cw}, 0.45)
+  {$N_3 = 3$: suffix of $P[1..3]$ matches suffix of $P$};
+
+%% ── P^r row ──────────────────────────────────────────────────
+\node[font=\small\sffamily\bfseries, text=gray!60, anchor=east]
+  at ({-0.6*\cw}, -0.8) {$P^r$};
+\foreach \i/\c in {1/c, 2/b, 3/a, 4/c, 5/b, 6/a}
+  \node[C] (R\i) at ({\i*\cw}, -0.8) {\c};
+\foreach \i in {1,...,6}
+  \node[font=\tiny\sffamily, text=gray!50, above=2pt] at ({\i*\cw}, -0.4) {\i};
+
+% Highlight Z_4: prefix of P^r (positions 1..3 = cba) matches at position 4
+\foreach \i/\c in {1/c, 2/b, 3/a}
+  \node[Pf] at ({\i*\cw}, -0.8) {\c};
+\foreach \i/\c in {4/c, 5/b, 6/a}
+  \node[Zm] at ({\i*\cw}, -0.8) {\c};
+
+% Brace under prefix
+\draw[violet!50!black, thick, decorate,
+      decoration={brace, mirror, raise=4pt, amplitude=4pt}]
+  ({0.6*\cw}, -1.25) -- ({3.4*\cw}, -1.25)
+  node[midway, below=10pt, font=\scriptsize\sffamily, text=violet!60!black]
+    {prefix $P^r[1..3] = \texttt{cba}$};
+
+% Brace under match
+\draw[violet!50!black, thick, decorate,
+      decoration={brace, mirror, raise=4pt, amplitude=4pt}]
+  ({3.6*\cw}, -1.25) -- ({6.4*\cw}, -1.25)
+  node[midway, below=10pt, font=\scriptsize\sffamily, text=violet!60!black]
+    {$P^r[4..6] = \texttt{cba}$};
+
+\draw[-Stealth, violet!50!black, thick, dashed]
+  ({2*\cw}, -1.75) to[bend right=25] ({5*\cw}, -1.75);
+\node[font=\scriptsize\sffamily, text=violet!60!black] at ({3.5*\cw}, -2.15)
+  {$Z_4 = 3$: prefix of $P^r$ matches at position $k = 4$};
+
+%% ── Connection arrow between P and P^r ──────────────────────
+\draw[<->, very thick, Stealth-Stealth, blue!50!black]
+  ({7.2*\cw}, 1.8) -- ({7.2*\cw}, -0.8)
+  node[midway, right=4pt, font=\small\sffamily, text=blue!50!black, align=left]
+    {reverse\\[-2pt]\footnotesize $k = m{-}j{+}1 = 4$};
+
 \end{tikzpicture}
-\caption{Reversal correspondence: $N_j(P) = Z_{m-j+1}(P^r)$.
-  A Z-match of length $\ell$ at position $k$ in the reversed pattern
-  corresponds to a suffix-match of length $\ell$ ending at position $j = m-k+1$
-  in the original pattern.}
+\caption{Reversal correspondence: $N_j(P) = Z_{m-j+1}(P^r)$ for
+  $P = \texttt{abcabc}$.
+  \textbf{Top}: $N_3 = 3$ because the last 3 characters of $P[1..3]$
+  (\textcolor{orange!60!black}{\texttt{abc}}) match the last 3 characters
+  of $P$ (\textcolor{orange!60!black}{\texttt{abc}}).
+  \textbf{Bottom}: reversing $P$ gives $P^r = \texttt{cbacba}$, and
+  $Z_4 = 3$ because the prefix \textcolor{violet!60!black}{\texttt{cba}}
+  reappears at position $k = m - j + 1 = 4$.
+  Reading $P$ backwards from position $j$ is the same as reading $P^r$
+  forwards from position $k$.}
 \label{fig:nj-zk-correspondence}
 \end{figure}
 
@@ -3481,6 +3554,8 @@ the root, and continue matching from there.
     el/.style={font=\small\ttfamily, inner sep=1.5pt, text=gray!70},
     fl/.style={-Stealth, draw=red!50!black, dashed, thin,
                shorten >=3pt, shorten <=3pt},
+    ol/.style={-Stealth, draw=green!50!black, dotted, thick,
+               shorten >=3pt, shorten <=3pt},
     ll/.style={font=\scriptsize\sffamily\itshape, text=orange!55!black},
     nl/.style={font=\tiny\sffamily, text=blue!40!black},
 ]
@@ -3546,11 +3621,16 @@ the root, and continue matching from there.
   % h → root, s → root, he → root, hi → root (all go to root)
   % (omitted for clarity — only non-root failure links shown)
 
+  %% ── OUTPUT LINKS (dotted green arrows) ──────────────────────────
+  % she → he : following she's failure link reaches "he", a complete pattern
+  \draw[ol, bend right=20] (she) to (he);
+
   %% ── LEGEND ────────────────────────────────────────────────────
   \node[anchor=north west, font=\footnotesize\sffamily] at (7.5, -1.0) {
     \begin{tabular}{@{}l@{}}
       \textcolor{gray!50}{$\longrightarrow$\;tree edge} \\[2pt]
-      \textcolor{red!50!black}{$\dashrightarrow$\;failure link}
+      \textcolor{red!50!black}{$\dashrightarrow$\;failure link} \\[2pt]
+      \textcolor{green!50!black}{\dots$\rightarrow$\;output link}
     \end{tabular}
   };
 
@@ -3558,13 +3638,67 @@ the root, and continue matching from there.
 \caption{%
   Keyword tree for
   $\mathcal{P} = \{\texttt{he},\,\texttt{she},\,\texttt{his},\,\texttt{hers}\}$
-  with failure links (dashed).
+  with failure links (dashed) and output links (dotted).
   For example, after matching \texttt{she} the failure link from the
   \texttt{she}-node leads to the \texttt{he}-node, so the automaton
   knows that \texttt{he} has also been matched --- without re-reading
-  any character.
+  any character.  The output link from \texttt{she} to \texttt{he}
+  records this: whenever the automaton reaches the \texttt{she}-node,
+  it must also report \texttt{he} as a match.
   Only non-root failure links are shown; all other nodes fall back to
-  the root.
+  the root.  All other output links are nil.
 }
 \label{fig:keyword-tree-failure}
 \end{figure}
+
+\paragraph{Output links: patterns that end at internal nodes.}
+Failure links solve the problem of continuing the search without
+re-reading characters, but there is one more subtlety.
+Consider $\mathcal{P} = \{\texttt{acatt},\texttt{ca}\}$ and suppose we
+are searching through a text that contains \texttt{acatt}.
+As we descend the tree, we pass through the node for \texttt{ca} on our
+way to the leaf for \texttt{acatt}.
+But \texttt{ca} is itself a pattern in $\mathcal{P}$ --- and it ends at
+an \emph{internal} node, not a leaf.
+If we only report matches at leaves, we miss it.
+
+Failure links alone do not help here: the failure link from the
+\texttt{ca}-node might point to some unrelated node (or the root), and
+we would never know that \texttt{ca} itself was a match.
+
+The solution is to add a second type of pointer called an
+\textbf{output link}.
+For every node $v$ in $K(\mathcal{P})$, the output link of $v$ points
+to the nearest node reachable by following failure links from $v$ that
+corresponds to a complete pattern.
+During the search, every time we arrive at a node (whether by a tree
+edge or a failure link), we follow its output-link chain and report all
+the patterns we find.
+
+\begin{definition}[Output link]
+  For a node $v$ in $K(\mathcal{P})$, the \textbf{output link} of $v$
+  points to the nearest ancestor (via failure links) of $v$ whose
+  corresponding string is a complete pattern in $\mathcal{P}$.
+  If no such node exists, the output link is $\mathrm{nil}$.
+\end{definition}
+
+In our earlier example with
+$\mathcal{P} = \{\texttt{he},\texttt{she},\texttt{his},\texttt{hers}\}$
+(Figure~\ref{fig:keyword-tree-failure}), the node for \texttt{she} has
+a failure link to the node for \texttt{he}.
+Since \texttt{he} is a complete pattern, the output link from
+\texttt{she} points to \texttt{he}.
+This is exactly how the automaton discovers that matching \texttt{she}
+also implies matching \texttt{he} --- it follows the output link and
+reports both.
+
+\aside{Output links are computed during preprocessing in a single
+BFS pass over the tree: for each node $v$, if $v$'s failure-link
+target is itself a pattern, set the output link to that target;
+otherwise, copy the output link from the failure-link target.
+This takes $\Oh{m}$ time total.}
+
+Together, the keyword tree, failure links, and output links form the
+complete \textbf{Aho--Corasick automaton}.
+It processes $T$ in a single left-to-right pass in $\Oh{n + m + k}$
+time, where $k$ is the number of pattern occurrences reported.

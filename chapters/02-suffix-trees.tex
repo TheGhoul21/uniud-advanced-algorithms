@@ -38,6 +38,74 @@ In other words, $T[i,j]$ is a prefix of the suffix $T[i{,}]$.
   \texttt{anana}, and so on.
 \end{example}
 
+% ── Figure: substring = prefix of suffix ─────────────────────
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[
+    cell/.style={minimum width=7.5mm, minimum height=7.5mm,
+                 font=\ttfamily\small, inner sep=0pt, text centered,
+                 rounded corners=1.5pt},
+    C/.style={cell, draw=gray!40, fill=gray!6},
+    S/.style={cell, draw=teal!50, fill=teal!10, text=teal!70!black},
+    P/.style={cell, draw=orange!50, fill=orange!12, text=orange!70!black},
+]
+\def\cw{0.92}
+
+% ── T row ─────────────────────────────────────────────────────
+\node[font=\small\sffamily\bfseries, text=gray!60, anchor=east]
+  at ({-0.4*\cw}, 0) {$T$};
+\foreach \i/\c in {1/b, 2/a, 3/n, 4/a, 5/n, 6/a}
+  \node[C] (T\i) at ({\i*\cw}, 0) {\c};
+\foreach \i in {1,...,6}
+  \node[font=\tiny\sffamily, text=gray!50, above=3pt] at ({\i*\cw}, 0.4) {\i};
+
+% ── Highlight substring T[3..5] = "nan" ──────────────────────
+\foreach \i/\c in {3/n, 4/a, 5/n}
+  \node[S] at ({\i*\cw}, 0) {\c};
+
+% Brace above substring
+\draw[teal!50!black, thick, decorate,
+      decoration={brace, raise=14pt, amplitude=4pt}]
+  ({2.55*\cw}, 0.4) -- ({5.45*\cw}, 0.4)
+  node[midway, above=20pt, font=\scriptsize\sffamily\bfseries,
+       text=teal!50!black] {substring $T[3,5]$};
+
+% ── Suffix row: T[3,] = "nana" ───────────────────────────────
+\node[font=\small\sffamily\bfseries, text=gray!60, anchor=east]
+  at ({-0.4*\cw}, -1.8) {$T[3{,}]$};
+\foreach \i/\c in {1/n, 2/a, 3/n, 4/a}
+  \node[C] (Sf\i) at ({\i*\cw + 2*\cw}, -1.8) {\c};
+
+% Highlight prefix of suffix: first 3 chars = "nan"
+\foreach \i/\c in {1/n, 2/a, 3/n}
+  \node[P] at ({\i*\cw + 2*\cw}, -1.8) {\c};
+
+% Brace under prefix
+\draw[orange!50!black, thick, decorate,
+      decoration={brace, mirror, raise=6pt, amplitude=4pt}]
+  ({2.55*\cw}, -2.25) -- ({5.45*\cw}, -2.25)
+  node[midway, below=12pt, font=\scriptsize\sffamily\bfseries,
+       text=orange!50!black] {prefix of suffix $T[3{,}]$};
+
+% ── Connection: substring ↔ prefix of suffix ─────────────────
+\draw[<->, very thick, Stealth-Stealth, violet!50!black]
+  ({4*\cw + 0.5}, -0.1) -- ({4*\cw + 0.5}, -1.7)
+  node[midway, right=6pt, font=\scriptsize\sffamily, text=violet!50!black,
+       align=left] {same\\characters!};
+
+\end{tikzpicture}
+\caption{%
+  Every substring of $T$ is a prefix of some suffix.
+  The substring $T[3,5] = \texttt{nan}$
+  (\textcolor{teal!50!black}{teal}) is the first 3 characters of the
+  suffix $T[3{,}] = \texttt{nana}$
+  (\textcolor{orange!50!black}{orange prefix}).
+  This is why indexing all suffixes in a tree automatically indexes all
+  substrings.
+}
+\label{fig:substring-prefix-suffix}
+\end{figure}
+
 So if we build a data structure that indexes \emph{all} suffixes of $T$,
 we can find any substring by walking down from the root --- because that
 substring is guaranteed to appear as the beginning of at least one suffix.
@@ -75,6 +143,29 @@ keyword tree we saw earlier, but used for a different purpose.}
 
 The first idea is the most direct one: build a trie that contains every
 suffix of~$T$.
+
+If this sounds familiar, it should.
+In the previous chapter we built a \emph{keyword tree} $K(\mathcal{P})$
+to index a collection of patterns $\mathcal{P}$.
+A suffix trie is exactly the same construction, but the ``patterns'' are
+all the suffixes of $T$:
+\[
+  \mathrm{STrie}(T)
+  \;=\;
+  K\!\bigl(\{\, T[i{,}] \mid 1 \le i \le n \,\}\bigr).
+\]
+In other words, the suffix trie \emph{is} the keyword tree of the set of
+all suffixes of $T$.
+This means everything we learned about keyword trees --- shared prefixes
+merging into a single path, one node per distinct ``pattern prefix'' ---
+applies directly here.
+The difference is the purpose: instead of searching for a fixed set of
+patterns in a text, we are indexing the text itself so that \emph{any}
+query can be answered quickly.
+
+This also explains why the suffix trie has a state for every distinct
+substring of $T$: each substring is a prefix of some suffix, and in a
+keyword tree every prefix of every pattern gets its own node.
 
 \begin{definition}[Suffix trie, $\mathrm{STrie}(T)$]
   \label{def:strie}
@@ -338,8 +429,57 @@ This gives us the suffix tree:
 \end{definition}
 
 The key insight for the space bound: since every internal node branches
-(has at least two children), a standard counting argument tells us
-there can be at most $n - 1$ internal nodes for $n$ leaves.
+(has at least two children), there can be at most $n - 1$ internal nodes
+for $n$ leaves.
+This is a general fact about trees, and it is important enough to spell
+out:
+
+\begin{formaldetails}[Linear size of branching trees]
+\begin{lemma}
+  \label{lem:branching-tree-size}
+  Let $\mathcal{T}$ be a rooted tree in which every internal node has at
+  least two children, and let $f$ be the number of leaves.
+  Then the number of internal nodes $i$ satisfies $i \le f - 1$, and the
+  total number of nodes is at most $2f - 1$.
+\end{lemma}
+\begin{proof}
+  By induction on $f$.
+
+  \textbf{Base case} ($f = 1$).
+  The tree consists of a single node (the root), which is a leaf.
+  There are $i = 0$ internal nodes, and $0 \le 1 - 1 = 0$. \checkmark
+
+  \textbf{Inductive step} ($f > 1$).
+  Pick an internal node $x$ of maximum depth.
+  Since $x$ is internal it has at least two children, and since $x$ is
+  the deepest internal node, all of its children must be leaves.
+  Remove two of $x$'s leaf children from the tree.
+  Now $x$ has lost two children:
+  \begin{itemize}[nosep]
+    \item If $x$ had exactly two children, it now has zero --- so $x$
+          itself becomes a leaf.
+          The new tree $\mathcal{T}'$ has $f' = f - 2 + 1 = f - 1$ leaves
+          (two removed, one gained) and $i' = i - 1$ internal nodes
+          (we lost $x$ as an internal node).
+    \item If $x$ had more than two children, it still has at least one
+          child left, so $x$ remains internal.
+          The new tree has $f' = f - 2$ leaves and $i' = i$ internal nodes.
+  \end{itemize}
+  In both cases, $\mathcal{T}'$ still satisfies the branching condition
+  (every internal node has $\ge 2$ children), and $f' < f$.
+  By the inductive hypothesis, $i' \le f' - 1$.
+
+  In the first case: $i = i' + 1 \le (f - 1) - 1 + 1 = f - 1$. \checkmark
+
+  In the second case: $i = i' \le (f - 2) - 1 = f - 3 < f - 1$. \checkmark
+
+  The total number of nodes is $i + f \le (f - 1) + f = 2f - 1$.
+\end{proof}
+\end{formaldetails}
+
+Applying Lemma~\ref{lem:branching-tree-size} to the suffix tree: the
+leaves are the suffixes (at most $n$), so the internal branching nodes
+are at most $n - 1$, giving at most $2n - 1$ nodes total.
 And since we store each edge label as just two integers $(k, p)$ rather
 than copying the actual characters, the whole tree takes $\Oh{n}$ space
 --- a dramatic improvement over the $\Th{n^2}$ suffix trie.
@@ -350,6 +490,99 @@ For instance, the path root $\to$ \texttt{c} $\to$ \texttt{ca} in the
 trie (two single-character edges through the implicit node \texttt{c})
 has become a single edge labelled \texttt{ca} going directly from the
 root to the branching node.
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[
+  every node/.style={font=\small},
+  state/.style={circle, draw=blue!50!black, fill=blue!6,
+                minimum size=6mm, inner sep=0pt, font=\scriptsize},
+  leaf/.style={circle, draw=green!50!black, fill=green!8,
+               minimum size=6mm, inner sep=0pt, font=\scriptsize\bfseries},
+  implicit/.style={circle, draw=gray!60, dashed, fill=gray!8,
+                   minimum size=6mm, inner sep=0pt, font=\scriptsize},
+  edge label/.style={font=\small\ttfamily, text=violet!60!black},
+  arrow label/.style={font=\small\sffamily, text=black},
+]
+
+% ═══════════════════════════════════════
+% Example 1: root → c → ca  ⟶  root → ca
+% ═══════════════════════════════════════
+
+% -- Trie side (left) --
+\node[state] (t1-root) at (0,0) {$\varepsilon$};
+\node[implicit] (t1-c) at (0,-1.4) {};
+\node[state] (t1-ca) at (0,-2.8) {};
+
+\draw[-Stealth, thick] (t1-root) -- (t1-c)
+  node[midway, right, edge label] {c};
+\draw[-Stealth, thick] (t1-c) -- (t1-ca)
+  node[midway, right, edge label] {a};
+
+\node[below=1pt of t1-ca, font=\tiny\itshape, text=gray] {branching};
+
+% -- Arrow --
+\draw[-Stealth, very thick, gray!70] (1.2,-1.4) -- (2.6,-1.4)
+  node[midway, above, arrow label] {compaction};
+
+% -- Tree side (right) --
+\node[state] (s1-root) at (3.8,0) {$\varepsilon$};
+\node[state] (s1-ca) at (3.8,-2.8) {};
+
+\draw[-Stealth, thick] (s1-root) -- (s1-ca)
+  node[midway, right, edge label] {ca};
+
+\node[below=1pt of s1-ca, font=\tiny\itshape, text=gray] {branching};
+
+% ═══════════════════════════════════════
+% Example 2: ca → cac → caca → cacao  ⟶  ca → cacao
+% ═══════════════════════════════════════
+
+% -- Trie side (left) --
+\node[state] (t2-ca) at (0,-4.4) {};
+\node[implicit] (t2-cac) at (0,-5.6) {};
+\node[implicit] (t2-caca) at (0,-6.8) {};
+\node[leaf] (t2-cacao) at (0,-8.0) {0};
+
+\draw[-Stealth, thick] (t2-ca) -- (t2-cac)
+  node[midway, right, edge label] {c};
+\draw[-Stealth, thick] (t2-cac) -- (t2-caca)
+  node[midway, right, edge label] {a};
+\draw[-Stealth, thick] (t2-caca) -- (t2-cacao)
+  node[midway, right, edge label] {o};
+
+\node[left=3pt of t2-ca, font=\tiny\itshape, text=gray] {branching};
+
+% -- Arrow --
+\draw[-Stealth, very thick, gray!70] (1.2,-6.2) -- (2.6,-6.2)
+  node[midway, above, arrow label] {compaction};
+
+% -- Tree side (right) --
+\node[state] (s2-ca) at (3.8,-4.4) {};
+\node[leaf] (s2-cacao) at (3.8,-8.0) {0};
+
+\draw[-Stealth, thick] (s2-ca) -- (s2-cacao)
+  node[midway, right, edge label] {acao};
+
+\node[left=3pt of s2-ca, font=\tiny\itshape, text=gray] {branching};
+
+% ── Column labels ──
+\node[font=\small\bfseries, text=blue!50!black] at (0,0.8) {Suffix trie};
+\node[font=\small\bfseries, text=blue!50!black] at (3.8,0.8) {Suffix tree};
+
+\end{tikzpicture}
+\caption{%
+  Compaction from suffix trie to suffix tree on the string
+  \texttt{cacao\$}. Each maximal chain of nodes with a single child
+  (gray dashed) is replaced by one edge whose label is the
+  concatenation of the individual characters.
+  \emph{Top:} the implicit node \texttt{c} is removed, merging two
+  edges into the single edge \texttt{ca}.
+  \emph{Bottom:} three single-child nodes between the branching node
+  and leaf~0 collapse into the edge \texttt{acao}.%
+}
+\label{fig:compaction-example}
+\end{figure}
 
 \aside{%
   By appending a special character
