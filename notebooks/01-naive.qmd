@@ -65,96 +65,133 @@ def draw_string_row(ax, y, string, label="", highlights=None, offset=0):
 
 ## Naive String Matching
 
-Slide through every alignment of `P` against `T` and see which characters match.
+Step through **every single character comparison**.
+At each shift `s`, the algorithm compares `P[0]` vs `T[s]`, then `P[1]` vs `T[s+1]`, and so on.
+On a mismatch it **backtracks** to the next shift and starts over from `P[0]` — this is the repeated work that makes the naive approach slow.
 
 ```{pyodide}
 #| autorun: true
 #| edit: false
 #| output: false
 
-def naive_trace(T, P):
-    """Return list of (shift, comparisons) where each comparison is (j, matched)."""
+def naive_trace_granular(T, P):
+    """One step per character comparison, plus a backtrack step between shifts."""
     steps = []
-    for s in range(len(T) - len(P) + 1):
-        comps = []
-        for j in range(len(P)):
+    n, m = len(T), len(P)
+    total_comps = 0
+    matches = []
+    for s in range(n - m + 1):
+        for j in range(m):
             matched = T[s + j] == P[j]
-            comps.append((j, matched))
+            total_comps += 1
+            comps_so_far = [(k, T[s + k] == P[k]) for k in range(j)] + [(j, matched)]
+            is_full = matched and j == m - 1
+            if is_full:
+                matches.append(s)
+            steps.append({
+                "s": s, "j": j, "matched": matched,
+                "comps": comps_so_far,
+                "event": "full_match" if is_full else ("match" if matched else "mismatch"),
+                "total_comps": total_comps,
+                "matches": list(matches),
+            })
             if not matched:
                 break
-        steps.append((s, comps))
+        # Add backtrack step (unless this was the last shift)
+        if s < n - m:
+            steps.append({
+                "s": s, "j": -1, "matched": False,
+                "comps": [],
+                "event": "backtrack",
+                "total_comps": total_comps,
+                "matches": list(matches),
+            })
     return steps
 
 
 def draw_naive(T, P, step_idx):
-    steps = naive_trace(T, P)
+    steps = naive_trace_granular(T, P)
+    if not steps:
+        return
+    step_idx = min(step_idx, len(steps) - 1)
+    snap = steps[step_idx]
     n, m = len(T), len(P)
-    s, comps = steps[step_idx]
-    last_j, last_matched = comps[-1]
-    is_full_match = last_matched and last_j == m - 1
+    s = snap["s"]
+    comps = snap["comps"]
+    event = snap["event"]
 
-    total_comps = sum(len(c) for _, c in steps[:step_idx + 1])
-    matches_found = [st[0] for st in steps[:step_idx + 1]
-                     if st[1][-1][1] and st[1][-1][0] == m - 1]
-
-    fig, axes = plt.subplots(2, 1, figsize=(max(n * 0.85, 10), 5.5),
-                              gridspec_kw={"height_ratios": [3, 2]})
-
-    ax = axes[0]
-    ax.set_xlim(-2.5, n + 1.5)
-    ax.set_ylim(-1.0, 3.2)
+    fig, ax = plt.subplots(1, 1, figsize=(max(n * 0.85, 10), 4.0))
+    ax.set_xlim(-2.5, n + 4.0)
+    ax.set_ylim(-1.5, 3.5)
     ax.set_aspect("equal")
     ax.axis("off")
 
+    # Position indices
     for i in range(n):
-        ax.text(i + 0.45, 2.7, str(i), ha="center", va="center", fontsize=9, color="#999")
+        ax.text(i + 0.45, 2.9, str(i), ha="center", va="center",
+                fontsize=9, color="#999")
 
+    # T row highlights
     t_hi = {}
     for j, matched in comps:
         t_hi[s + j] = COLORS["match"] if matched else COLORS["mismatch"]
-    draw_string_row(ax, 1.6, T, label="T", highlights=t_hi)
+    draw_string_row(ax, 1.8, T, label="T", highlights=t_hi)
 
+    # P row highlights
     p_hi = {}
     for j, matched in comps:
         p_hi[j] = COLORS["match"] if matched else COLORS["mismatch"]
-    draw_string_row(ax, 0.3, P, label="P", highlights=p_hi, offset=s)
+    # Highlight current comparison position
+    if event in ("match", "mismatch", "full_match"):
+        cur_j = snap["j"]
+        p_hi[cur_j] = COLORS["current"] if event == "match" else (
+            COLORS["match"] if event == "full_match" else COLORS["mismatch"])
+        t_hi[s + cur_j] = p_hi[cur_j]
+    draw_string_row(ax, 0.5, P, label="P", highlights=p_hi, offset=s)
 
+    # Comparison arrows
     for j, matched in comps:
         color = COLORS["match"] if matched else COLORS["mismatch"]
-        ax.plot([s + j + 0.45, s + j + 0.45], [1.6, 1.2], color=color, linewidth=1.5, alpha=0.5)
-
-    status = "MATCH!" if is_full_match else f"mismatch: T[{s+last_j}]='{T[s+last_j]}' != P[{last_j}]='{P[last_j]}'"
-    color = COLORS["match"] if is_full_match else COLORS["mismatch"]
-    ax.text(n + 0.5, 1.0, status, fontsize=10, color=color, va="center", fontweight="bold")
-
-    ax.set_title(f"Naive | shift s={s} | comparisons this step: {len(comps)} | "
-                 f"total comparisons: {total_comps} | matches: {len(matches_found)}",
-                 fontsize=11, pad=8)
-
-    ax2 = axes[1]
-    ax2.set_xlim(-0.5, len(steps))
-    ax2.set_ylim(-0.5, 1.5)
-    ax2.axis("off")
-
-    for idx, (ss, cc) in enumerate(steps):
-        last = cc[-1]
-        if last[1] and last[0] == m - 1:
-            c = COLORS["match"]
-        elif idx <= step_idx:
-            c = COLORS["mismatch"] if not last[1] else COLORS["default"]
+        if event in ("match", "mismatch", "full_match") and j == snap["j"]:
+            color = COLORS["current"] if event == "match" else (
+                COLORS["match"] if event == "full_match" else COLORS["mismatch"])
+            lw = 2.5
         else:
-            c = "#F5F5F5"
-        edgecolor = "#000" if idx == step_idx else "#999"
-        lw = 2.5 if idx == step_idx else 0.8
-        rect = mpatches.FancyBboxPatch(
-            (idx, 0.3), 0.8, 0.8, boxstyle="round,pad=0.03",
-            facecolor=c, edgecolor=edgecolor, linewidth=lw)
-        ax2.add_patch(rect)
-        ax2.text(idx + 0.4, 0.7, str(len(cc)), ha="center", va="center", fontsize=8, fontweight="bold")
-        ax2.text(idx + 0.4, 0.05, f"s={ss}", ha="center", va="center", fontsize=7, color="#777")
+            lw = 1.2
+        ax.plot([s + j + 0.45, s + j + 0.45], [1.8, 1.4],
+                color=color, linewidth=lw, alpha=0.7)
 
-    ax2.set_title("All shifts (number = comparisons at each shift, current = bold border)",
-                  fontsize=10, pad=5, loc="left")
+    # Status message
+    if event == "backtrack":
+        status = f"Mismatch! Backtrack: shift s={s} → s={s+1} (start over from P[0])"
+        color = "#FF9800"
+        # Draw backtrack arrow
+        ax.annotate("", xy=(s + 1 + 0.45, 0.1), xytext=(s + 0.45, 0.1),
+                     arrowprops=dict(arrowstyle="-|>", color="#FF9800",
+                                     lw=2.5, connectionstyle="arc3,rad=-0.3"))
+        ax.text(s + 0.9, -0.5, "backtrack", ha="center", fontsize=9,
+                color="#FF9800", fontweight="bold")
+    elif event == "full_match":
+        status = f"MATCH at position {s}!"
+        color = COLORS["match"]
+    elif event == "match":
+        cur_j = snap["j"]
+        status = f"Compare P[{cur_j}]='{P[cur_j]}' vs T[{s+cur_j}]='{T[s+cur_j]}' → match, continue"
+        color = COLORS["match"]
+    else:  # mismatch
+        cur_j = snap["j"]
+        status = f"Compare P[{cur_j}]='{P[cur_j]}' vs T[{s+cur_j}]='{T[s+cur_j]}' → MISMATCH"
+        color = COLORS["mismatch"]
+
+    ax.text(n / 2, -1.0, status, fontsize=11, color=color,
+            ha="center", fontweight="bold")
+
+    ax.set_title(
+        f"Step {step_idx + 1}/{len(steps)}  |  shift s={s}  |  "
+        f"total comparisons: {snap['total_comps']}  |  "
+        f"matches found: {len(snap['matches'])}",
+        fontsize=11, pad=8)
+
     plt.tight_layout()
     plt.show()
 ```
@@ -172,7 +209,8 @@ viewof P_naive = Inputs.text({label: "P:", value: "abcab", width: 400})
 #| input: [T_naive, P_naive]
 #| define: [naive_max_step]
 
-naive_max_step = max(len(T_naive) - len(P_naive), 0) if T_naive and P_naive and len(P_naive) <= len(T_naive) else 0
+_steps = naive_trace_granular(T_naive, P_naive) if T_naive and P_naive and len(P_naive) <= len(T_naive) else []
+naive_max_step = max(len(_steps) - 1, 0)
 ```
 
 ```{ojs}
