@@ -112,6 +112,13 @@
     "text": "Searching with the Keyword Tree\nEnter a text and patterns. Step through each starting position to see the descent from the root: active edges light up, non-matching branches are grayed out.\n\n\n\n\n\n\n\n\n\nviewof T_kw_search = Inputs.text({\n  label: \"T:\",\n  value: \"a]potato that was put in a theater\",\n  width: 500\n})\nviewof P_kw_search = Inputs.text({\n  label: \"Patterns (comma-separated):\",\n  value: \"potato, tatoo, theater, other\",\n  width: 500\n})\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nviewof step_kw = Inputs.range([0, kw_max_step], {step: 1, value: 0, label: \"Step (starting position):\"})"
   },
   {
+    "objectID": "notebooks/07-keyword-tree.html#aho-corasick-failure-links-output-links",
+    "href": "notebooks/07-keyword-tree.html#aho-corasick-failure-links-output-links",
+    "title": "Keyword Tree — Multiple Pattern Matching",
+    "section": "Aho-Corasick: Failure Links & Output Links",
+    "text": "Aho-Corasick: Failure Links & Output Links\nThe keyword tree alone restarts from the root at every position. The Aho-Corasick automaton adds two types of pointers:\n\nFailure links (red dashed): when the descent gets stuck, jump to the longest proper suffix of the current path that is also a prefix of some pattern.\nOutput links (green dotted): chain together all patterns that end along the failure-link path, so patterns ending at internal nodes are not missed.\n\n\n\n\n\n\n\n\n\n\nviewof P_ac = Inputs.text({\n  label: \"Patterns (comma-separated):\",\n  value: \"he, she, his, hers\",\n  width: 500\n})"
+  },
+  {
     "objectID": "notebooks/05-suffix-structures.html#suffix-trie-suffix-tree",
     "href": "notebooks/05-suffix-structures.html#suffix-trie-suffix-tree",
     "title": "Suffix Trie & Suffix Tree",
