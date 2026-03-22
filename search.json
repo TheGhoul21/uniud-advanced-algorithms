@@ -88,7 +88,7 @@
     "href": "notebooks/01-naive.html#naive-string-matching",
     "title": "Naive String Matching",
     "section": "Naive String Matching",
-    "text": "Naive String Matching\nSlide through every alignment of P against T and see which characters match.\n\n\n\n\n\n\n\n\n\nviewof T_naive = Inputs.text({label: \"T:\", value: \"abcaabcabcaab\", width: 400})\nviewof P_naive = Inputs.text({label: \"P:\", value: \"abcab\", width: 400})\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nviewof step_naive = Inputs.range([0, naive_max_step], {step: 1, value: 0, label: \"Step:\"})"
+    "text": "Naive String Matching\nStep through every single character comparison. At each shift s, the algorithm compares P[0] vs T[s], then P[1] vs T[s+1], and so on. On a mismatch it backtracks to the next shift and starts over from P[0] — this is the repeated work that makes the naive approach slow.\n\n\n\n\n\n\n\n\n\nviewof T_naive = Inputs.text({label: \"T:\", value: \"abcaabcabcaab\", width: 400})\nviewof P_naive = Inputs.text({label: \"P:\", value: \"abcab\", width: 400})\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nviewof step_naive = Inputs.range([0, naive_max_step], {step: 1, value: 0, label: \"Step:\"})"
   },
   {
     "objectID": "notebooks/02-kmp.html#kmp-failure-function-sp-values-search",
