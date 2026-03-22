@@ -197,6 +197,7 @@ To pin down what ``the inner loop does'' precisely, let's give a name to the obv
 \]
 for the length of the longest common prefix of $T[i{,}]$ and $P$ — basically, how many characters of $P$ would match if you aligned it at position $i$.
 
+\begin{formaldetails}[Correctness of the naive algorithm]
 \begin{lemma}
   \label{lem:naive-inner}
   At shift $s$, the inner loop exits with $j = \mathrm{common}(s) + 1$.
@@ -219,9 +220,11 @@ for the length of the longest common prefix of $T[i{,}]$ and $P$ — basically, 
   exactly when $j > m$, i.e.\ $\mathrm{common}(s) \geq m$, i.e.\
   $T[s, s+m-1] = P$ — which is precisely the definition of an occurrence.
 \end{proof}
+\end{formaldetails}
 
 \subsubsection{Lower bound}
 
+\begin{formaldetails}[Lower bound for exact pattern matching]
 \begin{theorem}
   Any algorithm for exact pattern matching must make $\Omega(n + m)$ character
   comparisons in the worst case.
@@ -241,6 +244,7 @@ for the length of the longest common prefix of $T[i{,}]$ and $P$ — basically, 
   \end{itemize}
   The two bounds add up: $\Omega(m) + \Omega(n) = \Omega(n + m)$.
 \end{proof}
+\end{formaldetails}
 
 The naive algorithm achieves $\Oh{nm}$ in the worst case, which is far from this
 lower bound.\aside{This $\Omega(n+m)$ lower bound applies to \emph{any} algorithm, not just naive.} KMP will close the gap, achieving $\Theta(n + m)$.
@@ -287,12 +291,17 @@ This naive approach basically starts over from scratch at each shift, without le
 
 \section{Knuth-Morris-Pratt (KMP) algorithm}
 
-\aside{The algorithm is named after Donald Knuth, James Morris, and
-Vaughan Pratt, who discovered it independently around 1970.
-Morris came up with the idea while writing a text editor; Knuth and Pratt
-arrived at it through theoretical analysis.
+\begin{intermezzo}{A brief history of KMP}
+The algorithm is named after Donald Knuth, James Morris, and Vaughan
+Pratt, who discovered it independently around 1970.
+Morris came up with the idea while writing a text editor and needed a
+fast way to search for patterns in a stream of characters.
+Knuth and Pratt arrived at the same algorithm through purely theoretical
+analysis --- a rare case of practice and theory converging on the same
+solution simultaneously.
 The three joined forces, but the paper was not published until 1977 ---
-seven years later.}
+seven years after the initial discovery.
+\end{intermezzo}
 
 \subsection{Intuition}
 
@@ -946,6 +955,7 @@ so the invariant holds.
 
 \subsection{Application to KMP preprocessing}
 
+\begin{formaldetails}[Amortised $\Oh{m}$ analysis of $sp$ preprocessing]
 The $sp$-computation algorithm runs in $\Oh{m}$ total time despite the nested loops.
 We apply the credit method with $k$ as the potential: credits measure how much $k$
 can still decrease.
@@ -964,6 +974,7 @@ deposit $1$ credit), and amortised cost $0$ to each inner iteration that decreme
 and the total number of inner iterations is at most the total number of increments,
 which is $\Oh{m}$.
 Together with the $\Oh{m}$ overhead of the outer loop, the total preprocessing time is $\Oh{m}$.
+\end{formaldetails}
 
 \begin{example}
   Consider the pattern $P = \texttt{aaaaa}$ of length $5$. The $sp$ values are
@@ -1664,38 +1675,64 @@ $A = \texttt{aabaaab}$, showing every step $i = 2, \ldots, 7$.
                          invariant holds vacuously. \checkmark
 
     \item[Preservation]  Assume the invariant holds at the start of iteration~$i$.
-                         We analyse the two cases.
+                         Three cases arise depending on whether $i$ falls inside
+                         the current Z-box $[l, r]$, and if so, what the
+                         ``mirror position'' tells us.
+                         Throughout, $k = i - l + 1$ denotes $i$'s mirror
+                         position inside the Z-box (i.e.\ $k$ is the position
+                         in the prefix that corresponds to $i$).
 
-                         \textit{Case 1: $i > r$.}
-                         The while loop compares $A[1], A[2], \ldots$ against
-                         $A[i], A[i{+}1], \ldots$ directly and stops at the first
-                         mismatch, so $Z\kern0pt[i]$ is set to the correct value by
-                         definition. If $Z\kern0pt[i] > 0$, the box is updated to
-                         $[l, r] = [i,\, i{+}Z\kern0pt[i]{-}1]$, which has a larger $r$
-                         than before. \checkmark
+                         \medskip
+                         \textit{Case 1: $i > r$ (outside the Z-box).}
 
-                         \textit{Case 2a: $i \le r$ and $Z\kern0pt[k] < r{-}i{+}1$
-                         (mirror strictly inside the box).}
-                         Let $k = i{-}l{+}1$.
-                         From the invariant, $A[l\ldots r] = A[1\ldots r{-}l{+}1]$,
-                         so $A[i{+}j] = A[k{+}j]$ for $j = 0, \ldots, r{-}i$.
-                         In particular $A[i\ldots i{+}Z\kern0pt[k]{-}1] = A[k\ldots k{+}Z\kern0pt[k]{-}1] = A[1\ldots Z\kern0pt[k]]$.
-                         Since $Z\kern0pt[k] < r{-}i{+}1$, position $k{+}Z\kern0pt[k]$ still lies
-                         inside $[1, r{-}l{+}1]$, so
-                         $A[i{+}Z\kern0pt[k]] = A[k{+}Z\kern0pt[k]] \ne A[1{+}Z\kern0pt[k]]$
-                         (the character that ended the match at $k$).
-                         Therefore $Z\kern0pt[i] = Z\kern0pt[k]$.
-                         The box $[l, r]$ is not updated since
-                         $i{+}Z\kern0pt[i]{-}1 < r$. \checkmark
+                         We have no information about $A[i]$ from previous
+                         work, so we compare from scratch:
+                         $A[1]$ vs $A[i]$, then $A[2]$ vs $A[i{+}1]$, and so
+                         on until a mismatch.
+                         This directly computes $Z\kern0pt[i]$ by definition.
+                         If $Z\kern0pt[i] > 0$, we have found a new Z-box
+                         $[l, r] = [i,\, i{+}Z\kern0pt[i]{-}1]$ with a larger
+                         $r$ than before. \checkmark
 
-                         \textit{Case 2b: $i \le r$ and $Z\kern0pt[k] \ge r{-}i{+}1$
-                         (mirror reaches or exceeds the box boundary).}
-                         The same translation gives $A[i\ldots r] = A[1\ldots r{-}i{+}1]$,
-                         so $Z\kern0pt[i] \ge r{-}i{+}1$ is guaranteed.
-                         The algorithm initialises $Z\kern0pt[i] = r{-}i{+}1$ and extends
-                         it by comparing $A[r{+}1], A[r{+}2], \ldots$ directly
-                         until a mismatch, exactly as in Case~1.
-                         The box is then updated to $[i,\, i{+}Z\kern0pt[i]{-}1]$. \checkmark
+                         \medskip
+                         \textit{Case 2a: $i \le r$ and $Z\kern0pt[k] < r - i + 1$
+                         (mirror match fits entirely inside the Z-box).}
+
+                         Since $i$ is inside the Z-box, we know that
+                         $A[l\ldots r] = A[1\ldots r{-}l{+}1]$ (from the
+                         invariant).
+                         This means the substring starting at $i$ is a
+                         ``copy'' of the substring starting at position $k$
+                         in the prefix --- at least for the characters up to
+                         the box boundary $r$.
+
+                         Now, $Z\kern0pt[k]$ tells us how far the match at
+                         $k$ extended in the prefix.
+                         Since $Z\kern0pt[k] < r - i + 1$, that match ended
+                         \emph{before} the box boundary, so the mismatch
+                         character at $k + Z\kern0pt[k]$ is also inside the
+                         box.
+                         By the copy property, the same mismatch occurs at
+                         $i + Z\kern0pt[k]$, so we can conclude
+                         $Z\kern0pt[i] = Z\kern0pt[k]$ without any new
+                         comparisons.
+                         The box is not updated (no extension beyond $r$).
+                         \checkmark
+
+                         \medskip
+                         \textit{Case 2b: $i \le r$ and $Z\kern0pt[k] \ge r - i + 1$
+                         (mirror match reaches or exceeds the box boundary).}
+
+                         The mirror tells us that at least $r - i + 1$
+                         characters match (the portion inside the box), but
+                         beyond position $r$ we have no information --- the
+                         box does not cover that region.
+                         So we initialise $Z\kern0pt[i] = r - i + 1$ (the
+                         guaranteed part) and then extend by comparing
+                         $A[r{+}1]$ vs $A[Z\kern0pt[i]{+}1]$, etc., exactly
+                         as in Case~1.
+                         The box is then updated to
+                         $[i,\, i{+}Z\kern0pt[i]{-}1]$. \checkmark
 
     \item[Postcondition] When the loop exits, all $Z\kern0pt[i]$ have been correctly
                          computed by the case analysis above. \checkmark
@@ -1718,6 +1755,21 @@ The $sp$ values of $P$ can be read off directly from its Z-array.
   prefix-suffix of $P[1\ldots i]$ for $i = j + k - 1$.
   We say $j$ \emph{maps to} $i$ when $i = j + Z_j(P) - 1$.
 \end{observation}
+
+Let us see what this means on a concrete string.
+Take $P = \texttt{aabaaab}$.
+Its Z-array is $Z = [7, 1, 0, 2, 1, 1, 0]$ (1-indexed, with $Z_1 = |P|$
+by convention).
+Consider $j = 4$: $Z_4 = 2$, which tells us that
+$P[4\ldots5] = P[1\ldots2] = \texttt{aa}$.
+This means \texttt{aa} is a prefix of $P$ that also appears ending at
+position $i = j + Z_j - 1 = 4 + 2 - 1 = 5$.
+In other words, \texttt{aa} is a border (prefix-suffix) of $P[1\ldots5]
+= \texttt{aabaa}$, so $sp_5 \ge 2$.
+Is it the \emph{longest} border?
+That depends on whether any other $j$ also maps to $i = 5$ but gives a
+larger $Z_j$ value --- which is exactly what the proposition below
+formalises.
 
 \begin{proposition}
   \label{prop:sp-from-Z}
@@ -2495,6 +2547,23 @@ That is exactly captured by the \emph{$N$-values}:
   also a suffix of $P$.
 \end{definition}
 
+In plain words: stand at position $j$ in $P$ and look backwards ---
+how many characters match the \emph{end} of $P$?
+For example, let $P = \texttt{abcabc}$ ($m = 6$).
+The suffix of the full $P$ is \texttt{abcabc} itself, but we are asking
+about shorter suffixes that appear earlier.
+At $j = 3$, $P[1\ldots3] = \texttt{abc}$; the last 3 characters
+\texttt{abc} match the last 3 characters of $P$ (\texttt{abc}), so
+$N_3 = 3$.
+At $j = 2$, $P[1\ldots2] = \texttt{ab}$; neither \texttt{b} nor
+\texttt{ab} matches the end of $P$ (\texttt{bc}, \texttt{abc}), so
+$N_2 = 0$.
+
+Notice that $N_j$ is essentially the Z-value idea but reading
+\emph{from right to left} instead of left to right --- which is exactly
+why the theorem below connects $N_j$ to the Z-array of the
+\emph{reversed} pattern.
+
 \begin{theorem}
   The values $N_j(P)$ satisfy
   \[
@@ -2832,7 +2901,10 @@ Precomputing $N_i(P)$: since every prefix of $P$ is also a suffix of $P$, we hav
     \draw[blue!60, thick, decorate, decoration={brace, amplitude=5pt, mirror}] 
         (1.6*\cw, -3.2) -- (5.4*\cw, -3.2) node[midway, below=6pt, font=\tiny\sffamily\bfseries] {Skipped via $M[5]$};
         
-    \node[below=2pt of new, font=\tiny, text=orange!80!black] {single comparison};
+    \node[font=\tiny\sffamily, text=orange!80!black]
+      (sclabel) at (8.2*\cw, -3.6) {single comparison};
+    \draw[-Stealth, orange!70!black, thick]
+      (sclabel.west) to[bend left=30] (new.south);
 \end{tikzpicture}
 \end{center}
 
@@ -2963,6 +3035,15 @@ state in KMP, now for a whole set of patterns.}
           distinct labels, so the fan-out is at most $|\Sigma|$.
   \end{itemize}
 \end{observation}
+
+We can verify all three properties in
+Example~\ref{ex:keyword-tree} and Figure~\ref{fig:keyword-tree}:
+the tree has $6+5+7+5 = 23$ edges (the sum of the pattern lengths),
+confirming the size bound;
+the longest path is the one spelling \texttt{theater} (7 edges),
+matching $m_{\max} = 7$;
+and the root has fan-out~3 (edges \texttt{p}, \texttt{t}, \texttt{o}),
+well within $|\Sigma|$.
 
 \begin{example}[Building a keyword tree]\label{ex:keyword-tree}
   Let $\mathcal{P} = \{\texttt{potato},\allowbreak\texttt{tatoo},\allowbreak\texttt{theater},\allowbreak\texttt{other}\}$.
@@ -3360,12 +3441,18 @@ character.
 
 \aside{Failure links in $K(\mathcal{P})$ are the direct multi-pattern
 generalisation of the $sp'$ values in KMP: both encode ``the longest
-previously matched prefix you can fall back to''.
+previously matched prefix you can fall back to''.}
+
+\begin{intermezzo}{Aho--Corasick and Unix \texttt{fgrep}}
 The resulting automaton was published by Alfred Aho and Margaret Corasick
-in 1975, and was originally built for \texttt{fgrep}, the Unix tool for
-searching a file for multiple fixed strings at once --- so every time
-you run \texttt{grep -F} with several patterns, you are using a direct
-descendant of this construction.}
+in 1975.
+It was originally designed for \texttt{fgrep}, the Unix command-line tool
+for searching a file for multiple fixed strings at once.
+Every time you run \texttt{grep -F} with several patterns, you are using
+a direct descendant of this construction --- one of the most successful
+examples of an algorithm making its way from a research paper into a tool
+that millions of developers use daily without knowing it.
+\end{intermezzo}
 
 To achieve a true $\Oh{n + m}$ single pass we need to handle mismatches
 without restarting from the root --- the same challenge KMP solved for a

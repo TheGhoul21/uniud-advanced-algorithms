@@ -21,10 +21,30 @@ the text length.}
 The data structure that achieves this is the \textbf{suffix tree}.
 Its power comes from a simple observation: every substring of~$T$ is a
 prefix of some suffix of~$T$.
-So if we index \emph{all} suffixes, we can find any substring by walking
-down from the root.
+What does this mean concretely?
+Take any substring --- say the characters from position $i$ to position
+$j$ in $T$.
+That same piece of text also appears at the \emph{beginning} of the
+suffix that starts at position $i$ (namely $T[i{,}]$).
+In other words, $T[i,j]$ is a prefix of the suffix $T[i{,}]$.
+
+\begin{example}
+  Let $T = \texttt{banana}$.
+  Consider the substring $T[3,5] = \texttt{nan}$.
+  The suffix starting at position~3 is $T[3{,}] = \texttt{nana}$, and
+  indeed \texttt{nan} is a prefix of \texttt{nana}.
+  The same holds for every substring: \texttt{ba} is a prefix of the
+  suffix \texttt{banana}, \texttt{an} is a prefix of the suffix
+  \texttt{anana}, and so on.
+\end{example}
+
+So if we build a data structure that indexes \emph{all} suffixes of $T$,
+we can find any substring by walking down from the root --- because that
+substring is guaranteed to appear as the beginning of at least one suffix.
 
 \subsection{Suffixes and Substrings}
+
+The example above illustrates a general fact:
 
 \begin{observation}
   Let $T = t_1 t_2 \cdots t_n$.
@@ -44,6 +64,14 @@ either succeeds (meaning $Q$ is a substring of~$T$) or fails at some
 point (meaning $Q$ does not occur in~$T$).
 
 \subsection{Suffix Trie}
+
+\aside[-6em]{The word \emph{trie} comes from ``re\textbf{trie}val'' and was
+coined by Edward Fredkin in 1960.
+It is sometimes pronounced ``tree'' (as Fredkin intended) and sometimes
+``try'' (to avoid confusion with the word ``tree'').
+A trie is simply a tree where each edge is labelled with a character and
+shared prefixes share the same path from the root --- exactly like the
+keyword tree we saw earlier, but used for a different purpose.}
 
 The first idea is the most direct one: build a trie that contains every
 suffix of~$T$.
@@ -73,6 +101,45 @@ suffix of~$T$.
   The \textbf{final states} correspond to actual suffixes of~$T$
   (including $root = \varepsilon$).
 \end{definition}
+
+Let us unpack the definition piece by piece, using
+Example~\ref{ex:strie-cacao} and Figure~\ref{fig:strie-cacao} as a
+running reference.
+
+The suffix trie is a tree whose nodes represent substrings of $T$.
+The root represents the empty string $\varepsilon$.
+From every node, there is at most one outgoing edge for each character
+$a \in \Sigma$: following that edge takes us from the substring $w$ to
+the substring $wa$ (i.e.\ we append one character).
+This is the transition function $g'$.
+In the figure, the
+\textcolor{violet}{\textbf{violet-highlighted}} edge from \texttt{ca}
+to \texttt{cac} shows $g'(\texttt{ca},\, \texttt{c}) = \texttt{cac}$:
+we were at substring \texttt{ca}, read character \texttt{c}, and arrived
+at substring \texttt{cac}.
+If there is no edge (because $wa$ is not a substring of $T$), we simply
+stop --- just as in the keyword tree.
+
+The suffix function $f$ is the interesting part.
+From any node representing a string $w$, the suffix function points to
+the node representing $w$ with its first character chopped off.
+In the figure, the
+\textcolor{red!70!black}{\textbf{red-highlighted}} dashed arrow from
+\texttt{cac} to \texttt{ac} shows $f(\texttt{cac}) = \texttt{ac}$:
+we drop the leading \texttt{c} from \texttt{cac} and land on
+\texttt{ac}.
+This is the same idea as the failure function in KMP, extended to a
+whole tree: when we get stuck during a search, we follow the suffix
+link to ``fall back'' to the longest suffix that is still a valid state,
+instead of starting from scratch.
+
+Finally, the bottom state $\bot$ is just a bookkeeping trick:
+it sits below the root and has an edge to the root for every character in
+$\Sigma$.
+Its only purpose is to make sure that the suffix-link chain (following
+$f$ repeatedly) always has a clean stopping point, even when we fall off
+the root.
+(The bottom state is not shown in the figure to keep it readable.)
 
 \aside{The suffix function $f$ is the direct analogue of KMP's failure
 function: it links each state to its longest proper suffix that is still
@@ -139,8 +206,10 @@ at $\bot$, even when we fall off the root.}
 \node[final] (cao) at (-3.0,-4.5) {\texttt{cao}};
 \node[state] (aca) at (-1.0,-4.5) {\texttt{aca}};
 
-\draw[-Stealth, thick] (ca) -- (cac)
-  node[midway, above left, edge label] {c};
+% highlighted transition g'(ca, c) = cac
+\draw[-Stealth, very thick, violet] (ca) -- (cac)
+  node[midway, above left, font=\scriptsize\ttfamily\bfseries,
+       text=violet] {c};
 \draw[-Stealth, thick] (ca) -- (cao)
   node[midway, above right, edge label] {o};
 \draw[-Stealth, thick] (ac) -- (aca)
@@ -164,7 +233,8 @@ at $\bot$, even when we fall off the root.}
 % ── Suffix links (only a few, for clarity) ────
 \draw[slink] (ca)   to (a);
 \draw[slink] (ac)   to (c);
-\draw[slink] (cac)  to (ac);
+% highlighted suffix link f(cac) = ac
+\draw[-Stealth, dashed, red!70!black, thick, bend right=20] (cac) to (ac);
 \draw[slink] (aca)  to (ca);
 \draw[slink] (cao)  to (ao);
 
@@ -174,8 +244,10 @@ at $\bot$, even when we fall off the root.}
   Solid arrows are transitions $g'(s,a)$; dashed arrows show selected
   suffix links $f(s)$.
   Double-bordered states are final (they correspond to actual suffixes).
-  Every path from the root spells a distinct substring of
-  $\texttt{cacao}$.
+  The \textcolor{violet}{\textbf{violet}} edge highlights the transition
+  $g'(\texttt{ca},\texttt{c}) = \texttt{cac}$;
+  the \textcolor{red!70!black}{\textbf{red}} dashed arrow highlights
+  the suffix link $f(\texttt{cac}) = \texttt{ac}$.
 }
 \label{fig:strie-cacao}
 \end{figure}
@@ -197,9 +269,19 @@ into one edge with a multi-character label.}
 
 Many states in the suffix trie have exactly one outgoing transition ---
 they are just ``pass-through'' nodes on a single path.
-If we merge every maximal chain of such single-child nodes into a single
-edge (whose label is the concatenation of the individual character
-labels), we obtain a much smaller tree.
+Look at the suffix trie in Figure~\ref{fig:strie-cacao}: the node
+\texttt{cac} has only one child (\texttt{caca}), which in turn has only
+one child (\texttt{cacao}).
+These nodes do not carry any useful branching information --- they just
+spell out the rest of a suffix one character at a time.
+The idea behind compaction is to collapse such chains into a single edge
+with a multi-character label.
+Instead of three nodes \texttt{cac} $\to$ \texttt{caca} $\to$
+\texttt{cacao} connected by edges \texttt{a} and \texttt{o}, we get a
+single edge labelled \texttt{ao} going straight from \texttt{cac}'s
+parent to the leaf.
+
+Before formalising this, let us classify the nodes of the suffix trie:
 
 \begin{definition}[Branching state, leaf, implicit state]
   A state of $\mathrm{STrie}(T)$ is:
@@ -214,6 +296,23 @@ labels), we obtain a much smaller tree.
   \end{itemize}
   The root is always considered a branching state.
 \end{definition}
+
+In our \texttt{cacao} example (Figure~\ref{fig:strie-cacao}):
+\begin{itemize}[nosep]
+  \item The root ($\varepsilon$), \texttt{a}, and \texttt{ca} are
+        \textbf{branching states} --- each has two or more children.
+  \item \texttt{o}, \texttt{ao}, \texttt{cao}, \texttt{acao}, and
+        \texttt{cacao} are \textbf{leaves} --- they have no outgoing
+        edges.
+  \item Everything else (\texttt{c}, \texttt{ac}, \texttt{cac},
+        \texttt{aca}, \texttt{caca}) is an \textbf{implicit state} ---
+        exactly one outgoing edge, just passing through.
+\end{itemize}
+
+The compaction step keeps only the branching states and leaves (the
+``interesting'' nodes) and merges everything in between into
+multi-character edges.
+This gives us the suffix tree:
 
 \begin{definition}[Suffix tree, $\mathrm{STree}(T)$]
   \label{def:stree}
@@ -237,6 +336,20 @@ labels), we obtain a much smaller tree.
   \end{itemize}
   Hence $\mathrm{STree}(T)$ uses $\Oh{n}$ space.
 \end{definition}
+
+The key insight for the space bound: since every internal node branches
+(has at least two children), a standard counting argument tells us
+there can be at most $n - 1$ internal nodes for $n$ leaves.
+And since we store each edge label as just two integers $(k, p)$ rather
+than copying the actual characters, the whole tree takes $\Oh{n}$ space
+--- a dramatic improvement over the $\Th{n^2}$ suffix trie.
+
+Compare Figure~\ref{fig:stree-cacao} with Figure~\ref{fig:strie-cacao}:
+the 16-node trie has been compressed into just 7 nodes.
+For instance, the path root $\to$ \texttt{c} $\to$ \texttt{ca} in the
+trie (two single-character edges through the implicit node \texttt{c})
+has become a single edge labelled \texttt{ca} going directly from the
+root to the branching node.
 
 \aside{%
   By appending a special character
@@ -318,21 +431,33 @@ labels), we obtain a much smaller tree.
 \end{figure}
 
 \paragraph{Reference pairs.}
-Since implicit states are not stored as nodes, we need a way to refer
-to them.
-A \textbf{reference pair} $(s, w)$ identifies an implicit (or explicit)
-state by naming an explicit ancestor $s$ and the string $w$ that leads
-from $s$ down to the desired state.
-In practice, $w$ is stored as an index pair $(k, p)$ so that $w = T[k \ldots p]$.
+Since implicit states are not stored as nodes in the suffix tree, we
+need a way to talk about them.
+Think of it this way: in the suffix trie, the node \texttt{cac} existed
+as its own node.
+In the suffix tree, it has been swallowed into the edge labelled
+\texttt{acao} going from the \texttt{ca}-node to a leaf.
+But we might still need to refer to the ``point'' on that edge where we
+have read \texttt{c} so far (one character into the four-character edge
+label).
+
+A \textbf{reference pair} $(s, w)$ gives us exactly that: it names an
+explicit node $s$ and a string $w$ that tells us how far to walk down
+from $s$.
+In practice, $w$ is stored as an index pair $(k, p)$ so that
+$w = T[k \ldots p]$.
+For our example, the implicit state \texttt{cac} would be represented
+as $(\texttt{ca},\; (3, 3))$ --- start at the explicit node
+\texttt{ca} and walk one character: $T[3] = \texttt{c}$.
 When $w = \varepsilon$ (i.e.\ $k > p$), the reference pair
 points to the explicit state $s$ itself.
 
 A reference pair $(s, (k, p))$ is \textbf{canonical} if $s$ is the
 closest explicit ancestor of the target state --- that is, the entire
-string $T[k \ldots p]$ is consumed by a single edge or $s$ is the
-state itself.
-Canonizing a reference pair means ``walking down'' from $s$, consuming
-full edges, until the remaining string fits within a single edge.
+string $T[k \ldots p]$ fits within a single edge leaving $s$.
+If it does not (because $w$ spans more than one edge), we
+\textbf{canonize} by walking down from $s$, consuming full edges one at
+a time, until the remaining string fits within a single edge.
 
 \subsection{Online Construction of the Suffix Trie}
 
@@ -560,6 +685,7 @@ until we reach a state that already has one.
   }
 \end{algorithm}
 
+\begin{formaldetails}[Suffix trie: $\Th{n^2}$ time and space]
 \begin{theorem}
   \label{thm:strie-quadratic}
   $\mathrm{STrie}(T)$ can be constructed on-line in time and space
@@ -575,6 +701,7 @@ until we reach a state that already has one.
   The number of states is bounded by the number of distinct substrings,
   which is at most $\binom{n+1}{2} + 1 = \Oh{n^2}$.
 \end{proof}
+\end{formaldetails}
 
 \subsection{Ukkonen's Linear-Time Construction}
 

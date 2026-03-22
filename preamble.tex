@@ -68,50 +68,56 @@
 \usepackage{cleveref}
 
 % --- intermezzo box ---
-\usepackage{mdframed}
+\usepackage[framemethod=tikz]{mdframed}
 \newmdenv[
   skipabove=\bigskipamount,
   skipbelow=\bigskipamount,
-  backgroundcolor=gray!7,
-  linecolor=gray!45,
-  linewidth=0.6pt,
-  innertopmargin=10pt,
-  innerbottommargin=10pt,
-  innerleftmargin=12pt,
-  innerrightmargin=8pt,
+  backgroundcolor=orange!4,
+  hidealllines=true,
+  innertopmargin=12pt,
+  innerbottommargin=12pt,
+  innerleftmargin=14pt,
+  innerrightmargin=12pt,
 ]{intermezzoframe}
 \newenvironment{intermezzo}[1]{%
+  \begin{adjustwidth}{-5mm}{-35mm}%
   \begin{intermezzoframe}%
-  \noindent{\footnotesize\sffamily\scshape Intermezzo}\enspace%
-  {\small\sffamily\bfseries ---\enspace#1}%
-  \par\smallskip{\color{gray!60}\hrule height 0.4pt}\smallskip
+  \noindent{\small\sffamily\bfseries\color{orange!60!black}%
+    \raisebox{0.5pt}{\rule{6pt}{6pt}}\enspace%
+    Intermezzo\enspace---\enspace#1}%
+  \par\vspace{6pt}%
 }{%
   \end{intermezzoframe}%
+  \end{adjustwidth}%
 }
 
 % --- formal-details box ---
 % Usage: \begin{formaldetails}[optional title] ... \end{formaldetails}
 % For algorithm correctness proofs use the loopproof list inside.
+\usepackage{changepage}
 \newmdenv[
   skipabove=\bigskipamount,
   skipbelow=\bigskipamount,
-  backgroundcolor=blue!3,
-  linecolor=blue!25,
-  linewidth=0.6pt,
-  innertopmargin=10pt,
-  innerbottommargin=10pt,
-  innerleftmargin=12pt,
-  innerrightmargin=8pt,
+  backgroundcolor=teal!4,
+  hidealllines=true,
+  innertopmargin=12pt,
+  innerbottommargin=12pt,
+  innerleftmargin=14pt,
+  innerrightmargin=12pt,
 ]{formaldetailsframe}
 \newenvironment{formaldetails}[1][]{%
+  \begin{adjustwidth}{-5mm}{-35mm}%
   \begin{formaldetailsframe}%
-  \noindent{\footnotesize\sffamily\scshape Formal details}%
-  \if\relax\detokenize{#1}\relax\else
-    \enspace{\small\sffamily\bfseries ---\enspace#1}%
-  \fi%
-  \par\smallskip{\color{blue!20}\hrule height 0.4pt}\smallskip
+  \noindent{\small\sffamily\bfseries\color{teal!60!black}%
+    \raisebox{0.5pt}{\rule{6pt}{6pt}}\enspace%
+    Formal details%
+    \if\relax\detokenize{#1}\relax\else
+      \enspace---\enspace#1%
+    \fi}%
+  \par\vspace{6pt}%
 }{%
   \end{formaldetailsframe}%
+  \end{adjustwidth}%
 }
 
 % --- loop-invariant proof structure ---
@@ -176,12 +182,12 @@
   linecolor=violet!60!black, backgroundcolor=violet!4]{exercise}
 \surroundwithmdframed[style=thmbar,
   linecolor=violet!60!black, backgroundcolor=violet!4]{problem}
-\surroundwithmdframed[style=thmbar, linewidth=1.5pt,
-  linecolor=gray!50]{remark}
-\surroundwithmdframed[style=thmbar, linewidth=1.5pt,
-  linecolor=gray!50]{note}
-\surroundwithmdframed[style=thmbar, linewidth=1.5pt,
-  linecolor=gray!50]{observation}
+\surroundwithmdframed[style=thmbar,
+  linecolor=gray!50, backgroundcolor=gray!4]{remark}
+\surroundwithmdframed[style=thmbar,
+  linecolor=gray!50, backgroundcolor=gray!4]{note}
+\surroundwithmdframed[style=thmbar,
+  linecolor=gray!50, backgroundcolor=gray!4]{observation}
 
 % ---- custom margin-note shorthand ----
 % \aside[offset]{text} — unnumbered note in the margin
