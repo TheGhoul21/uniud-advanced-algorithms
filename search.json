@@ -1,10 +1,136 @@
 [
   {
-    "objectID": "notebooks/04-boyer-moore.html#boyer-moore-bad-character-rule",
-    "href": "notebooks/04-boyer-moore.html#boyer-moore-bad-character-rule",
-    "title": "Boyer-Moore — Bad Character Rule",
-    "section": "Boyer-Moore — Bad Character Rule",
-    "text": "Boyer-Moore — Bad Character Rule\nStep through the Boyer-Moore search. The algorithm scans the pattern right-to-left and uses the bad character rule to skip alignments.\n\n\n\n\n\n\n\n\n\nviewof T_bm = Inputs.text({label: \"T:\", value: \"abcaabcabcaab\", width: 400})\nviewof P_bm = Inputs.text({label: \"P:\", value: \"abcab\", width: 400})\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nviewof step_bm = Inputs.range([0, bm_max_step], {step: 1, value: 0, label: \"Step:\"})"
+    "objectID": "STYLE-GUIDE.html",
+    "href": "STYLE-GUIDE.html",
+    "title": "Style Guide — Advanced Algorithms Notes",
+    "section": "",
+    "text": "Guidelines for writing, structuring, and illustrating these lecture notes.\n\n\nTone: Knowledgeable guide, not textbook. Write as if you’re walking someone through the material at a whiteboard. Use “we”, “let’s”, “notice that”. Never compress three ideas into one sentence.\nAfter every formal definition: Add an intuitive paragraph that unpacks it piece by piece in plain language. Reference a concrete example by number. The definition is for precision; the paragraph is for understanding.\nStep-by-step over summary: When describing an algorithm or process, list what happens at each step. “Two things can happen: …” is better than a single abstract sentence covering all cases.\nConcrete before general: Always show a specific example first, then state the general rule. “For instance, nan is a prefix of the suffix nana” before “every substring is a prefix of some suffix.”\n\n\n\nFormal definitions stay formal — they’re reference material. But they never stand alone. Every definition gets: 1. An intuitive walkthrough immediately after 2. A cross-reference to a concrete example/figure 3. Color-highlighted elements in the referenced figure\nFormaldetails boxes for proofs and complexity analyses — wider than normal text, centered on the page, light teal background. Inner theorems/lemmas keep their normal styling (colored left bar).\nIntermezzo boxes for historical notes, fun facts, and tangential connections — warm orange background. Keep them self-contained and interesting.\nAsides (margin notes) for brief clarifications, one-liners, and connections to other concepts. Keep them short — if they overflow the margin, they’re too long.\n\n\n\nEvery major concept gets a figure. If you’re describing a tree, draw the tree. If you’re describing a process, show before/after.\nCross-reference with colors: Highlight specific elements in TikZ figures (e.g., violet edge for a transition, red dashed arrow for a suffix link) and reference them in the text: “the violet-highlighted edge shows g’(ca, c) = cac.”\nStyle consistency: - Blue: internal/branching nodes - Orange: leaves - Gray (dashed border): implicit/pass-through nodes - Violet: highlighted transitions - Red (dashed): failure/suffix links - Green (dotted): output links - Solid lines: tree edges\nAnnotations on figures: Use boxed labels with leader arrows for callouts. Never let annotations overlap with the figure content. Keep them outside the main structure.\nScan direction arrows, pointers, comparison markers must be clearly visible — bold, colored, not gray.\n\n\n\nRecurring examples: Use the same strings across related sections (cacao for suffix structures, potato/tatoo/theater/other for keyword trees, he/she/his/hers for Aho-Corasick). Familiarity reduces cognitive load.\nVerify properties on examples: After stating a property (size, height, fan-out), verify it on the running example with actual numbers: “the tree has 23 edges, confirming the size bound.”\nShow the failure case: When motivating a new concept, show concretely what goes wrong without it. “We already knew that T[3,4] = he; going back to the root and re-reading them is redundant work.”\n\n\n\nBridge sections explicitly: When a new structure generalizes an old one, say so directly. “A suffix trie is exactly the keyword tree of the set of all suffixes” with the formula. “Failure links are the direct multi-pattern generalisation of KMP’s sp’ values.”\n“Why learn X if we have Y?”: Address this whenever two algorithms solve similar problems. Boyer-Moore vs KMP, keyword tree vs running KMP per pattern.\nHistorical context as intermezzos: Who invented it, when, why, what tool it was built for. “Every time you run grep -F, you’re using Aho-Corasick.”\n\n\n\nOneside (digital notes, not printed book). Wide right margin for asides. Formaldetails and intermezzos extend into the margin space, centered on the physical page.\nNo dashed borders on boxes — just colored backgrounds. Formaldetails = teal tint, Intermezzo = orange tint. Bold sans-serif headers with a small filled square icon.\nTheorem-like environments: Colored left bar (2.5pt), light tinted background. - Blue: theorems, lemmas, corollaries, propositions - Teal: definitions - Orange: examples - Violet: exercises, problems - Gray: remarks, notes, observations\n\n\n\nOne notebook per algorithm/topic, not one giant monolith. Both .qmd (Quarto/Pyodide for web) and .ipynb (Jupyter with ipywidgets).\nCode hidden by default (echo: false for qmd, source_hidden for ipynb). The reader sees only the interactive controls and output.\nGranular stepping: Each step should show one atomic operation. For naive matching: one character comparison per step, with explicit backtrack steps. The student should see the repeated work, not just the result.\nVisual feedback: Active path lit up, inactive parts grayed out. Color-coded status messages. Running counters for total comparisons and matches found.\nMatch the notes’ examples: Default inputs in notebooks should use the same strings as the LaTeX notes.\n\n\n\n\nDon’t compress a walkthrough into a single dense sentence\nDon’t let a formal definition stand without intuitive follow-up\nDon’t use invisible gray for important visual elements\nDon’t nest boxed environments with conflicting border styles\nDon’t assume the reader connects abstract definitions to figures on their own — make the connection explicit with colors and cross-references"
+  },
+  {
+    "objectID": "STYLE-GUIDE.html#writing-style",
+    "href": "STYLE-GUIDE.html#writing-style",
+    "title": "Style Guide — Advanced Algorithms Notes",
+    "section": "",
+    "text": "Tone: Knowledgeable guide, not textbook. Write as if you’re walking someone through the material at a whiteboard. Use “we”, “let’s”, “notice that”. Never compress three ideas into one sentence.\nAfter every formal definition: Add an intuitive paragraph that unpacks it piece by piece in plain language. Reference a concrete example by number. The definition is for precision; the paragraph is for understanding.\nStep-by-step over summary: When describing an algorithm or process, list what happens at each step. “Two things can happen: …” is better than a single abstract sentence covering all cases.\nConcrete before general: Always show a specific example first, then state the general rule. “For instance, nan is a prefix of the suffix nana” before “every substring is a prefix of some suffix.”"
+  },
+  {
+    "objectID": "STYLE-GUIDE.html#structure",
+    "href": "STYLE-GUIDE.html#structure",
+    "title": "Style Guide — Advanced Algorithms Notes",
+    "section": "",
+    "text": "Formal definitions stay formal — they’re reference material. But they never stand alone. Every definition gets: 1. An intuitive walkthrough immediately after 2. A cross-reference to a concrete example/figure 3. Color-highlighted elements in the referenced figure\nFormaldetails boxes for proofs and complexity analyses — wider than normal text, centered on the page, light teal background. Inner theorems/lemmas keep their normal styling (colored left bar).\nIntermezzo boxes for historical notes, fun facts, and tangential connections — warm orange background. Keep them self-contained and interesting.\nAsides (margin notes) for brief clarifications, one-liners, and connections to other concepts. Keep them short — if they overflow the margin, they’re too long."
+  },
+  {
+    "objectID": "STYLE-GUIDE.html#figures",
+    "href": "STYLE-GUIDE.html#figures",
+    "title": "Style Guide — Advanced Algorithms Notes",
+    "section": "",
+    "text": "Every major concept gets a figure. If you’re describing a tree, draw the tree. If you’re describing a process, show before/after.\nCross-reference with colors: Highlight specific elements in TikZ figures (e.g., violet edge for a transition, red dashed arrow for a suffix link) and reference them in the text: “the violet-highlighted edge shows g’(ca, c) = cac.”\nStyle consistency: - Blue: internal/branching nodes - Orange: leaves - Gray (dashed border): implicit/pass-through nodes - Violet: highlighted transitions - Red (dashed): failure/suffix links - Green (dotted): output links - Solid lines: tree edges\nAnnotations on figures: Use boxed labels with leader arrows for callouts. Never let annotations overlap with the figure content. Keep them outside the main structure.\nScan direction arrows, pointers, comparison markers must be clearly visible — bold, colored, not gray."
+  },
+  {
+    "objectID": "STYLE-GUIDE.html#examples",
+    "href": "STYLE-GUIDE.html#examples",
+    "title": "Style Guide — Advanced Algorithms Notes",
+    "section": "",
+    "text": "Recurring examples: Use the same strings across related sections (cacao for suffix structures, potato/tatoo/theater/other for keyword trees, he/she/his/hers for Aho-Corasick). Familiarity reduces cognitive load.\nVerify properties on examples: After stating a property (size, height, fan-out), verify it on the running example with actual numbers: “the tree has 23 edges, confirming the size bound.”\nShow the failure case: When motivating a new concept, show concretely what goes wrong without it. “We already knew that T[3,4] = he; going back to the root and re-reading them is redundant work.”"
+  },
+  {
+    "objectID": "STYLE-GUIDE.html#connecting-concepts",
+    "href": "STYLE-GUIDE.html#connecting-concepts",
+    "title": "Style Guide — Advanced Algorithms Notes",
+    "section": "",
+    "text": "Bridge sections explicitly: When a new structure generalizes an old one, say so directly. “A suffix trie is exactly the keyword tree of the set of all suffixes” with the formula. “Failure links are the direct multi-pattern generalisation of KMP’s sp’ values.”\n“Why learn X if we have Y?”: Address this whenever two algorithms solve similar problems. Boyer-Moore vs KMP, keyword tree vs running KMP per pattern.\nHistorical context as intermezzos: Who invented it, when, why, what tool it was built for. “Every time you run grep -F, you’re using Aho-Corasick.”"
+  },
+  {
+    "objectID": "STYLE-GUIDE.html#layout",
+    "href": "STYLE-GUIDE.html#layout",
+    "title": "Style Guide — Advanced Algorithms Notes",
+    "section": "",
+    "text": "Oneside (digital notes, not printed book). Wide right margin for asides. Formaldetails and intermezzos extend into the margin space, centered on the physical page.\nNo dashed borders on boxes — just colored backgrounds. Formaldetails = teal tint, Intermezzo = orange tint. Bold sans-serif headers with a small filled square icon.\nTheorem-like environments: Colored left bar (2.5pt), light tinted background. - Blue: theorems, lemmas, corollaries, propositions - Teal: definitions - Orange: examples - Violet: exercises, problems - Gray: remarks, notes, observations"
+  },
+  {
+    "objectID": "STYLE-GUIDE.html#notebooks",
+    "href": "STYLE-GUIDE.html#notebooks",
+    "title": "Style Guide — Advanced Algorithms Notes",
+    "section": "",
+    "text": "One notebook per algorithm/topic, not one giant monolith. Both .qmd (Quarto/Pyodide for web) and .ipynb (Jupyter with ipywidgets).\nCode hidden by default (echo: false for qmd, source_hidden for ipynb). The reader sees only the interactive controls and output.\nGranular stepping: Each step should show one atomic operation. For naive matching: one character comparison per step, with explicit backtrack steps. The student should see the repeated work, not just the result.\nVisual feedback: Active path lit up, inactive parts grayed out. Color-coded status messages. Running counters for total comparisons and matches found.\nMatch the notes’ examples: Default inputs in notebooks should use the same strings as the LaTeX notes."
+  },
+  {
+    "objectID": "STYLE-GUIDE.html#what-not-to-do",
+    "href": "STYLE-GUIDE.html#what-not-to-do",
+    "title": "Style Guide — Advanced Algorithms Notes",
+    "section": "",
+    "text": "Don’t compress a walkthrough into a single dense sentence\nDon’t let a formal definition stand without intuitive follow-up\nDon’t use invisible gray for important visual elements\nDon’t nest boxed environments with conflicting border styles\nDon’t assume the reader connects abstract definitions to figures on their own — make the connection explicit with colors and cross-references"
+  },
+  {
+    "objectID": "notebooks/05-suffix-structures.html#suffix-trie-suffix-tree",
+    "href": "notebooks/05-suffix-structures.html#suffix-trie-suffix-tree",
+    "title": "Suffix Trie & Suffix Tree",
+    "section": "Suffix Trie & Suffix Tree",
+    "text": "Suffix Trie & Suffix Tree\nBuild and visualize the suffix trie and its compacted suffix tree for any input string.\n\n\n\n\n\n\n\n\n\nviewof T_tree = Inputs.text({label: \"T:\", value: \"cacao$\", width: 300})\nviewof tree_view = Inputs.radio([\"Suffix Trie\", \"Suffix Tree\"], {value: \"Suffix Trie\", label: \"View:\"})"
+  },
+  {
+    "objectID": "notebooks/07-keyword-tree.html#building-the-keyword-tree",
+    "href": "notebooks/07-keyword-tree.html#building-the-keyword-tree",
+    "title": "Keyword Tree — Multiple Pattern Matching",
+    "section": "Building the Keyword Tree",
+    "text": "Building the Keyword Tree\nEnter a comma-separated list of patterns and see the resulting keyword tree. The stats panel shows size (number of edges), height (longest pattern), and maximum fan-out.\n\n\n\n\n\n\n\n\n\nviewof patterns_input = Inputs.text({\n  label: \"Patterns (comma-separated):\",\n  value: \"potato, tatoo, theater, other\",\n  width: 500\n})"
+  },
+  {
+    "objectID": "notebooks/07-keyword-tree.html#searching-with-the-keyword-tree",
+    "href": "notebooks/07-keyword-tree.html#searching-with-the-keyword-tree",
+    "title": "Keyword Tree — Multiple Pattern Matching",
+    "section": "Searching with the Keyword Tree",
+    "text": "Searching with the Keyword Tree\nEnter a text and patterns. Step through each starting position to see the descent from the root: active edges light up, non-matching branches are grayed out.\n\n\n\n\n\n\n\n\n\nviewof T_kw_search = Inputs.text({\n  label: \"T:\",\n  value: \"a]potato that was put in a theater\",\n  width: 500\n})\nviewof P_kw_search = Inputs.text({\n  label: \"Patterns (comma-separated):\",\n  value: \"potato, tatoo, theater, other\",\n  width: 500\n})\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nviewof step_kw = Inputs.range([0, kw_max_step], {step: 1, value: 0, label: \"Step (starting position):\"})"
+  },
+  {
+    "objectID": "notebooks/07-keyword-tree.html#aho-corasick-failure-links-output-links",
+    "href": "notebooks/07-keyword-tree.html#aho-corasick-failure-links-output-links",
+    "title": "Keyword Tree — Multiple Pattern Matching",
+    "section": "Aho-Corasick: Failure Links & Output Links",
+    "text": "Aho-Corasick: Failure Links & Output Links\nThe keyword tree alone restarts from the root at every position. The Aho-Corasick automaton adds two types of pointers:\n\nFailure links (red dashed): when the descent gets stuck, jump to the longest proper suffix of the current path that is also a prefix of some pattern.\nOutput links (green dotted): chain together all patterns that end along the failure-link path, so patterns ending at internal nodes are not missed.\n\n\n\n\n\n\n\n\n\n\nviewof P_ac = Inputs.text({\n  label: \"Patterns (comma-separated):\",\n  value: \"he, she, his, hers\",\n  width: 500\n})"
+  },
+  {
+    "objectID": "notebooks/02-kmp.html#kmp-failure-function-sp-values-search",
+    "href": "notebooks/02-kmp.html#kmp-failure-function-sp-values-search",
+    "title": "KMP — Failure Function & Search",
+    "section": "KMP — Failure Function (sp values) & Search",
+    "text": "KMP — Failure Function (sp values) & Search\nVisualize the sp (border) array computation and then step through the KMP search showing how mismatches use the failure function to skip alignments.\n\n\n\n\n\n\n\n\n\nFailure Function Table\n\nviewof P_sp = Inputs.text({label: \"P:\", value: \"abcabcab\", width: 400})\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nKMP Search — Step by Step\nWatch how KMP uses the failure function to avoid re-scanning characters. The arrow shows where j falls back to on a mismatch.\n\n\n\n\n\n\n\n\n\nviewof T_kmp = Inputs.text({label: \"T:\", value: \"abcaabcabcaab\", width: 400})\nviewof P_kmp = Inputs.text({label: \"P:\", value: \"abcab\", width: 400})\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nviewof step_kmp = Inputs.range([0, kmp_max_step], {step: 1, value: 0, label: \"Step:\"})"
+  },
+  {
+    "objectID": "notebooks/01-naive.html#naive-string-matching",
+    "href": "notebooks/01-naive.html#naive-string-matching",
+    "title": "Naive String Matching",
+    "section": "Naive String Matching",
+    "text": "Naive String Matching\nStep through every single character comparison. At each shift s, the algorithm compares P[0] vs T[s], then P[1] vs T[s+1], and so on. On a mismatch it backtracks to the next shift and starts over from P[0] — this is the repeated work that makes the naive approach slow.\n\n\n\n\n\n\n\n\n\nviewof T_naive = Inputs.text({label: \"T:\", value: \"abcaabcabcaab\", width: 400})\nviewof P_naive = Inputs.text({label: \"P:\", value: \"abcab\", width: 400})\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nviewof step_naive = Inputs.range([0, naive_max_step], {step: 1, value: 0, label: \"Step:\"})"
+  },
+  {
+    "objectID": "index.html",
+    "href": "index.html",
+    "title": "Advanced Algorithms — Interactive Companions",
+    "section": "",
+    "text": "Interactive visualizations for the Advanced Algorithms course at the University of Udine.\nEach notebook lets you step through classic algorithms with sliders and custom inputs — all running directly in your browser via Pyodide, no installation required."
+  },
+  {
+    "objectID": "index.html#notebooks",
+    "href": "index.html#notebooks",
+    "title": "Advanced Algorithms — Interactive Companions",
+    "section": "Notebooks",
+    "text": "Notebooks\n\nChapter 1 — String Matching\n\nNaive String Matching — Step through every alignment of P against T\nKMP — Failure function (sp values) and search with fallback arrows\nZ-Algorithm — Z-array computation with Z-box reuse\nBoyer-Moore — Right-to-left scanning with bad character rule\nSuffix Trie & Suffix Tree — Build and visualize suffix structures\nAlgorithm Comparison — Side-by-side character comparison counts\nKeyword Tree — Multiple pattern matching: tree builder and search visualization"
+  },
+  {
+    "objectID": "notebooks/06-algorithm-comparison.html#algorithm-comparison",
+    "href": "notebooks/06-algorithm-comparison.html#algorithm-comparison",
+    "title": "Algorithm Comparison",
+    "section": "Algorithm Comparison",
+    "text": "Algorithm Comparison\nRun all algorithms on the same input and compare the number of character comparisons.\n\n\n\n\n\n\n\n\n\nviewof T_cmp = Inputs.text({label: \"T:\", value: \"abcaabcabcaab\", width: 500})\nviewof P_cmp = Inputs.text({label: \"P:\", value: \"abcab\", width: 500})"
+  },
+  {
+    "objectID": "notebooks/03-z-algorithm.html#z-algorithm",
+    "href": "notebooks/03-z-algorithm.html#z-algorithm",
+    "title": "Z-Algorithm",
+    "section": "Z-Algorithm",
+    "text": "Z-Algorithm\nVisualize the Z-array: Z[k] = length of the longest substring starting at k that matches a prefix of S.\n\n\n\n\n\n\n\n\n\nviewof S_z = Inputs.text({label: \"S:\", value: \"aabxaabxcaabxaabxay\", width: 500})\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nviewof step_z = Inputs.range([0, z_max_step], {step: 1, value: 0, label: \"Step:\"})"
   },
   {
     "objectID": "notebooks/01-string-matching.html#naive-string-matching",
@@ -56,73 +182,10 @@
     "text": "7. Keyword Tree — Multiple Pattern Matching\n\n7a. Building the Keyword Tree\nEnter a comma-separated list of patterns and see the resulting keyword tree. The stats panel shows size (number of edges), height (longest pattern), and maximum fan-out.\n\n\n\n\n\n\n\n\n\nviewof patterns_input = Inputs.text({\n  label: \"Patterns (comma-separated):\",\n  value: \"potato, tatoo, theater, other\",\n  width: 500\n})\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n7b. Searching with the Keyword Tree\nEnter a text and patterns. Step through each starting position to see the descent from the root: active edges light up, non-matching branches are grayed out.\n\n\n\n\n\n\n\n\n\nviewof T_kw_search = Inputs.text({\n  label: \"T:\",\n  value: \"a]potato that was put in a theater\",\n  width: 500\n})\nviewof P_kw_search = Inputs.text({\n  label: \"Patterns (comma-separated):\",\n  value: \"potato, tatoo, theater, other\",\n  width: 500\n})\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nviewof step_kw = Inputs.range([0, kw_max_step], {step: 1, value: 0, label: \"Step (starting position):\"})"
   },
   {
-    "objectID": "notebooks/03-z-algorithm.html#z-algorithm",
-    "href": "notebooks/03-z-algorithm.html#z-algorithm",
-    "title": "Z-Algorithm",
-    "section": "Z-Algorithm",
-    "text": "Z-Algorithm\nVisualize the Z-array: Z[k] = length of the longest substring starting at k that matches a prefix of S.\n\n\n\n\n\n\n\n\n\nviewof S_z = Inputs.text({label: \"S:\", value: \"aabxaabxcaabxaabxay\", width: 500})\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nviewof step_z = Inputs.range([0, z_max_step], {step: 1, value: 0, label: \"Step:\"})"
-  },
-  {
-    "objectID": "notebooks/06-algorithm-comparison.html#algorithm-comparison",
-    "href": "notebooks/06-algorithm-comparison.html#algorithm-comparison",
-    "title": "Algorithm Comparison",
-    "section": "Algorithm Comparison",
-    "text": "Algorithm Comparison\nRun all algorithms on the same input and compare the number of character comparisons.\n\n\n\n\n\n\n\n\n\nviewof T_cmp = Inputs.text({label: \"T:\", value: \"abcaabcabcaab\", width: 500})\nviewof P_cmp = Inputs.text({label: \"P:\", value: \"abcab\", width: 500})"
-  },
-  {
-    "objectID": "index.html",
-    "href": "index.html",
-    "title": "Advanced Algorithms — Interactive Companions",
-    "section": "",
-    "text": "Interactive visualizations for the Advanced Algorithms course at the University of Udine.\nEach notebook lets you step through classic algorithms with sliders and custom inputs — all running directly in your browser via Pyodide, no installation required."
-  },
-  {
-    "objectID": "index.html#notebooks",
-    "href": "index.html#notebooks",
-    "title": "Advanced Algorithms — Interactive Companions",
-    "section": "Notebooks",
-    "text": "Notebooks\n\nChapter 1 — String Matching\n\nNaive String Matching — Step through every alignment of P against T\nKMP — Failure function (sp values) and search with fallback arrows\nZ-Algorithm — Z-array computation with Z-box reuse\nBoyer-Moore — Right-to-left scanning with bad character rule\nSuffix Trie & Suffix Tree — Build and visualize suffix structures\nAlgorithm Comparison — Side-by-side character comparison counts\nKeyword Tree — Multiple pattern matching: tree builder and search visualization"
-  },
-  {
-    "objectID": "notebooks/01-naive.html#naive-string-matching",
-    "href": "notebooks/01-naive.html#naive-string-matching",
-    "title": "Naive String Matching",
-    "section": "Naive String Matching",
-    "text": "Naive String Matching\nStep through every single character comparison. At each shift s, the algorithm compares P[0] vs T[s], then P[1] vs T[s+1], and so on. On a mismatch it backtracks to the next shift and starts over from P[0] — this is the repeated work that makes the naive approach slow.\n\n\n\n\n\n\n\n\n\nviewof T_naive = Inputs.text({label: \"T:\", value: \"abcaabcabcaab\", width: 400})\nviewof P_naive = Inputs.text({label: \"P:\", value: \"abcab\", width: 400})\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nviewof step_naive = Inputs.range([0, naive_max_step], {step: 1, value: 0, label: \"Step:\"})"
-  },
-  {
-    "objectID": "notebooks/02-kmp.html#kmp-failure-function-sp-values-search",
-    "href": "notebooks/02-kmp.html#kmp-failure-function-sp-values-search",
-    "title": "KMP — Failure Function & Search",
-    "section": "KMP — Failure Function (sp values) & Search",
-    "text": "KMP — Failure Function (sp values) & Search\nVisualize the sp (border) array computation and then step through the KMP search showing how mismatches use the failure function to skip alignments.\n\n\n\n\n\n\n\n\n\nFailure Function Table\n\nviewof P_sp = Inputs.text({label: \"P:\", value: \"abcabcab\", width: 400})\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nKMP Search — Step by Step\nWatch how KMP uses the failure function to avoid re-scanning characters. The arrow shows where j falls back to on a mismatch.\n\n\n\n\n\n\n\n\n\nviewof T_kmp = Inputs.text({label: \"T:\", value: \"abcaabcabcaab\", width: 400})\nviewof P_kmp = Inputs.text({label: \"P:\", value: \"abcab\", width: 400})\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nviewof step_kmp = Inputs.range([0, kmp_max_step], {step: 1, value: 0, label: \"Step:\"})"
-  },
-  {
-    "objectID": "notebooks/07-keyword-tree.html#building-the-keyword-tree",
-    "href": "notebooks/07-keyword-tree.html#building-the-keyword-tree",
-    "title": "Keyword Tree — Multiple Pattern Matching",
-    "section": "Building the Keyword Tree",
-    "text": "Building the Keyword Tree\nEnter a comma-separated list of patterns and see the resulting keyword tree. The stats panel shows size (number of edges), height (longest pattern), and maximum fan-out.\n\n\n\n\n\n\n\n\n\nviewof patterns_input = Inputs.text({\n  label: \"Patterns (comma-separated):\",\n  value: \"potato, tatoo, theater, other\",\n  width: 500\n})"
-  },
-  {
-    "objectID": "notebooks/07-keyword-tree.html#searching-with-the-keyword-tree",
-    "href": "notebooks/07-keyword-tree.html#searching-with-the-keyword-tree",
-    "title": "Keyword Tree — Multiple Pattern Matching",
-    "section": "Searching with the Keyword Tree",
-    "text": "Searching with the Keyword Tree\nEnter a text and patterns. Step through each starting position to see the descent from the root: active edges light up, non-matching branches are grayed out.\n\n\n\n\n\n\n\n\n\nviewof T_kw_search = Inputs.text({\n  label: \"T:\",\n  value: \"a]potato that was put in a theater\",\n  width: 500\n})\nviewof P_kw_search = Inputs.text({\n  label: \"Patterns (comma-separated):\",\n  value: \"potato, tatoo, theater, other\",\n  width: 500\n})\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nviewof step_kw = Inputs.range([0, kw_max_step], {step: 1, value: 0, label: \"Step (starting position):\"})"
-  },
-  {
-    "objectID": "notebooks/07-keyword-tree.html#aho-corasick-failure-links-output-links",
-    "href": "notebooks/07-keyword-tree.html#aho-corasick-failure-links-output-links",
-    "title": "Keyword Tree — Multiple Pattern Matching",
-    "section": "Aho-Corasick: Failure Links & Output Links",
-    "text": "Aho-Corasick: Failure Links & Output Links\nThe keyword tree alone restarts from the root at every position. The Aho-Corasick automaton adds two types of pointers:\n\nFailure links (red dashed): when the descent gets stuck, jump to the longest proper suffix of the current path that is also a prefix of some pattern.\nOutput links (green dotted): chain together all patterns that end along the failure-link path, so patterns ending at internal nodes are not missed.\n\n\n\n\n\n\n\n\n\n\nviewof P_ac = Inputs.text({\n  label: \"Patterns (comma-separated):\",\n  value: \"he, she, his, hers\",\n  width: 500\n})"
-  },
-  {
-    "objectID": "notebooks/05-suffix-structures.html#suffix-trie-suffix-tree",
-    "href": "notebooks/05-suffix-structures.html#suffix-trie-suffix-tree",
-    "title": "Suffix Trie & Suffix Tree",
-    "section": "Suffix Trie & Suffix Tree",
-    "text": "Suffix Trie & Suffix Tree\nBuild and visualize the suffix trie and its compacted suffix tree for any input string.\n\n\n\n\n\n\n\n\n\nviewof T_tree = Inputs.text({label: \"T:\", value: \"cacao$\", width: 300})\nviewof tree_view = Inputs.radio([\"Suffix Trie\", \"Suffix Tree\"], {value: \"Suffix Trie\", label: \"View:\"})"
+    "objectID": "notebooks/04-boyer-moore.html#boyer-moore-bad-character-rule",
+    "href": "notebooks/04-boyer-moore.html#boyer-moore-bad-character-rule",
+    "title": "Boyer-Moore — Bad Character Rule",
+    "section": "Boyer-Moore — Bad Character Rule",
+    "text": "Boyer-Moore — Bad Character Rule\nStep through the Boyer-Moore search. The algorithm scans the pattern right-to-left and uses the bad character rule to skip alignments.\n\n\n\n\n\n\n\n\n\nviewof T_bm = Inputs.text({label: \"T:\", value: \"abcaabcabcaab\", width: 400})\nviewof P_bm = Inputs.text({label: \"P:\", value: \"abcab\", width: 400})\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nviewof step_bm = Inputs.range([0, bm_max_step], {step: 1, value: 0, label: \"Step:\"})"
   }
 ]
