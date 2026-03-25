@@ -12,10 +12,15 @@
 \usepackage[T1]{fontenc}
 \usepackage[utf8]{inputenc}
 \usepackage{microtype}
-\usepackage{lmodern}
+% Palatino for main text (newpxtext must precede amsmath)
+\usepackage{newpxtext}
+% Cabin as humanist sans companion to Palatino
+\usepackage[scale=0.92]{cabin}
 
 % --- math ---
 \usepackage{amsmath, amssymb, amsthm, mathtools}
+% Palatino-compatible math fonts (must follow amsmath)
+\usepackage{newpxmath}
 
 % --- margin notes ---
 \usepackage{marginnote}
@@ -29,6 +34,13 @@
 \definecolor{codecomment}{RGB}{100,100,100}
 \definecolor{codekw}{RGB}{0,0,200}
 \definecolor{codestr}{RGB}{163,21,21}
+
+% accent palette — deep forest green used throughout headings, rules, cover
+\definecolor{accent}{RGB}{30,90,60}        % main: deep hunter / forest green
+\definecolor{accentgold}{RGB}{185,155,60}  % warm brass for cover strip
+\colorlet{accentdark}{accent!85!black}     % darker variant for cover band
+\colorlet{accentmid}{accent!55!white}      % mid tint for labels / section numbers
+\colorlet{accentlight}{accent!18!white}    % very light tint for subtle rules
 
 \lstset{
   backgroundcolor=\color{codebg},
@@ -55,11 +67,16 @@
 \usepackage{graphicx}
 \usepackage{caption}    % provides \caption*{} for unnumbered captions
 \usepackage{tikz}
-\usetikzlibrary{arrows.meta, positioning, shapes.geometric, decorations.pathmorphing, decorations.pathreplacing}
+\usetikzlibrary{arrows.meta, positioning, shapes.geometric, decorations.pathmorphing, decorations.pathreplacing,
+                matrix, fit, backgrounds}
+
+% --- booklet layout ---
+\usepackage{fancyhdr}
+\usepackage{titlesec}
 
 % --- hyperlinks ---
-\usepackage[colorlinks=true, linkcolor=blue!70!black,
-            citecolor=green!50!black, urlcolor=blue]{hyperref}
+\usepackage[colorlinks=true, linkcolor=accent,
+            citecolor=teal!55!black, urlcolor=accent]{hyperref}
 
 % --- misc ---
 \raggedbottom
@@ -69,6 +86,9 @@
 
 % --- intermezzo box ---
 \usepackage[framemethod=tikz]{mdframed}
+\usepackage{etoolbox}
+\newbool{infullwidth}
+\boolfalse{infullwidth}
 \newmdenv[
   skipabove=\bigskipamount,
   skipbelow=\bigskipamount,
@@ -80,6 +100,7 @@
   innerrightmargin=12pt,
 ]{intermezzoframe}
 \newenvironment{intermezzo}[1]{%
+  \booltrue{infullwidth}%
   \begin{adjustwidth}{-5mm}{-35mm}%
   \begin{intermezzoframe}%
   \noindent{\small\sffamily\bfseries\color{orange!60!black}%
@@ -89,6 +110,7 @@
 }{%
   \end{intermezzoframe}%
   \end{adjustwidth}%
+  \boolfalse{infullwidth}%
 }
 
 % --- formal-details box ---
@@ -106,6 +128,7 @@
   innerrightmargin=12pt,
 ]{formaldetailsframe}
 \newenvironment{formaldetails}[1][]{%
+  \booltrue{infullwidth}%
   \begin{adjustwidth}{-5mm}{-35mm}%
   \begin{formaldetailsframe}%
   \noindent{\small\sffamily\bfseries\color{teal!60!black}%
@@ -118,6 +141,7 @@
 }{%
   \end{formaldetailsframe}%
   \end{adjustwidth}%
+  \boolfalse{infullwidth}%
 }
 
 % --- loop-invariant proof structure ---
@@ -137,7 +161,7 @@
   parsep=0pt,
 }
 \newcommand{\lprulesep}{%
-  \vspace{4pt}{\color{blue!20}\hrule height 0.4pt}\vspace{6pt}%
+  \vspace{4pt}{\color{accentlight}\hrule height 0.4pt}\vspace{6pt}%
 }
 
 % ---- theorem environments ----
@@ -167,15 +191,15 @@
   innertopmargin=3pt,  innerbottommargin=3pt,
 }
 \surroundwithmdframed[style=thmbar,
-  linecolor=blue!60!black, backgroundcolor=blue!4]{theorem}
+  linecolor=accent, backgroundcolor=accent!6]{theorem}
 \surroundwithmdframed[style=thmbar,
-  linecolor=blue!60!black, backgroundcolor=blue!4]{lemma}
+  linecolor=accent, backgroundcolor=accent!6]{lemma}
 \surroundwithmdframed[style=thmbar,
-  linecolor=blue!60!black, backgroundcolor=blue!4]{corollary}
+  linecolor=accent, backgroundcolor=accent!6]{corollary}
 \surroundwithmdframed[style=thmbar,
-  linecolor=blue!60!black, backgroundcolor=blue!4]{proposition}
+  linecolor=accent, backgroundcolor=accent!6]{proposition}
 \surroundwithmdframed[style=thmbar,
-  linecolor=teal!65!black,  backgroundcolor=teal!4]{definition}
+  linecolor=teal!55!black, backgroundcolor=teal!5]{definition}
 \surroundwithmdframed[style=thmbar,
   linecolor=orange!70!black, backgroundcolor=orange!5]{example}
 \surroundwithmdframed[style=thmbar,
@@ -190,10 +214,26 @@
   linecolor=gray!50, backgroundcolor=gray!4]{observation}
 
 % ---- custom margin-note shorthand ----
-% \aside[offset]{text} — unnumbered note in the margin
+% \aside[offset]{text} — margin note normally; inline block inside full-width environments
 \newcommand{\aside}[2][0pt]{%
-  \marginnote{\footnotesize\itshape #2}[#1]%
+  \ifbool{infullwidth}{%
+    \begin{mdframed}[
+      topline=false, rightline=false, bottomline=false,
+      leftline=true, linewidth=1.5pt, linecolor=gray!35,
+      innertopmargin=3pt, innerbottommargin=3pt,
+      innerleftmargin=8pt, innerrightmargin=0pt,
+      skipabove=6pt, skipbelow=6pt,
+      backgroundcolor=white,
+    ]%
+    {\footnotesize\itshape\color{gray!65!black}#2}%
+    \end{mdframed}%
+  }{%
+    \marginnote{\footnotesize\itshape #2}[#1]%
+  }%
 }
+
+% ---- circled step numbers ----
+\newcommand{\circled}[1]{\raisebox{-0.5pt}{\textcircled{\raisebox{-0.3pt}{\scriptsize #1}}}}
 
 % ---- KMP / string-matching notation ----
 \newcommand{\spi}[1]{\mathrm{sp}_{#1}(P)}   % max proper prefix-suffix length of P[1..#1]
@@ -202,3 +242,90 @@
 \newcommand{\Oh}[1]{\mathcal{O}\!\left(#1\right)}
 \newcommand{\Th}[1]{\Theta\!\left(#1\right)}
 \newcommand{\Om}[1]{\Omega\!\left(#1\right)}
+
+% ============================================================
+%  Booklet: running headers, chapter headings, title page
+% ============================================================
+
+% --- running headers ---
+\pagestyle{fancy}
+\fancyhf{}
+\renewcommand{\headrulewidth}{0.35pt}
+\fancyhead[L]{\small\sffamily\color{gray!65!black}\nouppercase{\leftmark}}
+\fancyhead[R]{\small\sffamily\color{gray!65!black}\thepage}
+% chapter-opening pages: no header, page number centred at foot
+\fancypagestyle{plain}{%
+  \fancyhf{}%
+  \renewcommand{\headrulewidth}{0pt}%
+  \fancyfoot[C]{\small\sffamily\color{gray!65!black}\thepage}%
+}
+% use "1.  String Matching" in the header (not all-caps default)
+\renewcommand{\chaptermark}[1]{\markboth{\thechapter.\enspace#1}{}}
+
+% --- chapter headings ---
+% CHAPTER 1          (small accent label)
+% ──────────────     (thin tint rule)     [sep=6pt]
+% String Matching    (huge title)
+% ═══════════════════════════════ (accent rule, after-code)
+\titleformat{\chapter}[display]
+  {\normalfont\sffamily\bfseries}
+  {\small\color{accentmid}\MakeUppercase{\chaptertitlename}\ \thechapter}
+  {6pt}
+  {%
+    {\color{accentlight}\rule{\linewidth}{0.5pt}}\\[6pt]%
+    \Huge\color{black!88}%
+  }
+  [\vspace{6pt}{\color{accent}\rule{\linewidth}{2.5pt}}]
+\titlespacing*{\chapter}{0pt}{28pt}{28pt}
+
+% --- section / subsection headings ---
+\titleformat{\section}
+  {\large\sffamily\bfseries}
+  {\color{accentmid}\thesection}{0.8em}{}
+\titleformat{\subsection}
+  {\normalsize\sffamily\bfseries}
+  {\color{accentmid}\thesubsection}{0.7em}{}
+
+% --- title page ---
+% Full-bleed TikZ cover: accent band + thin gold strip.
+% Positioned via current-page anchors so it ignores asymmetric margins.
+\newcommand{\maketitlepage}{%
+  \begin{titlepage}%
+    \thispagestyle{empty}%
+    \begin{tikzpicture}[remember picture, overlay]
+      % accent top band (upper 44 % of page)
+      \fill[accentdark]
+        (current page.north west)
+        rectangle
+        ([yshift=-0.44\paperheight] current page.north east);
+      % thin gold accent strip at bottom of band
+      \fill[accentgold]
+        ([yshift=-0.440\paperheight] current page.north west)
+        rectangle
+        ([yshift=-0.453\paperheight] current page.north east);
+      % main title
+      \node[anchor=center,
+            text=white,
+            font=\fontsize{44}{50}\selectfont\sffamily\bfseries]
+        at ([yshift=-0.17\paperheight] current page.north)
+        {Advanced Algorithms};
+      % subtitle
+      \node[anchor=center,
+            text=accentlight,
+            font=\Large\sffamily\mdseries]
+        at ([yshift=-0.28\paperheight] current page.north)
+        {Lecture Notes};
+      % author
+      \node[anchor=center,
+            font=\large\sffamily]
+        at ([yshift=0.14\paperheight] current page.south)
+        {Luca Simonetti};
+      % institution · year
+      \node[anchor=center,
+            text=gray!60!black,
+            font=\normalsize\sffamily]
+        at ([yshift=0.08\paperheight] current page.south)
+        {Università degli Studi di Udine\enspace·\enspace A.A.\ 2025--2026};
+    \end{tikzpicture}%
+  \end{titlepage}%
+}
