@@ -7,7 +7,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
 
-<title>Advanced Algorithms – Advanced Algorithms — UniUD</title>
+<title>Lecture Notes – Advanced Algorithms — UniUD</title>
 <style>
 code{white-space: pre-wrap;}
 span.smallcaps{font-variant: small-caps;}
@@ -91,7 +91,7 @@ ul.task-list li input[type="checkbox"] {
           <div class="collapse navbar-collapse" id="navbarCollapse">
             <ul class="navbar-nav navbar-nav-scroll me-auto">
   <li class="nav-item">
-    <a class="nav-link active" href="./index.html" aria-current="page"> 
+    <a class="nav-link" href="./index.html"> 
 <span class="menu-text">Home</span></a>
   </li>  
   <li class="nav-item">
@@ -111,7 +111,7 @@ ul.task-list li input[type="checkbox"] {
 <!-- margin-sidebar -->
     
 <!-- main -->
-<main class="content column-page" id="quarto-document-content"><header id="title-block-header" class="quarto-title-block"><h1 class="title display-7">Advanced Algorithms</h1></header>
+<main class="content column-page" id="quarto-document-content"><header id="title-block-header" class="quarto-title-block"><h1 class="title display-7">Lecture Notes</h1></header>
 
 <header id="title-block-header">
 
@@ -119,295 +119,105 @@ ul.task-list li input[type="checkbox"] {
 </header>
 
 
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
-<link href="https://fonts.googleapis.com/css2?family=Cabin:ital,wght@0,400;0,600;0,700;1,400&amp;display=swap" rel="stylesheet">
-
 <style>
-/* ── Override Quarto chrome for this page ────────────────────────────── */
 #title-block-header { display: none; }
-#quarto-content { background: #13392a !important; }
-#quarto-content > * { padding: 0 !important; }
+#quarto-content { padding: 0 !important; }
+#quarto-margin-sidebar { display: none !important; }
 .page-columns { display: block !important; }
 main.content { margin: 0 !important; max-width: 100% !important; padding: 0 !important; }
-body { background: #13392a; }
 body::after { display: none !important; }
 footer.footer { display: none !important; }
 
-/* ── Landing container ───────────────────────────────────────────────── */
-.landing {
-  min-height: 100vh;
-  background: #13392a;
-  font-family: 'Cabin', sans-serif;
+.notes-layout {
+  display: flex;
+  min-height: calc(100vh - 40px);
+}
+.notes-content {
+  flex: 1;
   display: flex;
   flex-direction: column;
+  min-width: 0;
 }
-
-/* ── Hero section ────────────────────────────────────────────────────── */
-.landing-hero {
-  background: linear-gradient(160deg, #1a4d33 0%, #1e5a3c 50%, #13392a 100%);
-  padding: 1.4rem 2.5rem 1.2rem;
-  border-bottom: 3px solid #b99b3c;
-  flex-shrink: 0;
-}
-.landing-hero .uni-label {
-  font-size: 0.72rem;
-  text-transform: uppercase;
-  letter-spacing: 0.12em;
-  color: #b99b3c;
-  font-weight: 700;
-  margin-bottom: 0.6rem;
-}
-.landing-hero h1 {
-  font-size: 1.6rem;
-  font-weight: 700;
-  color: #fff;
-  margin: 0 0 0.4rem 0;
-  border: none;
-  padding: 0;
-  line-height: 1.2;
-}
-.landing-hero .desc {
-  font-size: 0.88rem;
-  color: rgba(240,235,224,0.8);
-  max-width: 560px;
-  margin: 0;
-  line-height: 1.55;
-}
-
-/* ── Main content area ───────────────────────────────────────────────── */
-.landing-body {
-  flex: 1;
-  display: flex;
-  background: #13392a;
-}
-
-/* ── Canvas area — card grid ─────────────────────────────────────────── */
-.landing-canvas {
-  flex: 1;
+.notes-toolbar {
   background: #faf8f2;
-  padding: 2rem 2.5rem;
-  overflow-y: auto;
-}
-.chapter-label {
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: #8c7430;
-  margin-bottom: 1.2rem;
-}
-.card-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-  gap: 14px;
-}
-.algo-card {
-  background: #ece8d8;
-  border-radius: 6px;
-  padding: 18px 20px;
-  text-decoration: none;
-  border: 2px solid transparent;
-  transition: all 0.18s;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  position: relative;
-  overflow: hidden;
-}
-.algo-card:hover {
-  background: #fff;
-  border-color: #b99b3c;
-  box-shadow: 0 4px 16px rgba(0,0,0,0.1);
-  transform: translateY(-2px);
-  text-decoration: none;
-}
-.algo-card .card-num {
-  font-size: 11px;
-  font-weight: 700;
-  color: #b99b3c;
-  letter-spacing: 0.05em;
-}
-.algo-card .card-title {
-  font-size: 15px;
-  font-weight: 700;
-  color: #13392a;
-  line-height: 1.3;
-}
-.algo-card .card-desc {
-  font-size: 12.5px;
-  color: #555;
-  line-height: 1.5;
-}
-.algo-card .card-badge {
-  display: inline-block;
-  margin-top: 4px;
-  background: #1e5a3c;
-  color: #d4e8db;
-  font-size: 10px;
-  font-weight: 600;
-  padding: 2px 8px;
-  border-radius: 3px;
-  letter-spacing: 0.03em;
-}
-
-/* ── Bottom bar ──────────────────────────────────────────────────────── */
-.landing-bottom {
-  height: 40px;
-  background: #b99b3c;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 24px;
-  flex-shrink: 0;
-}
-.landing-bottom .bot-left {
-  font-size: 11px;
-  font-weight: 600;
-  color: #111;
+  padding: 10px 24px;
   display: flex;
   align-items: center;
   gap: 12px;
+  border-bottom: 1px solid #e0d9c8;
+  flex-shrink: 0;
 }
-.landing-bottom .bot-right {
+.notes-toolbar .notes-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: #13392a;
+}
+.notes-toolbar .notes-sep {
+  color: #ccc;
+}
+.notes-toolbar .notes-file {
+  font-size: 12px;
+  color: #888;
+}
+.notes-toolbar a {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: #1e5a3c;
+  color: #d4e8db;
   font-size: 11px;
-  color: rgba(0,0,0,0.6);
-}
-.landing-bottom .bot-pill {
-  background: rgba(255,255,255,0.22);
-  padding: 3px 10px;
-  border-radius: 3px;
-  font-size: 10px;
   font-weight: 600;
-  color: #111;
-  letter-spacing: 0.02em;
+  padding: 5px 12px;
+  border-radius: 3px;
+  text-decoration: none;
+  transition: background 0.15s;
+}
+.notes-toolbar a:hover {
+  background: #2e7d52;
+  text-decoration: none;
+}
+.notes-viewer {
+  flex: 1;
+}
+.notes-viewer iframe {
+  width: 100%;
+  height: 100%;
+  border: none;
+  display: block;
 }
 
-/* ── Responsive ──────────────────────────────────────────────────────── */
 @media (max-width: 768px) {
-  .landing-body { flex-direction: column; }
-  .landing-body #aa-sidebar {
-    width: 100%;
-    display: flex;
-    flex-wrap: wrap;
-    padding: 10px 12px;
-    gap: 0;
-  }
-  .landing-canvas { padding: 1.5rem 1rem; }
-  .card-grid { grid-template-columns: 1fr; }
-  .landing-hero { padding: 2rem 1.2rem; }
-  .landing-hero h1 { font-size: 1.6rem; }
+  .notes-layout { flex-direction: column; }
 }
 </style>
 
-<div class="landing">
-
-<!-- Top bar — reuses #aa-topbar from custom.scss -->
-<div id="aa-topbar">
-  <a href="./" class="aa-brand">AA-VIZ</a>
-  <span class="aa-sep">/</span>
-  <span class="aa-page-name">Interactive Companions</span>
-</div>
-
-<!-- Hero -->
-<div class="landing-hero">
-  <div class="uni-label">Università degli Studi di Udine · A.A. 2025–2026</div>
-  <h1>Advanced Algorithms</h1>
-  <p class="desc">
-    Interactive visualizations for the course lecture notes. Step through classic
-    algorithms with custom inputs — all running directly in your browser.
-  </p>
-</div>
-
-<!-- Body — sidebar + canvas -->
-<div class="landing-body">
-
-  <!-- Sidebar — reuses #aa-sidebar from custom.scss -->
+<div class="notes-layout">
   <nav id="aa-sidebar">
     <div class="aa-sidebar-label">String Matching</div>
-    <a class="aa-sidebar-link" href="./notebooks/01-naive.html">Naive</a>
-    <a class="aa-sidebar-link" href="./notebooks/02-kmp.html">KMP</a>
+    <a class="aa-sidebar-link" href="notebooks/01-naive.html">Naive</a>
+    <a class="aa-sidebar-link" href="notebooks/02-kmp.html">KMP</a>
     <a class="aa-sidebar-link aa-viz-link" href="visualizers/kmp.html" target="_blank">↳ visualizer</a>
-    <a class="aa-sidebar-link" href="./notebooks/03-z-algorithm.html">Z-Algorithm</a>
-    <a class="aa-sidebar-link" href="./notebooks/04-boyer-moore.html">Boyer-Moore</a>
-    <a class="aa-sidebar-link" href="./notebooks/05-suffix-structures.html">Suffix Structures</a>
-    <a class="aa-sidebar-link" href="./notebooks/06-algorithm-comparison.html">Comparison</a>
-    <a class="aa-sidebar-link" href="./notebooks/07-keyword-tree.html">Keyword Tree</a>
+    <a class="aa-sidebar-link" href="notebooks/03-z-algorithm.html">Z-Algorithm</a>
+    <a class="aa-sidebar-link" href="notebooks/04-boyer-moore.html">Boyer-Moore</a>
+    <a class="aa-sidebar-link" href="notebooks/05-suffix-structures.html">Suffix Structures</a>
+    <a class="aa-sidebar-link" href="notebooks/06-algorithm-comparison.html">Comparison</a>
+    <a class="aa-sidebar-link" href="notebooks/07-keyword-tree.html">Keyword Tree</a>
+    <div style="height:1px; background:rgba(255,255,255,0.08); margin:8px 0;"></div>
+    <a class="aa-sidebar-link active" href="notes.html">Lecture Notes</a>
   </nav>
 
-  <!-- Canvas — card grid -->
-  <div class="landing-canvas">
-    <div class="chapter-label">Chapter 1 — String Matching</div>
-    <div class="card-grid">
-
-      <a class="algo-card" href="./notebooks/01-naive.html">
-        <span class="card-num">01</span>
-        <span class="card-title">Naive String Matching</span>
-        <span class="card-desc">Step through every alignment of pattern P against text T</span>
-      </a>
-
-      <a class="algo-card" href="./notebooks/02-kmp.html">
-        <span class="card-num">02</span>
-        <span class="card-title">KMP</span>
-        <span class="card-desc">Failure function (sp values) and search with fallback arrows</span>
-        <span class="card-badge">Standalone visualizer</span>
-      </a>
-
-      <a class="algo-card" href="./notebooks/03-z-algorithm.html">
-        <span class="card-num">03</span>
-        <span class="card-title">Z-Algorithm</span>
-        <span class="card-desc">Z-array computation with Z-box reuse</span>
-      </a>
-
-      <a class="algo-card" href="./notebooks/04-boyer-moore.html">
-        <span class="card-num">04</span>
-        <span class="card-title">Boyer-Moore</span>
-        <span class="card-desc">Right-to-left scanning with the bad character rule</span>
-      </a>
-
-      <a class="algo-card" href="./notebooks/05-suffix-structures.html">
-        <span class="card-num">05</span>
-        <span class="card-title">Suffix Trie &amp; Suffix Tree</span>
-        <span class="card-desc">Build and visualize suffix structures interactively</span>
-      </a>
-
-      <a class="algo-card" href="./notebooks/06-algorithm-comparison.html">
-        <span class="card-num">06</span>
-        <span class="card-title">Algorithm Comparison</span>
-        <span class="card-desc">Side-by-side character comparison counts across algorithms</span>
-      </a>
-
-      <a class="algo-card" href="./notebooks/07-keyword-tree.html">
-        <span class="card-num">07</span>
-        <span class="card-title">Keyword Tree</span>
-        <span class="card-desc">Multiple pattern matching: tree builder and search visualization</span>
-      </a>
-
+  <div class="notes-content">
+    <div class="notes-toolbar">
+      <span class="notes-title">Lecture Notes</span>
+      <span class="notes-sep">/</span>
+      <span class="notes-file">main.pdf</span>
+      <a href="main.pdf" target="_blank">Open in system reader</a>
     </div>
-
-    <!-- Lecture Notes link -->
-    <div style="margin-top: 2rem; border-top: 1px solid #e0d9c8; padding-top: 1.5rem;">
-      <div class="chapter-label">Lecture Notes</div>
-      <a class="algo-card" href="./notes.html">
-        <span class="card-num">PDF</span>
-        <span class="card-title">Full Course Notes</span>
-        <span class="card-desc">Browse the complete lecture notes with an in-browser PDF reader</span>
-      </a>
+    <div class="notes-viewer">
+      <iframe src="main.pdf"></iframe>
     </div>
-
   </div>
-
-</div>
-
-<!-- Bottom bar -->
-<div class="landing-bottom">
-  <div class="bot-left">
-    <span class="bot-pill">7 notebooks</span>
-    <span>Chapter 1 — String Matching</span>
-  </div>
-  <div class="bot-right">All interactive · runs in-browser</div>
-</div>
-
 </div>
 
 
