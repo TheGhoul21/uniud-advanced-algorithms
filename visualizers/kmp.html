@@ -231,6 +231,16 @@ html, body { height: 100%; overflow: hidden; font-family: 'Cabin', sans-serif; }
   color: #fff;
 }
 
+.pseudo-title {
+  font-family: 'Cabin', sans-serif;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--pseudo-text);
+  opacity: 0.5;
+  padding: 0 16px 10px 16px;
+}
+
 /* Bottom bar */
 #bottom-bar {
   background: var(--current); color: #111;
@@ -569,7 +579,8 @@ function renderPseudo(phase) {
   const wrap = document.getElementById('pseudo-wrap');
   if (!wrap) return;
   const lines = phase === 'failure' ? PSEUDO_FAILURE : PSEUDO_SEARCH;
-  let html = '<div class="pseudo-lines">';
+  const title = phase === 'failure' ? 'Failure function' : 'KMP search';
+  let html = `<div class="pseudo-title">${title}</div><div class="pseudo-lines">`;
   lines.forEach((line, idx) => {
     const indent = line.match(/^(\s+)/)?.[1]?.length ?? 0;
     const trimmed = line.trimStart();

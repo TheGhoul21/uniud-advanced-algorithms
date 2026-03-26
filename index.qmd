@@ -12,6 +12,7 @@ Each notebook lets you step through classic algorithms with sliders and custom i
 
 1. [**Naive String Matching**](notebooks/01-naive.qmd) — Step through every alignment of P against T
 2. [**KMP**](notebooks/02-kmp.qmd) — Failure function (sp values) and search with fallback arrows
+   — [KMP visualizer →](visualizers/kmp.html){target="_blank"}
 3. [**Z-Algorithm**](notebooks/03-z-algorithm.qmd) — Z-array computation with Z-box reuse
 4. [**Boyer-Moore**](notebooks/04-boyer-moore.qmd) — Right-to-left scanning with bad character rule
 5. [**Suffix Trie & Suffix Tree**](notebooks/05-suffix-structures.qmd) — Build and visualize suffix structures
