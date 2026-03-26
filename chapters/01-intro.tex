@@ -48,24 +48,24 @@ A \emph{proper} prefix (resp.\ suffix) of $S$ is any prefix (resp.\ suffix) stri
   \node[font=\tiny\sffamily, text=gray!70] at ({(\i-1)*\cw}, 1.9) {\i};
 
 % ── T row ────────────────────────────────────────────────
-\node[font=\small\ttfamily, anchor=east] at (-0.15, 1.2) {$T$};
+\node[font=\small\ttfamily, anchor=east] at (-0.45, 1.2) {$T$};
 \foreach \i/\c in {1/a, 2/b, 3/a, 4/b, 5/b, 6/a, 7/b}
   \node[Tcell] at ({(\i-1)*\cw}, 1.2) {\c};
 
 % ── shift s=1 : P\kern0pt[1]=a✓ P\kern0pt[2]=b✓ P\kern0pt[3]=b✗ ────────────────
-\node[font=\tiny\sffamily, text=gray] at (-0.55, 0.4) {$s=1$};
+\node[font=\tiny\sffamily, text=gray, anchor=east] at (-0.55, 0.4) {$s=1$};
 \node[MC] at (0*\cw, 0.4) {a};
 \node[MC] at (1*\cw, 0.4) {b};
 \node[XC] at (2*\cw, 0.4) {b};   % P\kern0pt[3]=b vs T\kern0pt[3]=a
 
 % ── shift s=2 : P\kern0pt[1]=a✗ ─────────────────────────────────
-\node[font=\tiny\sffamily, text=gray] at (-0.55, -0.4) {$s=2$};
+\node[font=\tiny\sffamily, text=gray, anchor=east] at (-0.55, -0.4) {$s=2$};
 \node[XC] at (1*\cw, -0.4) {a};  % P\kern0pt[1]=a vs T\kern0pt[2]=b
 \node[NC] at (2*\cw, -0.4) {b};
 \node[NC] at (3*\cw, -0.4) {b};
 
 % ── shift s=3 : P\kern0pt[1]=a✓ P\kern0pt[2]=b✓ P\kern0pt[3]=b✓  →  MATCH ─────
-\node[font=\tiny\sffamily, text=gray] at (-0.55, -1.2) {$s=3$};
+\node[font=\tiny\sffamily, text=gray, anchor=east] at (-0.55, -1.2) {$s=3$};
 \node[FM] (ma) at (2*\cw, -1.2) {a};
 \node[FM] (mb) at (3*\cw, -1.2) {b};
 \node[FM] (mc) at (4*\cw, -1.2) {b};
@@ -73,17 +73,17 @@ A \emph{proper} prefix (resp.\ suffix) of $S$ is any prefix (resp.\ suffix) stri
   ([xshift=-4pt, yshift=-4pt] ma.south west)
   rectangle
   ([xshift= 4pt, yshift= 4pt] mc.north east);
-\node[font=\tiny\bfseries\sffamily, text=green!45!black]
-  at (3*\cw, -1.72) {match};
+\node[font=\tiny\bfseries\sffamily, text=green!45!black, anchor=west]
+  at ({4*\cw + 0.5}, -1.2) {match};
 
 % ── shift s=4 : P\kern0pt[1]=a✗ ─────────────────────────────────
-\node[font=\tiny\sffamily, text=gray] at (-0.55, -2.1) {$s=4$};
+\node[font=\tiny\sffamily, text=gray, anchor=east] at (-0.55, -2.1) {$s=4$};
 \node[XC] at (3*\cw, -2.1) {a};  % P\kern0pt[1]=a vs T\kern0pt[4]=b
 \node[NC] at (4*\cw, -2.1) {b};
 \node[NC] at (5*\cw, -2.1) {b};
 
 % ── shift s=5 : P\kern0pt[1]=a✗ ─────────────────────────────────
-\node[font=\tiny\sffamily, text=gray] at (-0.55, -2.9) {$s=5$};
+\node[font=\tiny\sffamily, text=gray, anchor=east] at (-0.55, -2.9) {$s=5$};
 \node[XC] at (4*\cw, -2.9) {a};  % P\kern0pt[1]=a vs T\kern0pt[5]=b
 \node[NC] at (5*\cw, -2.9) {b};
 \node[NC] at (6*\cw, -2.9) {b};
@@ -128,33 +128,33 @@ If the length of the pattern was $m$ and the length of the text was $n$, the out
   \node[font=\tiny\sffamily, text=gray!70] at ({(\i-1)*\cw}, 1.9) {\i};
 
 % T row
-\node[font=\small\ttfamily, anchor=east] at (-0.15, 1.2) {$T$};
+\node[font=\small\ttfamily, anchor=east] at (-0.45, 1.2) {$T$};
 \foreach \i in {1,...,7}
   \node[Tcell] at ({(\i-1)*\cw}, 1.2) {a};
 
 % s=1 : a✓ a✓ a✓ b✗
-\node[font=\tiny\sffamily, text=gray] at (-0.55,  0.4) {$s=1$};
+\node[font=\tiny\sffamily, text=gray, anchor=east] at (-0.55,  0.4) {$s=1$};
 \node[MC] at (0*\cw,  0.4) {a};
 \node[MC] at (1*\cw,  0.4) {a};
 \node[MC] at (2*\cw,  0.4) {a};
 \node[XC] at (3*\cw,  0.4) {b};
 
 % s=2 : a✓ a✓ a✓ b✗
-\node[font=\tiny\sffamily, text=gray] at (-0.55, -0.4) {$s=2$};
+\node[font=\tiny\sffamily, text=gray, anchor=east] at (-0.55, -0.4) {$s=2$};
 \node[MC] at (1*\cw, -0.4) {a};
 \node[MC] at (2*\cw, -0.4) {a};
 \node[MC] at (3*\cw, -0.4) {a};
 \node[XC] at (4*\cw, -0.4) {b};
 
 % s=3 : a✓ a✓ a✓ b✗
-\node[font=\tiny\sffamily, text=gray] at (-0.55, -1.2) {$s=3$};
+\node[font=\tiny\sffamily, text=gray, anchor=east] at (-0.55, -1.2) {$s=3$};
 \node[MC] at (2*\cw, -1.2) {a};
 \node[MC] at (3*\cw, -1.2) {a};
 \node[MC] at (4*\cw, -1.2) {a};
 \node[XC] at (5*\cw, -1.2) {b};
 
 % s=4 : a✓ a✓ a✓ b✗
-\node[font=\tiny\sffamily, text=gray] at (-0.55, -2.0) {$s=4$};
+\node[font=\tiny\sffamily, text=gray, anchor=east] at (-0.55, -2.0) {$s=4$};
 \node[MC] at (3*\cw, -2.0) {a};
 \node[MC] at (4*\cw, -2.0) {a};
 \node[MC] at (5*\cw, -2.0) {a};
@@ -789,7 +789,7 @@ Let's trace the algorithm on $P = \texttt{ababaca}$.
     {$k \gets sp\kern0pt[1]=0$ \enspace(border of $\texttt{a}$ is empty)};
 
 % ══ candidate 3: k = 0  (empty border) ═══════════════════════════════
-\node[font=\tiny\sffamily, text=gray!60, anchor=east] at (-0.1*\cw, -4.9) {$k{=}0$};
+\node[font=\tiny\sffamily, text=gray!60, anchor=east] at (-0.55, -4.9) {$k{=}0$};
 
 \node[Try] (s3x) at (0*\cw, -4.9) {a};   % P[k+1]=P\kern0pt[1]
 
@@ -1943,7 +1943,10 @@ The $sp$ and $sp'$ values are:
   At $i=5$, the border chain of $P[1..5]=\texttt{aabaa}$ is
   $k \in \{2,\,1,\,0\}$.
   Both $k=2$ ($P[3]{=}\texttt{b}{=}P[6]$) and $k=1$ ($P[2]{=}\texttt{a}$)
-  must be inspected; $\spi{5}'=1$ skips past the useless $k=2$.}
+  must be inspected; $\spi{5}'=1$ skips past the useless $k=2$.
+  Also: $\mathrm{sp}_{5,\texttt{a}}=1$ (border of length~$1$ satisfies
+  $P[2]=\texttt{a}=x$); $\mathrm{sp}_{5,\texttt{c}}=0$ (no border has
+  $P[k{+}1]=\texttt{c}$).}
 At $i=5$ the border $\texttt{aa}$ ($\spi{5}=2$) is useless because $P[3]=\texttt{b}=P[6]$;
 the shorter border $\texttt{a}$ ($k=1$) satisfies $P[2]=\texttt{a}\neq P[6]$, so
 $\spi{5}'=1$.
@@ -1951,11 +1954,6 @@ $\spi{5}'=1$.
 Now suppose we have matched $P[1..5]$ (state $j=5$) and the next text character is $x$.
 With $\spi{5}'=1$, KMP falls back to state~$1$ for \emph{every} mismatch
 $x \neq P[6]=\texttt{b}$, and may still need further comparisons depending on $x$:
-
-\aside[-2ex]{%
-  $\mathrm{sp}_{5,\texttt{a}}=1$ because the border of length~$1$
-  satisfies $P[2]=\texttt{a}=x$; no border has $P[k{+}1]=\texttt{c}$,
-  so $\mathrm{sp}_{5,\texttt{c}}=0$.}
 \begin{itemize}[topsep=4pt, itemsep=3pt]
   \item $x=\texttt{a}$: $5\to 1$, then $P[2]=\texttt{a}=x \Rightarrow$ state $2$.
         \textbf{Two comparisons.}
@@ -2124,9 +2122,8 @@ failures possible—they let the algorithm skip large portions of the text.
 
 \aside{Scanning right-to-left is the key insight: a mismatch at the
 \emph{last} character of the current alignment gives the most information
-about how far to jump.}
-
-\aside{Why learn Boyer-Moore if KMP already achieves $\Oh{n+m}$?
+about how far to jump.
+Why learn Boyer-Moore if KMP already achieves $\Oh{n+m}$?
 In practice, Boyer-Moore is often \emph{faster} than KMP on natural
 language and large alphabets: its right-to-left scan frequently skips
 large chunks of the text without even looking at them.
@@ -2715,47 +2712,47 @@ ending at position $j$ in $P$.
 
 % Curved arrow connecting the two
 \draw[-Stealth, orange!50!black, thick, dashed]
-  ({2*\cw}, 0.85) to[bend right=25] ({5*\cw}, 0.85);
-\node[font=\scriptsize\sffamily, text=orange!60!black] at ({3.5*\cw}, 0.45)
+  ({2*\cw}, 0.1) to[bend right=20] ({5*\cw}, 0.1);
+\node[font=\scriptsize\sffamily, text=orange!60!black] at ({3.5*\cw}, -0.7)
   {$N_3 = 3$: suffix of $P[1..3]$ matches suffix of $P$};
 
 %% ── P^r row ──────────────────────────────────────────────────
 \node[font=\small\sffamily\bfseries, text=gray!60, anchor=east]
-  at ({-0.6*\cw}, -0.8) {$P^r$};
+  at ({-0.6*\cw}, -2.2) {$P^r$};
 \foreach \i/\c in {1/c, 2/b, 3/a, 4/c, 5/b, 6/a}
-  \node[C] (R\i) at ({\i*\cw}, -0.8) {\c};
+  \node[C] (R\i) at ({\i*\cw}, -2.2) {\c};
 \foreach \i in {1,...,6}
-  \node[font=\tiny\sffamily, text=gray!50, above=2pt] at ({\i*\cw}, -0.4) {\i};
+  \node[font=\tiny\sffamily, text=gray!50, above=2pt] at ({\i*\cw}, -1.8) {\i};
 
 % Highlight Z_4: prefix of P^r (positions 1..3 = cba) matches at position 4
 \foreach \i/\c in {1/c, 2/b, 3/a}
-  \node[Pf] at ({\i*\cw}, -0.8) {\c};
+  \node[Pf] at ({\i*\cw}, -2.2) {\c};
 \foreach \i/\c in {4/c, 5/b, 6/a}
-  \node[Zm] at ({\i*\cw}, -0.8) {\c};
+  \node[Zm] at ({\i*\cw}, -2.2) {\c};
 
 % Brace under prefix
 \draw[violet!50!black, thick, decorate,
       decoration={brace, mirror, raise=4pt, amplitude=4pt}]
-  ({0.6*\cw}, -1.25) -- ({3.4*\cw}, -1.25)
+  ({0.6*\cw}, -2.65) -- ({3.4*\cw}, -2.65)
   node[midway, below=10pt, font=\scriptsize\sffamily, text=violet!60!black]
-    {prefix $P^r[1..3] = \texttt{cba}$};
+    {$P^r[1..3]$};
 
 % Brace under match
 \draw[violet!50!black, thick, decorate,
       decoration={brace, mirror, raise=4pt, amplitude=4pt}]
-  ({3.6*\cw}, -1.25) -- ({6.4*\cw}, -1.25)
+  ({3.6*\cw}, -2.65) -- ({6.4*\cw}, -2.65)
   node[midway, below=10pt, font=\scriptsize\sffamily, text=violet!60!black]
-    {$P^r[4..6] = \texttt{cba}$};
+    {$P^r[4..6]$};
 
 \draw[-Stealth, violet!50!black, thick, dashed]
-  ({2*\cw}, -1.75) to[bend right=25] ({5*\cw}, -1.75);
-\node[font=\scriptsize\sffamily, text=violet!60!black] at ({3.5*\cw}, -2.15)
+  ({2*\cw}, -3.9) to[bend right=20] ({5*\cw}, -3.9);
+\node[font=\scriptsize\sffamily, text=violet!60!black] at ({3.5*\cw}, -4.7)
   {$Z_4 = 3$: prefix of $P^r$ matches at position $k = 4$};
 
 %% ── Connection arrow between P and P^r ──────────────────────
 \draw[<->, very thick, Stealth-Stealth, blue!50!black]
-  ({7.2*\cw}, 1.8) -- ({7.2*\cw}, -0.8)
-  node[midway, right=4pt, font=\small\sffamily, text=blue!50!black, align=left]
+  ({7.5*\cw}, 1.8) -- ({7.5*\cw}, -2.2)
+  node[pos=0.10, right=4pt, font=\small\sffamily, text=blue!50!black, align=left]
     {reverse\\[-2pt]\footnotesize $k = m{-}j{+}1 = 4$};
 
 \end{tikzpicture}
@@ -2879,41 +2876,36 @@ Figure~\ref{fig:ag-cases} summarises the four cases geometrically.
   lbl/.style ={font=\scriptsize\sffamily, text=gray!70},
 ]
 \def\cw{0.82}
-\def\rsp{2.1}   % row spacing
-
-% ── helper macro: draw a labelled P-bar of length 5 ───────────────
-% args: y-offset, case label, highlight cells (list: index/style pairs)
+\def\rsp{2.0}   % row spacing
 
 % ── Case 1: w > N_i ───────────────────────────────────────────────
 \node[lbl, anchor=west] at (-1.2, 0) {\textbf{Case 1}: $w > N_i$ — mismatch at $i - N_i$, shift immediately};
-% P bar
 \foreach \x/\s in {1/mch,2/mch,3/mch,4/skip,5/cur}
-  \node[\s] at ({\x*\cw}, -0.4) {};
-\node[lbl] at ({3*\cw}, -0.4) {$N_i$};
-\node[lbl] at ({5*\cw}, -0.9) {$i$};
-\draw[<->, blue!50, thick] ({1.5*\cw},-0.9) -- ({3.5*\cw},-0.9)
+  \node[\s] at ({\x*\cw}, -0.7) {};
+\node[lbl] at ({3*\cw}, -0.7) {$N_i$};
+\node[lbl] at ({5*\cw}, -1.2) {$i$};
+\draw[<->, blue!50, thick] ({1.5*\cw},-1.2) -- ({3.5*\cw},-1.2)
   node[midway, below, font=\tiny\sffamily] {$w > N_i$};
 
 % ── Case 2: w < N_i ───────────────────────────────────────────────
 \node[lbl, anchor=west] at (-1.2, {-\rsp}) {\textbf{Case 2}: $w < N_i$ — mismatch at $i - w$, shift};
 \foreach \x/\s in {1/cell,2/cell,3/mch,4/mch,5/cur}
-  \node[\s] at ({\x*\cw}, {-\rsp-0.4}) {};
-\node[lbl] at ({4.5*\cw}, {-\rsp-0.9}) {$w$};
-\draw[<->, blue!50, thick] ({3.5*\cw},{-\rsp-0.9}) -- ({4.9*\cw},{-\rsp-0.9})
+  \node[\s] at ({\x*\cw}, {-\rsp-0.7}) {};
+\draw[<->, blue!50, thick] ({3.5*\cw},{-\rsp-1.2}) -- ({4.5*\cw},{-\rsp-1.2})
   node[midway, below, font=\tiny\sffamily] {$w < N_i$};
 
 % ── Case 3: w = N_i ───────────────────────────────────────────────
 \node[lbl, anchor=west] at (-1.2, {-2*\rsp}) {\textbf{Case 3}: $w = N_i$ — skip $w$ comparisons, continue at $i{-}w$};
 \foreach \x/\s in {1/cell,2/mch,3/mch,4/mch,5/cur}
-  \node[\s] at ({\x*\cw}, {-2*\rsp-0.4}) {};
-\draw[<->, green!55!black, thick] ({2.5*\cw},{-2*\rsp-0.9}) -- ({4.9*\cw},{-2*\rsp-0.9})
+  \node[\s] at ({\x*\cw}, {-2*\rsp-0.7}) {};
+\draw[<->, green!55!black, thick] ({2.5*\cw},{-2*\rsp-1.2}) -- ({4.5*\cw},{-2*\rsp-1.2})
   node[midway, below, font=\tiny\sffamily] {$w = N_i$, resume at $i{-}w$};
 
 % ── Case 4: w >= N_i and N_i = i ─────────────────────────────────
 \node[lbl, anchor=west] at (-1.2, {-3*\rsp}) {\textbf{Case 4}: $N_i = i$ (prefix match) — full or partial match declared};
 \foreach \x/\s in {1/mch,2/mch,3/mch,4/mch,5/cur}
-  \node[\s] at ({\x*\cw}, {-3*\rsp-0.4}) {};
-\draw[<->, green!55!black, thick] ({0.5*\cw},{-3*\rsp-0.9}) -- ({4.9*\cw},{-3*\rsp-0.9})
+  \node[\s] at ({\x*\cw}, {-3*\rsp-0.7}) {};
+\draw[<->, green!55!black, thick] ({0.5*\cw},{-3*\rsp-1.2}) -- ({4.5*\cw},{-3*\rsp-1.2})
   node[midway, below, font=\tiny\sffamily] {$N_i = i$: prefix of $P$ matches};
 
 \end{tikzpicture}
