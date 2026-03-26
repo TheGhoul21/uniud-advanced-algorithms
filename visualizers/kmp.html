@@ -133,14 +133,14 @@ html, body { height: 100%; overflow: hidden; font-family: 'Cabin', sans-serif; }
 
 /* Bottom bar */
 #bottom-bar {
-  background: var(--current); color: white;
+  background: var(--current); color: #111;
   padding: 0 16px; height: 38px;
   display: flex; align-items: center; gap: 10px;
   flex-shrink: 0; font-size: 11px; font-family: 'Cabin', sans-serif;
 }
 .ctrl-btn {
   background: rgba(255,255,255,0.22); border: none; border-radius: 3px;
-  padding: 2px 9px; font-size: 11px; color: white;
+  padding: 2px 9px; font-size: 11px; color: #111;
   cursor: pointer; font-family: 'Cabin', sans-serif;
   transition: background 0.1s;
 }
@@ -150,7 +150,7 @@ html, body { height: 100%; overflow: hidden; font-family: 'Cabin', sans-serif; }
 #scrubber { flex: 1; height: 4px; cursor: pointer; accent-color: white; }
 .speed-btn {
   background: transparent; border: 1px solid rgba(255,255,255,0.3);
-  border-radius: 3px; padding: 1px 7px; font-size: 10px; color: white;
+  border-radius: 3px; padding: 1px 7px; font-size: 10px; color: #111;
   cursor: pointer; font-family: 'Cabin', sans-serif;
 }
 .speed-btn.active { background: rgba(255,255,255,0.25); font-weight: 700; }
@@ -166,11 +166,11 @@ html, body { height: 100%; overflow: hidden; font-family: 'Cabin', sans-serif; }
   </div>
   <div id="input-bar">
     <div class="input-group">
-      <span class="input-label">Text T</span>
+      <label class="input-label" for="input-T">Text T</label>
       <input id="input-T" class="string-input" value="abababcababc" style="width:160px">
     </div>
     <div class="input-group">
-      <span class="input-label">Pattern P</span>
+      <label class="input-label" for="input-P">Pattern P</label>
       <input id="input-P" class="string-input" value="ababc" style="width:100px">
     </div>
     <button id="run-btn">Run ▶</button>
