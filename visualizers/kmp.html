@@ -7,7 +7,6 @@
 <link href="https://fonts.googleapis.com/css2?family=Cabin:wght@400;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
-<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/animejs@3.2.1/lib/anime.min.js"></script>
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -60,13 +59,13 @@ html, body { height: 100%; overflow: hidden; font-family: 'Cabin', sans-serif; }
 }
 .string-input:focus { border-color: var(--current); background: rgba(255,255,255,0.15); }
 .string-input.error { border-color: var(--mismatch); }
-#run-btn {
+#btn-run {
   background: var(--current); color: #111; border: none;
   border-radius: 3px; padding: 3px 12px; height: 26px;
   font-size: 11px; font-weight: 700; font-family: 'Cabin', sans-serif;
   cursor: pointer; transition: opacity 0.15s;
 }
-#run-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+#btn-run:disabled { opacity: 0.4; cursor: not-allowed; }
 #input-hint { font-size: 10px; opacity: 0.5; margin-left: 4px; }
 #input-error { font-size: 10px; color: #f4a5a5; margin-left: 4px; }
 
@@ -263,8 +262,7 @@ html, body { height: 100%; overflow: hidden; font-family: 'Cabin', sans-serif; }
   border-radius: 3px; padding: 1px 7px; font-size: 10px; color: #111;
   cursor: pointer; font-family: 'Cabin', sans-serif;
 }
-.speed-btn.active { background: rgba(255,255,255,0.25); font-weight: 700; }
-.speed-btn.active,
+.speed-btn.active { background: rgba(255,255,255,0.25); font-weight: 700; color: #111; }
 #btn-phase-failure.active,
 #btn-phase-search.active {
   background: var(--match);
@@ -304,12 +302,7 @@ html, body { height: 100%; overflow: hidden; font-family: 'Cabin', sans-serif; }
       </div>
       <div id="status-bar"></div>
     </div>
-    <div id="pseudo-wrap">
-      <div id="pseudo-panel">
-        <div class="pseudo-section-label" id="pseudo-label"></div>
-        <div id="pseudo-lines"></div>
-      </div>
-    </div>
+    <div id="pseudo-wrap"></div>
   </div>
   <div id="bottom-bar">
     <button class="ctrl-btn" id="btn-beginning">⏮</button>
@@ -412,18 +405,18 @@ function computeSearchSteps(T, P, sp) {
       if (j === m) {
         const start = i - m;
         matches.push(start);
-        snap(i, j, 'match_found', 6, `\\text{match at } T[${start}..${i-1}]`);
+        snap(i, j, 'match_found', 4, `\\text{match at } T[${start}..${i-1}]`);
         j = sp[j - 1];
-        snap(i, j, 'after_match', 7, `j \\leftarrow \\text{sp}[${m - 1}] = ${j}`);
+        snap(i, j, 'after_match', 4, `j \\leftarrow \\text{sp}[${m - 1}] = ${j}`);
       }
     } else {
       if (j > 0) {
-        snap(i, j, 'compare_mismatch', 4, `T[${i}] = \\texttt{'${T[i]}'}\\; \\neq\\; P[${j}] = \\texttt{'${P[j]}'},\\; j > 0 \\to j = \\text{sp}[${j-1}]`);
+        snap(i, j, 'compare_mismatch', 5, `T[${i}] = \\texttt{'${T[i]}'}\\; \\neq\\; P[${j}] = \\texttt{'${P[j]}'},\\; j > 0 \\to j = \\text{sp}[${j-1}]`);
         const jPrev = j;
         j = sp[j - 1];
         snap(i, j, 'fallback', 5, `j \\leftarrow \\text{sp}[${jPrev - 1}] = ${j}`);
       } else {
-        snap(i, j, 'compare_mismatch', 4, `T[${i}] = \\texttt{'${T[i]}'}\\; \\neq\\; P[0] = \\texttt{'${P[0]}'},\\; j = 0 \\to i{+}{+}`);
+        snap(i, j, 'compare_mismatch', 6, `T[${i}] = \\texttt{'${T[i]}'}\\; \\neq\\; P[0] = \\texttt{'${P[0]}'},\\; j = 0 \\to i{+}{+}`);
         i++;
       }
     }
