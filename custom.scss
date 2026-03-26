@@ -1,0 +1,88 @@
+/*-- scss:defaults --*/
+
+// Palette — mirrors visualizers/kmp.html CSS variables
+$green-dark:   #13392a;
+$green-mid:    #1e5a3c;
+$green-link:   #2e7d52;
+$green-done:   #d4e8db;
+$gold:         #b99b3c;
+$gold-dark:    #8c7430;
+$warm-white:   #faf8f2;
+$warm-off:     #ece8d8;
+
+// Bootstrap / Quarto overrides
+$body-bg:            $warm-white;
+$body-color:         #1a1a1a;
+$link-color:         $green-link;
+$link-hover-color:   darken($green-link, 12%);
+
+$navbar-bg:          $green-dark;
+$navbar-fg:          #f0ebe0;
+$navbar-hl:          $gold;          // active link in navbar
+
+$code-bg:            $warm-off;
+$code-color:         #2a2a2a;
+
+$headings-color:     $green-dark;
+$toc-color:          $green-mid;
+$toc-active-color:   $green-link;
+
+$border-color:       #d8d2c4;
+
+/*-- scss:rules --*/
+
+// Navbar refinements
+.navbar {
+  border-bottom: 3px solid $gold;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.18);
+
+  .navbar-brand {
+    font-weight: 700;
+    letter-spacing: 0.02em;
+  }
+}
+
+// Gold accent rule under page headings
+h1 {
+  border-bottom: 2.5px solid $green-link;
+  padding-bottom: 0.3em;
+  margin-bottom: 0.8em;
+}
+
+// Section headings get the mid-green number tint (like LaTeX notes)
+h2 .header-section-number,
+h3 .header-section-number {
+  color: mix($green-link, white, 55%);
+}
+
+// TOC
+#TOC {
+  border-left: 3px solid $gold;
+  padding-left: 0.8em;
+
+  .active > a {
+    color: $green-link;
+    font-weight: 600;
+  }
+}
+
+// Inline code
+code:not(pre code) {
+  background: $warm-off;
+  color: #2a2a2a;
+  padding: 0.1em 0.35em;
+  border-radius: 3px;
+}
+
+// Footer strip
+body::after {
+  content: '';
+  display: block;
+  height: 4px;
+  background: linear-gradient(90deg, #{$green-dark} 0%, #{$green-mid} 60%, #{$gold} 100%);
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 999;
+}
