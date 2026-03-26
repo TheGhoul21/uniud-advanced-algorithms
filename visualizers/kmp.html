@@ -208,7 +208,48 @@ html, body { height: 100%; overflow: hidden; font-family: 'Cabin', sans-serif; }
   </div>
 </div>
 <script>
-// placeholder — logic added in subsequent tasks
+function computeFailureSteps(P) {
+  const m = P.length;
+  const steps = [];
+  const sp = new Array(m).fill(null);
+  function snap(i, j, event, pseudoLine, statusKaTeX, extraHighlights) {
+    const spSnap = sp.slice();
+    const pHi = {};
+    for (let k = 0; k < m; k++) {
+      if (spSnap[k] !== null) pHi[k] = 'done'; else pHi[k] = 'default';
+    }
+    if (i < m) pHi[i] = 'cur';
+    if (j < m && j !== i) pHi[j] = 'match';
+    if (extraHighlights) Object.assign(pHi, extraHighlights);
+    const spHi = {};
+    for (let k = 0; k < m; k++) {
+      if (spSnap[k] !== null) spHi[k] = k === i ? 'active' : 'filled';
+      else spHi[k] = 'empty';
+    }
+    steps.push({ phase: 'failure', pseudoLine, i, j, sp: spSnap,
+      highlights: { P: pHi, sp: spHi }, statusKaTeX, event });
+  }
+  sp[0] = 0;
+  snap(0, 0, 'init', 0, `\\text{sp}[0] = 0`);
+  for (let i = 1; i < m; i++) {
+    let j = sp[i - 1];
+    snap(i, j, 'enter_iter', 2, `i = ${i},\\; j = \\text{sp}[${i-1}] = ${j}`);
+    while (j > 0 && P[i] !== P[j]) {
+      snap(i, j, 'compare_mismatch', 3, `P[${i}] = \\texttt{'${P[i]}'}\\; \\neq\\; P[${j}] = \\texttt{'${P[j]}'},\\; j > 0 \\to j = \\text{sp}[${j-1}]`, { [i]: 'mismatch', [j]: 'mismatch' });
+      j = sp[j - 1];
+      snap(i, j, 'fallback', 4, `j \\leftarrow \\text{sp}[${sp[i > 0 ? i-1 : 0]}] = ${j}`);
+    }
+    if (P[i] === P[j]) {
+      snap(i, j, 'compare_match', 5, `P[${i}] = P[${j}] = \\texttt{'${P[i]}'}\\; \\to\\; j = ${j+1}`, { [i]: 'match', [j]: 'match' });
+      j++;
+    } else {
+      snap(i, j, 'compare_mismatch', 3, `P[${i}] = \\texttt{'${P[i]}'}\\; \\neq\\; P[0] = \\texttt{'${P[0]}'},\\; j = 0 \\to \\text{exit while}`, { [i]: 'mismatch', [0]: 'mismatch' });
+    }
+    sp[i] = j;
+    snap(i, j, 'set_sp', 6, `\\text{sp}[${i}] = ${j}`);
+  }
+  return steps;
+}
 </script>
 </body>
 </html>
