@@ -7,41 +7,6 @@
     "text": "String Matching\n    Naive\n    KMP\n    ↳ visualizer\n    Z-Algorithm\n    Boyer-Moore\n    Suffix Structures\n    Comparison\n    Keyword Tree\n    \n    Lecture Notes\n  \n\n  \n    \n      Lecture Notes\n      /\n      main.pdf\n      Open in system reader"
   },
   {
-    "objectID": "notebooks/08-rabin-karp.html",
-    "href": "notebooks/08-rabin-karp.html",
-    "title": "Rabin-Karp — Rolling Hash",
-    "section": "",
-    "text": "AA-VIZ\n  /"
-  },
-  {
-    "objectID": "notebooks/08-rabin-karp.html#how-rabin-karp-works",
-    "href": "notebooks/08-rabin-karp.html#how-rabin-karp-works",
-    "title": "Rabin-Karp — Rolling Hash",
-    "section": "How Rabin-Karp Works",
-    "text": "How Rabin-Karp Works\nThe Rabin-Karp algorithm uses hashing to speed up string matching. Instead of comparing every character at every alignment, it computes a hash fingerprint of the pattern and of each length-m window of the text. If the hashes differ, the window cannot match — skip it without any character comparisons.\nKey ideas:\n\nHash-based filtering. Compute h(P) once. At each shift s, compute h(T[s..s+m-1]) and compare it to h(P). Only when the hashes agree do we verify character-by-character.\nRolling hash. Re-computing the hash from scratch at every position would be just as slow as naive matching. A rolling (incremental) hash lets us update the window hash in O(1) using the formula h_new = (d * (h_old - T[s] * d^(m-1)) + T[s+m]) mod q.\nSpurious hits. Two different strings can hash to the same value (a collision). When hashes match but the strings differ we call it a spurious hit. The algorithm is still correct because every hash match is verified, but spurious hits add extra work.\n\nThe polynomial rolling hash used here is:\n\\[h(s) = \\bigl(s_0 \\cdot d^{m-1} + s_1 \\cdot d^{m-2} + \\cdots + s_{m-1}\\bigr) \\bmod q\\]\nwith alphabet size d = 256 and a small prime q = 101 (chosen small so you can follow the arithmetic by hand)."
-  },
-  {
-    "objectID": "notebooks/08-rabin-karp.html#hash-function-visualization",
-    "href": "notebooks/08-rabin-karp.html#hash-function-visualization",
-    "title": "Rabin-Karp — Rolling Hash",
-    "section": "Hash Function Visualization",
-    "text": "Hash Function Visualization\nStep through each window position. The top row shows the text with the current window highlighted. Below it, the hash of the window is compared to the hash of the pattern. On a hash match the algorithm verifies character by character — a real match turns green, a spurious hit turns yellow. The progress bar at the bottom summarizes all positions.\n\n\n\n\n\n\n\n\n\nviewof T_rk = Inputs.text({label: \"T:\", value: \"abcaabcabcaab\", width: 400})\nviewof P_rk = Inputs.text({label: \"P:\", value: \"abcab\", width: 400})\nviewof d_rk = Inputs.range([2, 256], {step: 1, value: 256, label: \"d (alphabet size):\"})\nviewof q_rk = Inputs.range([2, 997], {step: 1, value: 101, label: \"q (prime modulus):\"})\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nviewof step_rk = Inputs.range([0, rk_max_step], {step: 1, value: 0, label: \"Step:\"})"
-  },
-  {
-    "objectID": "notebooks/08-rabin-karp.html#rolling-hash-step-by-step",
-    "href": "notebooks/08-rabin-karp.html#rolling-hash-step-by-step",
-    "title": "Rabin-Karp — Rolling Hash",
-    "section": "Rolling Hash Step-by-Step",
-    "text": "Rolling Hash Step-by-Step\nThis visualization shows how the rolling hash is updated from one window to the next. At each step:\n\nThe outgoing character T[s] (red) is removed by subtracting T[s] * d^(m-1).\nThe running value is multiplied by d (the base shift).\nThe incoming character T[s+m] (green) is added.\nThe result is taken mod q.\n\n\n\n\n\n\n\n\n\n\nviewof T_roll = Inputs.text({label: \"T:\", value: \"abcaabcabcaab\", width: 400})\nviewof P_roll = Inputs.text({label: \"P:\", value: \"abcab\", width: 400})\nviewof d_roll = Inputs.range([2, 256], {step: 1, value: 256, label: \"d (alphabet size):\"})\nviewof q_roll = Inputs.range([2, 997], {step: 1, value: 101, label: \"q (prime modulus):\"})\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nviewof step_roll = Inputs.range([0, roll_max_step], {step: 1, value: 0, label: \"Step:\"})"
-  },
-  {
-    "objectID": "notebooks/08-rabin-karp.html#comparison-with-naive",
-    "href": "notebooks/08-rabin-karp.html#comparison-with-naive",
-    "title": "Rabin-Karp — Rolling Hash",
-    "section": "Comparison with Naive",
-    "text": "Comparison with Naive\nHow many character comparisons does Rabin-Karp need versus naive matching? When the hash function distributes well (few spurious hits), Rabin-Karp verifies only at real matches — vastly fewer character comparisons than the naive approach which must compare at every position.\nTry lowering q to a very small prime (e.g. 2 or 3) to see how more collisions increase the character comparison count.\n\n\n\n\n\n\n\n\n\nviewof T_cmp_rk = Inputs.text({label: \"T:\", value: \"abcaabcabcaab\", width: 400})\nviewof P_cmp_rk = Inputs.text({label: \"P:\", value: \"abcab\", width: 400})\nviewof d_cmp_rk = Inputs.range([2, 256], {step: 1, value: 256, label: \"d (alphabet size):\"})\nviewof q_cmp_rk = Inputs.range([2, 997], {step: 1, value: 101, label: \"q (prime modulus):\"})"
-  },
-  {
     "objectID": "notebooks/06-algorithm-comparison.html",
     "href": "notebooks/06-algorithm-comparison.html",
     "title": "Algorithm Comparison",
@@ -215,33 +180,5 @@
     "title": "Keyword Tree — Multiple Pattern Matching",
     "section": "Aho-Corasick: Failure Links & Output Links",
     "text": "Aho-Corasick: Failure Links & Output Links\nThe keyword tree alone restarts from the root at every position. The Aho-Corasick automaton adds two types of pointers:\n\nFailure links (red dashed): when the descent gets stuck, jump to the longest proper suffix of the current path that is also a prefix of some pattern.\nOutput links (green dotted): chain together all patterns that end along the failure-link path, so patterns ending at internal nodes are not missed.\n\n\n\n\n\n\n\n\n\n\nviewof P_ac = Inputs.text({\n  label: \"Patterns (comma-separated):\",\n  value: \"he, she, his, hers\",\n  width: 500\n})"
-  },
-  {
-    "objectID": "notebooks/09-ukkonen.html",
-    "href": "notebooks/09-ukkonen.html",
-    "title": "Ukkonen’s Algorithm — Online Suffix Tree Construction",
-    "section": "",
-    "text": "AA-VIZ\n  /"
-  },
-  {
-    "objectID": "notebooks/09-ukkonen.html#phase-by-phase-suffix-tree-construction",
-    "href": "notebooks/09-ukkonen.html#phase-by-phase-suffix-tree-construction",
-    "title": "Ukkonen’s Algorithm — Online Suffix Tree Construction",
-    "section": "Phase-by-Phase Suffix Tree Construction",
-    "text": "Phase-by-Phase Suffix Tree Construction\nUkkonen’s algorithm builds the suffix tree online, one character at a time. Each phase processes one character and extends all active suffixes. Use the slider to step through the phases and watch the tree grow.\nRemember to include a unique end marker (like $) so every suffix ends at a leaf.\nThree extension rules govern what happens at each step:\n\nRule 1 (leaf extension): the suffix already ends at a leaf — the leaf grows automatically (implicit, via global end).\nRule 2 (new branch): the suffix ends at a point with no continuation for the new character — split the edge and create a new leaf.\nRule 3 (already exists): the new character is already present — do nothing and stop the phase (showstopper).\n\n\nviewof S_uk = Inputs.text({label: \"S:\", value: \"cacao$\", width: 300})\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nviewof phase_uk = Inputs.range([0, uk_max_phase], {step: 1, value: 0, label: \"Phase:\"})"
-  },
-  {
-    "objectID": "notebooks/09-ukkonen.html#extension-details-within-a-phase",
-    "href": "notebooks/09-ukkonen.html#extension-details-within-a-phase",
-    "title": "Ukkonen’s Algorithm — Online Suffix Tree Construction",
-    "section": "Extension Details Within a Phase",
-    "text": "Extension Details Within a Phase\nThis view lets you step through the individual extensions within a single phase. For each extension you can see which suffix is being processed, which rule applies, and how the active point changes.\n\n\n\n\n\n\n\n\n\nviewof S_ext = Inputs.text({label: \"S:\", value: \"cacao$\", width: 300})\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nviewof phase_ext = Inputs.range([0, ext_max_phase], {step: 1, value: 0, label: \"Phase:\"})\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nviewof ext_step = Inputs.range([0, ext_max_step], {step: 1, value: 0, label: \"Extension step:\"})"
-  },
-  {
-    "objectID": "notebooks/09-ukkonen.html#suffix-links-visualization",
-    "href": "notebooks/09-ukkonen.html#suffix-links-visualization",
-    "title": "Ukkonen’s Algorithm — Online Suffix Tree Construction",
-    "section": "Suffix Links Visualization",
-    "text": "Suffix Links Visualization\nSuffix links are the key to Ukkonen’s O(n) complexity. If an internal node represents string ax (where a is a single character and x is a possibly empty string), its suffix link points to the node representing x.\nThis view shows all suffix links in the final suffix tree. Suffix links allow the algorithm to jump from one extension to the next in O(1) amortized time, instead of restarting from the root.\n\n\n\n\n\n\n\n\n\nviewof S_sl = Inputs.text({label: \"S:\", value: \"cacao$\", width: 300})"
   }
 ]

@@ -2,50 +2,42 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
     <loc>https://TheGhoul21.github.io/uniud-advanced-algorithms/notes.html</loc>
-    <lastmod>2026-03-26T09:18:10.561Z</lastmod>
-  </url>
-  <url>
-    <loc>https://TheGhoul21.github.io/uniud-advanced-algorithms/notebooks/08-rabin-karp.html</loc>
-    <lastmod>2026-03-26T09:12:09.144Z</lastmod>
+    <lastmod>2026-03-26T18:20:47.208Z</lastmod>
   </url>
   <url>
     <loc>https://TheGhoul21.github.io/uniud-advanced-algorithms/notebooks/06-algorithm-comparison.html</loc>
-    <lastmod>2026-03-26T09:12:09.140Z</lastmod>
+    <lastmod>2026-03-26T18:20:47.204Z</lastmod>
   </url>
   <url>
     <loc>https://TheGhoul21.github.io/uniud-advanced-algorithms/notebooks/04-boyer-moore.html</loc>
-    <lastmod>2026-03-26T09:12:09.137Z</lastmod>
+    <lastmod>2026-03-26T18:20:47.201Z</lastmod>
   </url>
   <url>
     <loc>https://TheGhoul21.github.io/uniud-advanced-algorithms/notebooks/02-kmp.html</loc>
-    <lastmod>2026-03-26T09:12:09.132Z</lastmod>
+    <lastmod>2026-03-26T18:20:47.199Z</lastmod>
   </url>
   <url>
     <loc>https://TheGhoul21.github.io/uniud-advanced-algorithms/notebooks/01-naive.html</loc>
-    <lastmod>2026-03-26T09:12:09.126Z</lastmod>
+    <lastmod>2026-03-26T18:20:47.197Z</lastmod>
   </url>
   <url>
     <loc>https://TheGhoul21.github.io/uniud-advanced-algorithms/index.html</loc>
-    <lastmod>2026-03-26T09:17:53.223Z</lastmod>
+    <lastmod>2026-03-26T18:20:47.191Z</lastmod>
   </url>
   <url>
     <loc>https://TheGhoul21.github.io/uniud-advanced-algorithms/notebooks/01-string-matching.html</loc>
-    <lastmod>2026-03-26T09:12:09.129Z</lastmod>
+    <lastmod>2026-03-26T18:20:47.198Z</lastmod>
   </url>
   <url>
     <loc>https://TheGhoul21.github.io/uniud-advanced-algorithms/notebooks/03-z-algorithm.html</loc>
-    <lastmod>2026-03-26T09:12:09.134Z</lastmod>
+    <lastmod>2026-03-26T18:20:47.200Z</lastmod>
   </url>
   <url>
     <loc>https://TheGhoul21.github.io/uniud-advanced-algorithms/notebooks/05-suffix-structures.html</loc>
-    <lastmod>2026-03-26T09:12:09.138Z</lastmod>
+    <lastmod>2026-03-26T18:20:47.204Z</lastmod>
   </url>
   <url>
     <loc>https://TheGhoul21.github.io/uniud-advanced-algorithms/notebooks/07-keyword-tree.html</loc>
-    <lastmod>2026-03-26T09:12:09.142Z</lastmod>
-  </url>
-  <url>
-    <loc>https://TheGhoul21.github.io/uniud-advanced-algorithms/notebooks/09-ukkonen.html</loc>
-    <lastmod>2026-03-26T09:12:09.146Z</lastmod>
+    <lastmod>2026-03-26T18:20:47.208Z</lastmod>
   </url>
 </urlset>
