@@ -252,6 +252,12 @@ html, body { height: 100%; overflow: hidden; font-family: 'Cabin', sans-serif; }
   cursor: pointer; font-family: 'Cabin', sans-serif;
 }
 .speed-btn.active { background: rgba(255,255,255,0.25); font-weight: 700; }
+.speed-btn.active,
+#btn-phase-failure.active,
+#btn-phase-search.active {
+  background: var(--match);
+  color: #fff;
+}
 </style>
 </head>
 <body>
@@ -271,14 +277,14 @@ html, body { height: 100%; overflow: hidden; font-family: 'Cabin', sans-serif; }
       <label class="input-label" for="input-P">Pattern P</label>
       <input id="input-P" class="string-input" value="ababc" style="width:100px">
     </div>
-    <button id="run-btn">Run ▶</button>
+    <button id="btn-run">Run ▶</button>
     <span id="input-hint">Enter to run</span>
     <span id="input-error"></span>
   </div>
   <div id="body">
     <div id="ops-panel">
-      <button class="op-btn" data-phase="failure">Build Failure Function</button>
-      <button class="op-btn" data-phase="search">Search</button>
+      <button class="op-btn" id="btn-phase-failure" data-phase="failure">Build Failure Function</button>
+      <button class="op-btn" id="btn-phase-search" data-phase="search">Search</button>
     </div>
     <div id="canvas-wrap">
       <div id="canvas">
@@ -294,15 +300,17 @@ html, body { height: 100%; overflow: hidden; font-family: 'Cabin', sans-serif; }
     </div>
   </div>
   <div id="bottom-bar">
-    <button class="ctrl-btn" id="btn-first">|◀</button>
+    <button class="ctrl-btn" id="btn-beginning">⏮</button>
     <button class="ctrl-btn" id="btn-prev">◀</button>
+    <button class="ctrl-btn" id="btn-playpause">▶</button>
     <button class="ctrl-btn" id="btn-next">▶</button>
-    <button class="ctrl-btn" id="btn-last">▶|</button>
+    <button class="ctrl-btn" id="btn-end">⏭</button>
     <span id="step-counter">—</span>
     <input id="scrubber" type="range" min="0" max="0" value="0">
-    <button class="speed-btn active" data-speed="1">1×</button>
-    <button class="speed-btn" data-speed="0.5">0.5×</button>
-    <button class="speed-btn" data-speed="2">2×</button>
+    <button class="speed-btn" data-speed="2000">0.5×</button>
+    <button class="speed-btn active" data-speed="1000">1×</button>
+    <button class="speed-btn" data-speed="500">2×</button>
+    <button class="speed-btn" data-speed="200">5×</button>
   </div>
 </div>
 <script>
@@ -576,6 +584,167 @@ function highlightPseudoLine(lineIdx) {
   const target = wrap.querySelector(`.pseudo-line[data-line="${lineIdx}"]`);
   if (target) target.classList.add('active');
 }
+
+// ============================================================
+//  App state
+// ============================================================
+const state = {
+  steps: [],
+  idx: 0,
+  phase: 'failure',  // 'failure' | 'search'
+  playing: false,
+  intervalId: null,
+  speed: 1000,  // ms per step
+};
+
+// ============================================================
+//  Core: advance to a specific step index
+// ============================================================
+function setStep(idx) {
+  if (!state.steps.length) return;
+  idx = Math.max(0, Math.min(idx, state.steps.length - 1));
+  state.idx = idx;
+  const step = state.steps[idx];
+  renderStep(step);
+  renderStatus(step);
+  highlightPseudoLine(step.pseudoLine);
+  updateStepCounter();
+}
+
+function updateStepCounter() {
+  const el = document.getElementById('step-counter');
+  if (el) el.textContent = `${state.idx + 1} / ${state.steps.length}`;
+}
+
+// ============================================================
+//  Phase: failure → search
+// ============================================================
+function switchPhase(phase) {
+  if (state.playing) stopPlay();
+  state.phase = phase;
+  if (phase === 'failure') {
+    state.steps = computeFailureSteps(window._P);
+  } else {
+    const sp = computeFailureSteps(window._P);
+    const finalSp = sp[sp.length - 1].sp;
+    state.steps = computeSearchSteps(window._T, window._P, finalSp);
+  }
+  state.idx = 0;
+  renderPseudo(phase);
+  setStep(0);
+  updatePhaseButtons(phase);
+}
+
+function updatePhaseButtons(phase) {
+  ['failure', 'search'].forEach(p => {
+    const btn = document.getElementById('btn-phase-' + p);
+    if (btn) btn.classList.toggle('active', p === phase);
+  });
+}
+
+// ============================================================
+//  Run visualizer from inputs
+// ============================================================
+function runVisualizer() {
+  const T = document.getElementById('input-T')?.value?.trim() || 'cacacaocacao';
+  const P = document.getElementById('input-P')?.value?.trim() || 'cacao';
+  if (!P) return;
+  window._T = T;
+  window._P = P;
+  switchPhase('failure');
+}
+
+// ============================================================
+//  Playback
+// ============================================================
+function startPlay() {
+  if (state.playing) return;
+  if (state.idx >= state.steps.length - 1) setStep(0);
+  state.playing = true;
+  updatePlayPauseBtn();
+  state.intervalId = setInterval(() => {
+    if (state.idx >= state.steps.length - 1) {
+      stopPlay();
+    } else {
+      setStep(state.idx + 1);
+    }
+  }, state.speed);
+}
+
+function stopPlay() {
+  state.playing = false;
+  clearInterval(state.intervalId);
+  state.intervalId = null;
+  updatePlayPauseBtn();
+}
+
+function updatePlayPauseBtn() {
+  const btn = document.getElementById('btn-playpause');
+  if (!btn) return;
+  btn.textContent = state.playing ? '⏸' : '▶';
+  btn.title = state.playing ? 'Pause' : 'Play';
+}
+
+// ============================================================
+//  Event listeners
+// ============================================================
+document.addEventListener('DOMContentLoaded', () => {
+  // Run button
+  document.getElementById('btn-run')?.addEventListener('click', runVisualizer);
+
+  // Input Enter key
+  ['input-T', 'input-P'].forEach(id => {
+    document.getElementById(id)?.addEventListener('keydown', e => {
+      if (e.key === 'Enter') runVisualizer();
+    });
+  });
+
+  // Prev / Next / Beginning / End
+  document.getElementById('btn-prev')?.addEventListener('click', () => {
+    stopPlay(); setStep(state.idx - 1);
+  });
+  document.getElementById('btn-next')?.addEventListener('click', () => {
+    stopPlay(); setStep(state.idx + 1);
+  });
+  document.getElementById('btn-beginning')?.addEventListener('click', () => {
+    stopPlay(); setStep(0);
+  });
+  document.getElementById('btn-end')?.addEventListener('click', () => {
+    stopPlay(); setStep(state.steps.length - 1);
+  });
+
+  // Play/Pause
+  document.getElementById('btn-playpause')?.addEventListener('click', () => {
+    state.playing ? stopPlay() : startPlay();
+  });
+
+  // Speed buttons
+  document.querySelectorAll('.speed-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.speed-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      state.speed = parseInt(btn.dataset.speed, 10);
+      if (state.playing) { stopPlay(); startPlay(); }
+    });
+  });
+
+  // Phase tabs
+  document.getElementById('btn-phase-failure')?.addEventListener('click', () => switchPhase('failure'));
+  document.getElementById('btn-phase-search')?.addEventListener('click', () => switchPhase('search'));
+
+  // Keyboard shortcuts
+  document.addEventListener('keydown', e => {
+    if (e.target.tagName === 'INPUT') return;
+    if (e.key === 'ArrowRight' || e.key === 'ArrowDown') { stopPlay(); setStep(state.idx + 1); }
+    if (e.key === 'ArrowLeft'  || e.key === 'ArrowUp')   { stopPlay(); setStep(state.idx - 1); }
+    if (e.key === ' ') { e.preventDefault(); state.playing ? stopPlay() : startPlay(); }
+    if (e.key === 'Home') { stopPlay(); setStep(0); }
+    if (e.key === 'End')  { stopPlay(); setStep(state.steps.length - 1); }
+  });
+
+  // Auto-run on load with defaults
+  runVisualizer();
+});
 </script>
 </body>
 </html>
