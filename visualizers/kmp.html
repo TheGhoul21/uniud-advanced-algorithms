@@ -676,6 +676,11 @@ function setStep(idx) {
 function updateStepCounter() {
   const el = document.getElementById('step-counter');
   if (el) el.textContent = `${state.idx + 1} / ${state.steps.length}`;
+  const scrubber = document.getElementById('scrubber');
+  if (scrubber) {
+    scrubber.max = Math.max(0, state.steps.length - 1);
+    scrubber.value = state.idx;
+  }
 }
 
 // ============================================================
@@ -788,6 +793,12 @@ document.addEventListener('DOMContentLoaded', () => {
       state.speed = parseInt(btn.dataset.speed, 10);
       if (state.playing) { stopPlay(); startPlay(); }
     });
+  });
+
+  // Scrubber
+  document.getElementById('scrubber')?.addEventListener('input', e => {
+    stopPlay();
+    setStep(parseInt(e.target.value, 10));
   });
 
   // Phase tabs
