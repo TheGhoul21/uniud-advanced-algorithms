@@ -94,8 +94,89 @@ html, body { height: 100%; overflow: hidden; font-family: 'Cabin', sans-serif; }
 #canvas-wrap { flex: 1; display: flex; flex-direction: column; min-width: 0; }
 #canvas {
   flex: 1; background: var(--canvas-bg);
-  padding: 24px 28px; overflow: auto;
-  display: flex; flex-direction: column; gap: 20px;
+  padding: 28px 32px; overflow: auto;
+  display: flex; flex-direction: column; gap: 10px;
+}
+
+/* --- canvas rows --- */
+.char-row {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.index-row .idx-label {
+  width: 34px;
+  text-align: center;
+  font-size: 10px;
+  color: #888;
+  font-family: 'Cabin', sans-serif;
+}
+
+.row-label {
+  display: inline-block;
+  width: 40px;
+  font-size: 13px;
+  font-family: 'Cabin', sans-serif;
+  font-style: italic;
+  color: #555;
+  flex-shrink: 0;
+}
+
+.char-box {
+  width: 34px;
+  height: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Cabin', monospace;
+  font-size: 15px;
+  font-weight: 600;
+  border-radius: 4px;
+  transition: background 0.15s;
+  user-select: none;
+}
+
+.sp-box {
+  width: 34px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Cabin', sans-serif;
+  font-size: 13px;
+  border-radius: 3px;
+  transition: background 0.15s;
+}
+
+/* char-box states */
+.char-box[data-state="default"], .sp-box[data-state="empty"] {
+  background: var(--default-box);
+  color: #333;
+}
+.char-box[data-state="done"] {
+  background: var(--done);
+  color: var(--done-text);
+}
+.char-box[data-state="cur"] {
+  background: var(--current);
+  color: #111;
+}
+.char-box[data-state="match"] {
+  background: var(--match);
+  color: #fff;
+}
+.char-box[data-state="mismatch"] {
+  background: var(--mismatch);
+  color: #fff;
+}
+.sp-box[data-state="filled"] {
+  background: var(--done);
+  color: var(--done-text);
+}
+.sp-box[data-state="active"] {
+  background: var(--current);
+  color: #111;
 }
 #canvas-placeholder {
   display: flex; align-items: center; justify-content: center;
@@ -312,6 +393,115 @@ function computeSearchSteps(T, P, sp) {
   }
   snap(i, j, 'done', 8, `\\text{search complete, }${matches.length}\\text{ match(es)}`);
   return steps;
+}
+
+// --- DOM helpers ---
+function makeBox(char, state, idx, ns) {
+  // ns = 'T', 'P', or 'sp'
+  const b = document.createElement('div');
+  b.className = 'char-box';
+  b.dataset.ns = ns;
+  b.dataset.idx = idx;
+  b.dataset.state = state;
+  b.textContent = char;
+  return b;
+}
+
+function makeSpBox(val, state, idx) {
+  const b = document.createElement('div');
+  b.className = 'sp-box';
+  b.dataset.ns = 'sp';
+  b.dataset.idx = idx;
+  b.dataset.state = state;
+  b.textContent = val === null ? '' : String(val);
+  return b;
+}
+
+function makeRow(label, boxes) {
+  const row = document.createElement('div');
+  row.className = 'char-row';
+  const lbl = document.createElement('span');
+  lbl.className = 'row-label';
+  lbl.textContent = label;
+  row.appendChild(lbl);
+  boxes.forEach(b => row.appendChild(b));
+  return row;
+}
+
+function makeIndexRow(len) {
+  const row = document.createElement('div');
+  row.className = 'char-row index-row';
+  const lbl = document.createElement('span');
+  lbl.className = 'row-label';
+  lbl.textContent = '';
+  row.appendChild(lbl);
+  for (let k = 0; k < len; k++) {
+    const idx = document.createElement('div');
+    idx.className = 'idx-label';
+    idx.textContent = k;
+    row.appendChild(idx);
+  }
+  return row;
+}
+
+// --- Canvas renderers ---
+function renderFailureCanvas(step) {
+  const canvas = document.getElementById('canvas');
+  canvas.innerHTML = '';
+  const { i, j, sp, highlights } = step;
+  const P = window._P;  // set by runVisualizer
+  const m = P.length;
+
+  // P row
+  const pBoxes = P.split('').map((ch, k) =>
+    makeBox(ch, highlights.P[k] || 'default', k, 'P')
+  );
+  canvas.appendChild(makeIndexRow(m));
+  canvas.appendChild(makeRow('P', pBoxes));
+
+  // sp row
+  const spBoxes = sp.map((v, k) =>
+    makeSpBox(v, highlights.sp[k] || 'empty', k)
+  );
+  canvas.appendChild(makeRow('sp', spBoxes));
+}
+
+function renderSearchCanvas(step) {
+  const canvas = document.getElementById('canvas');
+  canvas.innerHTML = '';
+  const { i, j, highlights } = step;
+  const T = window._T;
+  const P = window._P;
+  const n = T.length;
+  const m = P.length;
+
+  // T row
+  const tBoxes = T.split('').map((ch, k) =>
+    makeBox(ch, highlights.T[k] || 'default', k, 'T')
+  );
+  canvas.appendChild(makeIndexRow(n));
+  canvas.appendChild(makeRow('T', tBoxes));
+
+  // P row — aligned under T at position i - j
+  const offset = i - j;
+  const pBoxes = P.split('').map((ch, k) =>
+    makeBox(ch, highlights.P[k] || 'default', k, 'P')
+  );
+  const pRow = makeRow('P', pBoxes);
+  // indent P row to align with T
+  const boxWidth = 36; // px — matches CSS .char-box width (34px) + gap (2px)
+  const labelWidth = 40; // px — matches CSS .row-label width
+  // Widen the label span to push the boxes into alignment with T[offset]
+  pRow.querySelector('.row-label').style.width = (labelWidth + offset * boxWidth) + 'px';
+  canvas.appendChild(pRow);
+}
+
+function renderStep(step) {
+  if (step.phase === 'failure') {
+    renderFailureCanvas(step);
+  } else {
+    renderSearchCanvas(step);
+  }
 }
 </script>
 </body>
