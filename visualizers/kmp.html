@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KMP String Matching — AA Visualizer</title>
+<link href="https://fonts.googleapis.com/css2?family=Cabin:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/animejs@3.2.1/lib/anime.min.js"></script>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --topbar:      #13392a;
+  --input-bar:   #1a4d33;
+  --ops-panel:   #1e5a3c;
+  --match:       #2e7d52;
+  --current:     #b99b3c;
+  --status-bg:   #8c7430;
+  --mismatch:    #c0392b;
+  --done:        #d4e8db;
+  --done-text:   #1e5a3c;
+  --default-box: #ece8d8;
+  --canvas-bg:   #faf8f2;
+  --pseudo-bg:   #1a1606;
+  --pseudo-text: #d4c88a;
+}
+html, body { height: 100%; overflow: hidden; font-family: 'Cabin', sans-serif; }
+#app { display: flex; flex-direction: column; height: 100vh; }
+
+/* Topbar */
+#topbar {
+  background: var(--topbar); color: #e0ebe4;
+  padding: 0 16px; height: 40px;
+  display: flex; align-items: center; gap: 10px;
+  flex-shrink: 0;
+}
+#topbar .logo { color: #7fc99a; font-weight: 700; letter-spacing: 1.5px; font-size: 13px; }
+#topbar .sep { opacity: 0.35; }
+#topbar .alg { font-weight: 600; font-size: 13px; }
+#topbar .mode { margin-left: auto; font-size: 11px; opacity: 0.6; }
+
+/* Input sub-bar */
+#input-bar {
+  background: var(--input-bar); color: #c4e0cf;
+  padding: 0 16px; height: 38px;
+  display: flex; align-items: center; gap: 14px;
+  flex-shrink: 0; border-top: 1px solid rgba(255,255,255,0.06);
+}
+.input-group { display: flex; align-items: center; gap: 6px; }
+.input-label { font-size: 11px; font-weight: 600; color: #a8d4bb; letter-spacing: 0.3px; }
+.string-input {
+  background: rgba(255,255,255,0.1);
+  border: 1px solid rgba(255,255,255,0.2);
+  border-radius: 3px; color: white;
+  font-family: 'Courier New', monospace; font-size: 12px;
+  padding: 3px 8px; height: 26px; outline: none;
+  transition: border-color 0.15s;
+}
+.string-input:focus { border-color: var(--current); background: rgba(255,255,255,0.15); }
+.string-input.error { border-color: var(--mismatch); }
+#run-btn {
+  background: var(--current); color: #111; border: none;
+  border-radius: 3px; padding: 3px 12px; height: 26px;
+  font-size: 11px; font-weight: 700; font-family: 'Cabin', sans-serif;
+  cursor: pointer; transition: opacity 0.15s;
+}
+#run-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+#input-hint { font-size: 10px; opacity: 0.5; margin-left: 4px; }
+#input-error { font-size: 10px; color: #f4a5a5; margin-left: 4px; }
+
+/* Main body */
+#body { display: flex; flex: 1; min-height: 0; }
+
+/* Ops panel */
+#ops-panel {
+  background: var(--ops-panel);
+  width: 160px; flex-shrink: 0;
+  padding: 12px 8px;
+  display: flex; flex-direction: column; gap: 4px;
+}
+.op-btn {
+  padding: 7px 10px; border-radius: 3px;
+  font-size: 11px; color: #c4e0cf;
+  font-family: 'Cabin', sans-serif;
+  cursor: pointer; border: none; background: transparent;
+  text-align: left; transition: background 0.1s;
+}
+.op-btn:hover { background: rgba(255,255,255,0.1); }
+.op-btn.active { background: rgba(255,255,255,0.18); color: white; font-weight: 600; }
+
+/* Canvas + status */
+#canvas-wrap { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+#canvas {
+  flex: 1; background: var(--canvas-bg);
+  padding: 24px 28px; overflow: auto;
+  display: flex; flex-direction: column; gap: 20px;
+}
+#canvas-placeholder {
+  display: flex; align-items: center; justify-content: center;
+  height: 100%; color: #bbb; font-style: italic; font-size: 13px;
+}
+#status-bar {
+  background: var(--status-bg); color: white;
+  padding: 7px 16px; font-size: 11px; font-weight: 600;
+  min-height: 32px; display: flex; align-items: center;
+  border-top: 1px solid rgba(0,0,0,0.1);
+}
+
+/* Pseudocode panel */
+#pseudo-wrap {
+  width: 220px; flex-shrink: 0;
+  position: relative; overflow: hidden;
+  border-left: 1px solid rgba(0,0,0,0.15);
+}
+#pseudo-panel {
+  background: var(--pseudo-bg);
+  height: 100%; padding: 14px 14px;
+  font-family: 'Courier New', monospace; font-size: 10.5px;
+  color: var(--pseudo-text);
+  display: flex; flex-direction: column; gap: 0;
+  transform: translateX(100%);
+}
+#pseudo-panel.visible { transform: translateX(0); }
+.pseudo-section-label {
+  font-family: 'Cabin', sans-serif; font-size: 9px;
+  text-transform: uppercase; letter-spacing: 0.8px;
+  color: #5a4a20; margin-bottom: 10px;
+}
+.pseudo-line { padding: 2px 6px; border-radius: 2px; line-height: 1.7; white-space: pre; }
+.pseudo-line.highlighted { background: var(--current); color: #111; }
+
+/* Bottom bar */
+#bottom-bar {
+  background: var(--current); color: white;
+  padding: 0 16px; height: 38px;
+  display: flex; align-items: center; gap: 10px;
+  flex-shrink: 0; font-size: 11px; font-family: 'Cabin', sans-serif;
+}
+.ctrl-btn {
+  background: rgba(255,255,255,0.22); border: none; border-radius: 3px;
+  padding: 2px 9px; font-size: 11px; color: white;
+  cursor: pointer; font-family: 'Cabin', sans-serif;
+  transition: background 0.1s;
+}
+.ctrl-btn:hover { background: rgba(255,255,255,0.35); }
+.ctrl-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+#step-counter { opacity: 0.85; font-size: 11px; white-space: nowrap; }
+#scrubber { flex: 1; height: 4px; cursor: pointer; accent-color: white; }
+.speed-btn {
+  background: transparent; border: 1px solid rgba(255,255,255,0.3);
+  border-radius: 3px; padding: 1px 7px; font-size: 10px; color: white;
+  cursor: pointer; font-family: 'Cabin', sans-serif;
+}
+.speed-btn.active { background: rgba(255,255,255,0.25); font-weight: 700; }
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="topbar">
+    <span class="logo">AA-VIZ</span>
+    <span class="sep">/</span>
+    <span class="alg">KMP STRING MATCHING</span>
+    <span class="mode">Exploration Mode</span>
+  </div>
+  <div id="input-bar">
+    <div class="input-group">
+      <span class="input-label">Text T</span>
+      <input id="input-T" class="string-input" value="abababcababc" style="width:160px">
+    </div>
+    <div class="input-group">
+      <span class="input-label">Pattern P</span>
+      <input id="input-P" class="string-input" value="ababc" style="width:100px">
+    </div>
+    <button id="run-btn">Run ▶</button>
+    <span id="input-hint">Enter to run</span>
+    <span id="input-error"></span>
+  </div>
+  <div id="body">
+    <div id="ops-panel">
+      <button class="op-btn" data-phase="failure">Build Failure Function</button>
+      <button class="op-btn" data-phase="search">Search</button>
+    </div>
+    <div id="canvas-wrap">
+      <div id="canvas">
+        <div id="canvas-placeholder">Select an operation to begin</div>
+      </div>
+      <div id="status-bar"></div>
+    </div>
+    <div id="pseudo-wrap">
+      <div id="pseudo-panel">
+        <div class="pseudo-section-label" id="pseudo-label"></div>
+        <div id="pseudo-lines"></div>
+      </div>
+    </div>
+  </div>
+  <div id="bottom-bar">
+    <button class="ctrl-btn" id="btn-first">|◀</button>
+    <button class="ctrl-btn" id="btn-prev">◀</button>
+    <button class="ctrl-btn" id="btn-next">▶</button>
+    <button class="ctrl-btn" id="btn-last">▶|</button>
+    <span id="step-counter">—</span>
+    <input id="scrubber" type="range" min="0" max="0" value="0">
+    <button class="speed-btn active" data-speed="1">1×</button>
+    <button class="speed-btn" data-speed="0.5">0.5×</button>
+    <button class="speed-btn" data-speed="2">2×</button>
+  </div>
+</div>
+<script>
+// placeholder — logic added in subsequent tasks
+</script>
+</body>
+</html>
