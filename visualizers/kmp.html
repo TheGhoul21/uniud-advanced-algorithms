@@ -1,0 +1,816 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KMP String Matching — AA Visualizer</title>
+<link href="https://fonts.googleapis.com/css2?family=Cabin:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/animejs@3.2.1/lib/anime.min.js"></script>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --topbar:      #13392a;
+  --input-bar:   #1a4d33;
+  --ops-panel:   #1e5a3c;
+  --match:       #2e7d52;
+  --current:     #b99b3c;
+  --status-bg:   #8c7430;
+  --mismatch:    #c0392b;
+  --done:        #d4e8db;
+  --done-text:   #1e5a3c;
+  --default-box: #ece8d8;
+  --canvas-bg:   #faf8f2;
+  --pseudo-bg:   #1a1606;
+  --pseudo-text: #d4c88a;
+}
+html, body { height: 100%; overflow: hidden; font-family: 'Cabin', sans-serif; }
+#app { display: flex; flex-direction: column; height: 100vh; }
+
+/* Topbar */
+#topbar {
+  background: var(--topbar); color: #e0ebe4;
+  padding: 0 16px; height: 40px;
+  display: flex; align-items: center; gap: 10px;
+  flex-shrink: 0;
+}
+#topbar .logo { color: #7fc99a; font-weight: 700; letter-spacing: 1.5px; font-size: 13px; }
+#topbar .sep { opacity: 0.35; }
+#topbar .alg { font-weight: 600; font-size: 13px; }
+#topbar .mode { margin-left: auto; font-size: 11px; opacity: 0.6; }
+
+/* Input sub-bar */
+#input-bar {
+  background: var(--input-bar); color: #c4e0cf;
+  padding: 0 16px; height: 38px;
+  display: flex; align-items: center; gap: 14px;
+  flex-shrink: 0; border-top: 1px solid rgba(255,255,255,0.06);
+}
+.input-group { display: flex; align-items: center; gap: 6px; }
+.input-label { font-size: 11px; font-weight: 600; color: #a8d4bb; letter-spacing: 0.3px; }
+.string-input {
+  background: rgba(255,255,255,0.1);
+  border: 1px solid rgba(255,255,255,0.2);
+  border-radius: 3px; color: white;
+  font-family: 'Courier New', monospace; font-size: 12px;
+  padding: 3px 8px; height: 26px; outline: none;
+  transition: border-color 0.15s;
+}
+.string-input:focus { border-color: var(--current); background: rgba(255,255,255,0.15); }
+.string-input.error { border-color: var(--mismatch); }
+#btn-run {
+  background: var(--current); color: #111; border: none;
+  border-radius: 3px; padding: 3px 12px; height: 26px;
+  font-size: 11px; font-weight: 700; font-family: 'Cabin', sans-serif;
+  cursor: pointer; transition: opacity 0.15s;
+}
+#btn-run:disabled { opacity: 0.4; cursor: not-allowed; }
+#input-hint { font-size: 10px; opacity: 0.5; margin-left: 4px; }
+#input-error { font-size: 10px; color: #f4a5a5; margin-left: 4px; }
+
+/* Main body */
+#body { display: flex; flex: 1; min-height: 0; }
+
+/* Ops panel */
+#ops-panel {
+  background: var(--ops-panel);
+  width: 160px; flex-shrink: 0;
+  padding: 12px 8px;
+  display: flex; flex-direction: column; gap: 4px;
+}
+.op-btn {
+  padding: 7px 10px; border-radius: 3px;
+  font-size: 11px; color: #c4e0cf;
+  font-family: 'Cabin', sans-serif;
+  cursor: pointer; border: none; background: transparent;
+  text-align: left; transition: background 0.1s;
+}
+.op-btn:hover { background: rgba(255,255,255,0.1); }
+.op-btn.active { background: rgba(255,255,255,0.18); color: white; font-weight: 600; }
+
+/* Canvas + status */
+#canvas-wrap { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+#canvas {
+  flex: 1; background: var(--canvas-bg);
+  padding: 28px 32px; overflow: auto;
+  display: flex; flex-direction: column; gap: 10px;
+}
+
+/* --- canvas rows --- */
+.char-row {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.index-row .idx-label {
+  width: 34px;
+  text-align: center;
+  font-size: 10px;
+  color: #888;
+  font-family: 'Cabin', sans-serif;
+}
+
+.row-label {
+  display: inline-block;
+  width: 40px;
+  font-size: 13px;
+  font-family: 'Cabin', sans-serif;
+  font-style: italic;
+  color: #555;
+  flex-shrink: 0;
+}
+
+.char-box {
+  width: 34px;
+  height: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Cabin', monospace;
+  font-size: 15px;
+  font-weight: 600;
+  border-radius: 4px;
+  transition: background 0.15s;
+  transform-origin: center;
+  user-select: none;
+}
+
+.sp-box {
+  width: 34px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Cabin', sans-serif;
+  font-size: 13px;
+  border-radius: 3px;
+  transition: background 0.15s;
+  transform-origin: center;
+}
+
+/* char-box states */
+.char-box[data-state="default"], .sp-box[data-state="empty"] {
+  background: var(--default-box);
+  color: #333;
+}
+.char-box[data-state="done"] {
+  background: var(--done);
+  color: var(--done-text);
+}
+.char-box[data-state="cur"] {
+  background: var(--current);
+  color: #111;
+}
+.char-box[data-state="match"] {
+  background: var(--match);
+  color: #fff;
+}
+.char-box[data-state="mismatch"] {
+  background: var(--mismatch);
+  color: #fff;
+}
+.sp-box[data-state="filled"] {
+  background: var(--done);
+  color: var(--done-text);
+}
+.sp-box[data-state="active"] {
+  background: var(--current);
+  color: #111;
+}
+#canvas-placeholder {
+  display: flex; align-items: center; justify-content: center;
+  height: 100%; color: #bbb; font-style: italic; font-size: 13px;
+}
+/* --- status bar --- */
+#status-bar {
+  padding: 0 18px;
+  font-size: 14px;
+  color: #111;
+  display: flex;
+  align-items: center;
+  min-height: 38px;
+  border-top: 1px solid rgba(0,0,0,0.08);
+  background: var(--status-bg);
+}
+
+#status-bar .katex {
+  color: #111;
+}
+
+/* --- pseudocode panel --- */
+#pseudo-wrap {
+  width: 220px;
+  background: var(--pseudo-bg);
+  overflow-y: auto;
+  padding: 16px 0 16px 0;
+  flex-shrink: 0;
+}
+
+.pseudo-lines {
+  display: flex;
+  flex-direction: column;
+}
+
+.pseudo-line {
+  font-family: 'Cabin', monospace;
+  font-size: 12px;
+  color: var(--pseudo-text);
+  padding: 4px 16px;
+  line-height: 1.5;
+  cursor: default;
+  white-space: nowrap;
+  opacity: 0.55;
+}
+
+.pseudo-line.active {
+  opacity: 1;
+  background: rgba(255,255,255,0.08);
+  color: #fff;
+}
+
+.pseudo-title {
+  font-family: 'Cabin', sans-serif;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--pseudo-text);
+  opacity: 0.5;
+  padding: 0 16px 10px 16px;
+}
+
+/* Bottom bar */
+#bottom-bar {
+  background: var(--current); color: #111;
+  padding: 0 16px; height: 38px;
+  display: flex; align-items: center; gap: 10px;
+  flex-shrink: 0; font-size: 11px; font-family: 'Cabin', sans-serif;
+}
+.ctrl-btn {
+  background: rgba(255,255,255,0.22); border: none; border-radius: 3px;
+  padding: 2px 9px; font-size: 11px; color: #111;
+  cursor: pointer; font-family: 'Cabin', sans-serif;
+  transition: background 0.1s;
+}
+.ctrl-btn:hover { background: rgba(255,255,255,0.35); }
+.ctrl-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+#step-counter { opacity: 0.85; font-size: 11px; white-space: nowrap; }
+#scrubber { flex: 1; height: 4px; cursor: pointer; accent-color: white; }
+.speed-btn {
+  background: transparent; border: 1px solid rgba(255,255,255,0.3);
+  border-radius: 3px; padding: 1px 7px; font-size: 10px; color: #111;
+  cursor: pointer; font-family: 'Cabin', sans-serif;
+}
+.speed-btn.active { background: rgba(255,255,255,0.25); font-weight: 700; color: #111; }
+#btn-phase-failure.active,
+#btn-phase-search.active {
+  background: var(--match);
+  color: #fff;
+}
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="topbar">
+    <span class="logo">AA-VIZ</span>
+    <span class="sep">/</span>
+    <span class="alg">KMP STRING MATCHING</span>
+    <span class="mode">Exploration Mode</span>
+  </div>
+  <div id="input-bar">
+    <div class="input-group">
+      <label class="input-label" for="input-T">Text T</label>
+      <input id="input-T" class="string-input" value="cacacaocacao" style="width:160px">
+    </div>
+    <div class="input-group">
+      <label class="input-label" for="input-P">Pattern P</label>
+      <input id="input-P" class="string-input" value="cacao" style="width:100px">
+    </div>
+    <button id="btn-run">Run ▶</button>
+    <span id="input-hint">Enter to run</span>
+    <span id="input-error"></span>
+  </div>
+  <div id="body">
+    <div id="ops-panel">
+      <button class="op-btn" id="btn-phase-failure" data-phase="failure">Build Failure Function</button>
+      <button class="op-btn" id="btn-phase-search" data-phase="search">Search</button>
+    </div>
+    <div id="canvas-wrap">
+      <div id="canvas">
+        <div id="canvas-placeholder">Select an operation to begin</div>
+      </div>
+      <div id="status-bar"></div>
+    </div>
+    <div id="pseudo-wrap"></div>
+  </div>
+  <div id="bottom-bar">
+    <button class="ctrl-btn" id="btn-beginning">⏮</button>
+    <button class="ctrl-btn" id="btn-prev">‹</button>
+    <button class="ctrl-btn" id="btn-playpause">▶</button>
+    <button class="ctrl-btn" id="btn-next">›</button>
+    <button class="ctrl-btn" id="btn-end">⏭</button>
+    <span id="step-counter">—</span>
+    <input id="scrubber" type="range" min="0" max="0" value="0">
+    <button class="speed-btn" data-speed="2000">0.5×</button>
+    <button class="speed-btn active" data-speed="1000">1×</button>
+    <button class="speed-btn" data-speed="500">2×</button>
+    <button class="speed-btn" data-speed="200">5×</button>
+  </div>
+</div>
+<script>
+function computeFailureSteps(P) {
+  const m = P.length;
+  const steps = [];
+  const sp = new Array(m).fill(null);
+  function snap(i, j, event, pseudoLine, statusKaTeX, extraHighlights) {
+    const spSnap = sp.slice();
+    const pHi = {};
+    for (let k = 0; k < m; k++) {
+      if (spSnap[k] !== null) pHi[k] = 'done'; else pHi[k] = 'default';
+    }
+    if (i < m) pHi[i] = 'cur';
+    if (j < m && j !== i) pHi[j] = 'match';
+    if (extraHighlights) Object.assign(pHi, extraHighlights);
+    const spHi = {};
+    for (let k = 0; k < m; k++) {
+      if (spSnap[k] !== null) spHi[k] = k === i ? 'active' : 'filled';
+      else spHi[k] = 'empty';
+    }
+    steps.push({ phase: 'failure', pseudoLine, i, j, sp: spSnap,
+      highlights: { P: pHi, sp: spHi }, statusKaTeX, event });
+  }
+  sp[0] = 0;
+  snap(0, 0, 'init', 0, `\\text{sp}[0] = 0`);
+  for (let i = 1; i < m; i++) {
+    let j = sp[i - 1];
+    snap(i, j, 'enter_iter', 2, `i = ${i},\\; j = \\text{sp}[${i-1}] = ${j}`);
+    while (j > 0 && P[i] !== P[j]) {
+      snap(i, j, 'compare_mismatch', 3, `P[${i}] = \\texttt{'${P[i]}'}\\; \\neq\\; P[${j}] = \\texttt{'${P[j]}'},\\; j > 0 \\to j = \\text{sp}[${j-1}]`, { [i]: 'mismatch', [j]: 'mismatch' });
+      const jPrev = j;
+      j = sp[j - 1];
+      snap(i, j, 'fallback', 4, `j \\leftarrow \\text{sp}[${jPrev - 1}] = ${j}`);
+    }
+    if (P[i] === P[j]) {
+      snap(i, j, 'compare_match', 5, `P[${i}] = P[${j}] = \\texttt{'${P[i]}'}\\; \\to\\; j = ${j+1}`, { [i]: 'match', [j]: 'match' });
+      j++;
+    } else {
+      snap(i, j, 'compare_mismatch', 3, `P[${i}] = \\texttt{'${P[i]}'}\\; \\neq\\; P[0] = \\texttt{'${P[0]}'},\\; j = 0 \\to \\text{exit while}`, { [i]: 'mismatch', [0]: 'mismatch' });
+    }
+    sp[i] = j;
+    snap(i, j, 'set_sp', 6, `\\text{sp}[${i}] = ${j}`);
+  }
+  return steps;
+}
+
+function computeSearchSteps(T, P, sp) {
+  const n = T.length, m = P.length;
+  const steps = [];
+  const matches = [];
+
+  function snap(i, j, event, pseudoLine, statusKaTeX, extraHighlights) {
+    const tHi = {};
+    const pHi = {};
+    for (let k = 0; k < n; k++) tHi[k] = 'default';
+    for (let k = 0; k < m; k++) pHi[k] = 'default';
+    // mark matched regions
+    for (const start of matches) {
+      for (let k = start; k < start + m; k++) tHi[k] = 'done';
+    }
+    // active window: align P[0..j-1] under T[i-j..i-1], current positions
+    for (let k = 0; k < j; k++) {
+      if (tHi[i - j + k] !== 'done') tHi[i - j + k] = 'match';
+      pHi[k] = 'match';
+    }
+    if (i < n) tHi[i] = tHi[i] === 'done' ? 'done' : (event === 'compare_match' || event === 'compare_mismatch' ? (event === 'compare_match' ? 'cur' : 'mismatch') : 'cur');
+    if (j < m) pHi[j] = event === 'compare_match' ? 'match' : (event === 'compare_mismatch' ? 'mismatch' : 'cur');
+    if (extraHighlights) {
+      if (extraHighlights.T) Object.assign(tHi, extraHighlights.T);
+      if (extraHighlights.P) Object.assign(pHi, extraHighlights.P);
+    }
+    steps.push({ phase: 'search', pseudoLine, i, j, sp, matches: matches.slice(),
+      highlights: { T: tHi, P: pHi }, statusKaTeX, event });
+  }
+
+  if (m === 0) return steps;
+
+  let i = 0, j = 0;
+  snap(i, j, 'init', 0, `i = 0,\\; j = 0`);
+
+  while (i < n) {
+    snap(i, j, 'enter_iter', 2, `i = ${i},\\; j = ${j}`);
+    if (T[i] === P[j]) {
+      snap(i, j, 'compare_match', 3, `T[${i}] = P[${j}] = \\texttt{'${T[i]}'}\\; \\to\\; i{+}{+},\\; j{+}{+}`);
+      i++; j++;
+      if (j === m) {
+        const start = i - m;
+        matches.push(start);
+        snap(i, j, 'match_found', 4, `\\text{match at } T[${start}..${i-1}]`);
+        j = sp[j - 1];
+        snap(i, j, 'after_match', 4, `j \\leftarrow \\text{sp}[${m - 1}] = ${j}`);
+      }
+    } else {
+      if (j > 0) {
+        snap(i, j, 'compare_mismatch', 5, `T[${i}] = \\texttt{'${T[i]}'}\\; \\neq\\; P[${j}] = \\texttt{'${P[j]}'},\\; j > 0 \\to j = \\text{sp}[${j-1}]`);
+        const jPrev = j;
+        j = sp[j - 1];
+        snap(i, j, 'fallback', 5, `j \\leftarrow \\text{sp}[${jPrev - 1}] = ${j}`);
+      } else {
+        snap(i, j, 'compare_mismatch', 6, `T[${i}] = \\texttt{'${T[i]}'}\\; \\neq\\; P[0] = \\texttt{'${P[0]}'},\\; j = 0 \\to i{+}{+}`);
+        i++;
+      }
+    }
+  }
+  snap(i, j, 'done', 7, `\\text{search complete, }${matches.length}\\text{ match(es)}`);
+  return steps;
+}
+
+// --- DOM helpers ---
+function makeBox(char, state, idx, ns) {
+  // ns = 'T', 'P', or 'sp'
+  const b = document.createElement('div');
+  b.className = 'char-box';
+  b.dataset.ns = ns;
+  b.dataset.idx = idx;
+  b.dataset.state = state;
+  b.textContent = char;
+  return b;
+}
+
+function makeSpBox(val, state, idx) {
+  const b = document.createElement('div');
+  b.className = 'sp-box';
+  b.dataset.ns = 'sp';
+  b.dataset.idx = idx;
+  b.dataset.state = state;
+  b.textContent = val === null ? '' : String(val);
+  return b;
+}
+
+function makeRow(label, boxes) {
+  const row = document.createElement('div');
+  row.className = 'char-row';
+  const lbl = document.createElement('span');
+  lbl.className = 'row-label';
+  lbl.textContent = label;
+  row.appendChild(lbl);
+  boxes.forEach(b => row.appendChild(b));
+  return row;
+}
+
+function makeIndexRow(len) {
+  const row = document.createElement('div');
+  row.className = 'char-row index-row';
+  const lbl = document.createElement('span');
+  lbl.className = 'row-label';
+  lbl.textContent = '';
+  row.appendChild(lbl);
+  for (let k = 0; k < len; k++) {
+    const idx = document.createElement('div');
+    idx.className = 'idx-label';
+    idx.textContent = k;
+    row.appendChild(idx);
+  }
+  return row;
+}
+
+// --- Canvas renderers ---
+function renderFailureCanvas(step) {
+  const canvas = document.getElementById('canvas');
+  canvas.innerHTML = '';
+  const { i, j, sp, highlights } = step;
+  const P = window._P;  // set by runVisualizer
+  const m = P.length;
+
+  // P row
+  const pBoxes = P.split('').map((ch, k) =>
+    makeBox(ch, highlights.P[k] || 'default', k, 'P')
+  );
+  canvas.appendChild(makeIndexRow(m));
+  canvas.appendChild(makeRow('P', pBoxes));
+
+  // sp row
+  const spBoxes = sp.map((v, k) =>
+    makeSpBox(v, highlights.sp[k] || 'empty', k)
+  );
+  canvas.appendChild(makeRow('sp', spBoxes));
+}
+
+function renderSearchCanvas(step) {
+  const canvas = document.getElementById('canvas');
+  canvas.innerHTML = '';
+  const { i, j, highlights } = step;
+  const T = window._T;
+  const P = window._P;
+  const n = T.length;
+  const m = P.length;
+
+  // T row
+  const tBoxes = T.split('').map((ch, k) =>
+    makeBox(ch, highlights.T[k] || 'default', k, 'T')
+  );
+  canvas.appendChild(makeIndexRow(n));
+  canvas.appendChild(makeRow('T', tBoxes));
+
+  // P row — aligned under T at position i - j
+  const offset = i - j;
+  const pBoxes = P.split('').map((ch, k) =>
+    makeBox(ch, highlights.P[k] || 'default', k, 'P')
+  );
+  const pRow = makeRow('P', pBoxes);
+  // indent P row to align with T
+  const boxWidth = 36; // px — matches CSS .char-box width (34px) + gap (2px)
+  const labelWidth = 40; // px — matches CSS .row-label width
+  // Widen the label span to push the boxes into alignment with T[offset]
+  pRow.querySelector('.row-label').style.width = (labelWidth + offset * boxWidth) + 'px';
+  canvas.appendChild(pRow);
+}
+
+function renderStep(step) {
+  if (step.phase === 'failure') {
+    renderFailureCanvas(step);
+  } else {
+    renderSearchCanvas(step);
+  }
+}
+
+// --- Status bar ---
+function renderStatus(step) {
+  const bar = document.getElementById('status-bar');
+  if (!bar) return;
+  if (!step.statusKaTeX) { bar.textContent = ''; return; }
+  try {
+    bar.innerHTML = katex.renderToString(step.statusKaTeX, { throwOnError: false, displayMode: false });
+  } catch(e) {
+    bar.textContent = step.statusKaTeX;
+  }
+}
+
+// --- Pseudocode panel ---
+const PSEUDO_FAILURE = [
+  'sp[0] = 0',
+  'for i = 1 to m−1:',
+  '  j = sp[i−1]',
+  '  while j > 0 and P[i] ≠ P[j]:',
+  '    j = sp[j−1]',
+  '  if P[i] = P[j]: j++',
+  '  sp[i] = j',
+];
+
+const PSEUDO_SEARCH = [
+  'i = 0; j = 0',
+  'while i < n:',
+  '  if T[i] = P[j]:',
+  '    i++; j++',
+  '    if j = m: report match; j = sp[j−1]',
+  '  else if j > 0: j = sp[j−1]',
+  '  else: i++',
+  'done',
+];
+
+function renderPseudo(phase) {
+  const wrap = document.getElementById('pseudo-wrap');
+  if (!wrap) return;
+  const lines = phase === 'failure' ? PSEUDO_FAILURE : PSEUDO_SEARCH;
+  const title = phase === 'failure' ? 'Failure function' : 'KMP search';
+  let html = `<div class="pseudo-title">${title}</div><div class="pseudo-lines">`;
+  lines.forEach((line, idx) => {
+    const indent = line.match(/^(\s+)/)?.[1]?.length ?? 0;
+    const trimmed = line.trimStart();
+    html += `<div class="pseudo-line" data-line="${idx}" style="padding-left:${indent * 10 + 16}px">${trimmed}</div>`;
+  });
+  html += '</div>';
+  wrap.innerHTML = html;
+}
+
+function highlightPseudoLine(lineIdx) {
+  const wrap = document.getElementById('pseudo-wrap');
+  if (!wrap) return;
+  wrap.querySelectorAll('.pseudo-line').forEach(el => el.classList.remove('active'));
+  const target = wrap.querySelector(`.pseudo-line[data-line="${lineIdx}"]`);
+  if (target) target.classList.add('active');
+}
+
+// ============================================================
+//  Animation — pulse boxes whose state changed
+// ============================================================
+function snapshotStates() {
+  // Returns a map of "ns:idx" → data-state
+  const map = {};
+  document.querySelectorAll('[data-ns][data-idx][data-state]').forEach(el => {
+    map[`${el.dataset.ns}:${el.dataset.idx}`] = el.dataset.state;
+  });
+  return map;
+}
+
+function animateDiff(prevSnapshot) {
+  if (typeof anime === 'undefined') return;
+  document.querySelectorAll('[data-ns][data-idx][data-state]').forEach(el => {
+    const key = `${el.dataset.ns}:${el.dataset.idx}`;
+    const prevState = prevSnapshot[key];
+    const curState = el.dataset.state;
+    if (prevState !== curState) {
+      // Pulse: scale up then back
+      anime({
+        targets: el,
+        scale: [1, 1.18, 1],
+        duration: 280,
+        easing: 'easeOutBack',
+      });
+      // Extra glow for match/done state transitions
+      if (curState === 'match' || curState === 'done') {
+        anime({
+          targets: el,
+          boxShadow: ['0 0 0px rgba(46,125,82,0)', '0 0 10px rgba(46,125,82,0.7)', '0 0 0px rgba(46,125,82,0)'],
+          duration: 500,
+          easing: 'easeOutQuad',
+        });
+      }
+      if (curState === 'mismatch') {
+        anime({
+          targets: el,
+          boxShadow: ['0 0 0px rgba(192,57,43,0)', '0 0 10px rgba(192,57,43,0.6)', '0 0 0px rgba(192,57,43,0)'],
+          duration: 500,
+          easing: 'easeOutQuad',
+        });
+      }
+    }
+  });
+}
+
+// ============================================================
+//  App state
+// ============================================================
+const state = {
+  steps: [],
+  idx: 0,
+  phase: 'failure',  // 'failure' | 'search'
+  playing: false,
+  intervalId: null,
+  speed: 1000,  // ms per step
+};
+
+// ============================================================
+//  Core: advance to a specific step index
+// ============================================================
+function setStep(idx) {
+  if (!state.steps.length) return;
+  idx = Math.max(0, Math.min(idx, state.steps.length - 1));
+  state.idx = idx;
+  const step = state.steps[idx];
+  const prevSnapshot = snapshotStates();
+  renderStep(step);
+  renderStatus(step);
+  highlightPseudoLine(step.pseudoLine);
+  updateStepCounter();
+  animateDiff(prevSnapshot);
+}
+
+function updateStepCounter() {
+  const el = document.getElementById('step-counter');
+  if (el) el.textContent = `${state.idx + 1} / ${state.steps.length}`;
+  const scrubber = document.getElementById('scrubber');
+  if (scrubber) {
+    scrubber.max = Math.max(0, state.steps.length - 1);
+    scrubber.value = state.idx;
+  }
+}
+
+// ============================================================
+//  Phase: failure → search
+// ============================================================
+function switchPhase(phase) {
+  if (state.playing) stopPlay();
+  state.phase = phase;
+  if (phase === 'failure') {
+    state.steps = computeFailureSteps(window._P);
+  } else {
+    const sp = computeFailureSteps(window._P);
+    const finalSp = sp[sp.length - 1].sp;
+    state.steps = computeSearchSteps(window._T, window._P, finalSp);
+  }
+  state.idx = 0;
+  renderPseudo(phase);
+  setStep(0);
+  updatePhaseButtons(phase);
+}
+
+function updatePhaseButtons(phase) {
+  ['failure', 'search'].forEach(p => {
+    const btn = document.getElementById('btn-phase-' + p);
+    if (btn) btn.classList.toggle('active', p === phase);
+  });
+}
+
+// ============================================================
+//  Run visualizer from inputs
+// ============================================================
+function runVisualizer() {
+  const T = document.getElementById('input-T')?.value?.trim() || 'cacacaocacao';
+  const P = document.getElementById('input-P')?.value?.trim() || 'cacao';
+  if (!P) return;
+  window._T = T;
+  window._P = P;
+  switchPhase('failure');
+}
+
+// ============================================================
+//  Playback
+// ============================================================
+function startPlay() {
+  if (state.playing) return;
+  if (state.idx >= state.steps.length - 1) setStep(0);
+  state.playing = true;
+  updatePlayPauseBtn();
+  state.intervalId = setInterval(() => {
+    if (state.idx >= state.steps.length - 1) {
+      stopPlay();
+    } else {
+      setStep(state.idx + 1);
+    }
+  }, state.speed);
+}
+
+function stopPlay() {
+  state.playing = false;
+  clearInterval(state.intervalId);
+  state.intervalId = null;
+  updatePlayPauseBtn();
+}
+
+function updatePlayPauseBtn() {
+  const btn = document.getElementById('btn-playpause');
+  if (!btn) return;
+  btn.textContent = state.playing ? '⏸' : '▶';
+  btn.title = state.playing ? 'Pause' : 'Play';
+}
+
+// ============================================================
+//  Event listeners
+// ============================================================
+document.addEventListener('DOMContentLoaded', () => {
+  // Run button
+  document.getElementById('btn-run')?.addEventListener('click', runVisualizer);
+
+  // Input Enter key
+  ['input-T', 'input-P'].forEach(id => {
+    document.getElementById(id)?.addEventListener('keydown', e => {
+      if (e.key === 'Enter') runVisualizer();
+    });
+  });
+
+  // Prev / Next / Beginning / End
+  document.getElementById('btn-prev')?.addEventListener('click', () => {
+    stopPlay(); setStep(state.idx - 1);
+  });
+  document.getElementById('btn-next')?.addEventListener('click', () => {
+    stopPlay(); setStep(state.idx + 1);
+  });
+  document.getElementById('btn-beginning')?.addEventListener('click', () => {
+    stopPlay(); setStep(0);
+  });
+  document.getElementById('btn-end')?.addEventListener('click', () => {
+    stopPlay(); setStep(state.steps.length - 1);
+  });
+
+  // Play/Pause
+  document.getElementById('btn-playpause')?.addEventListener('click', () => {
+    state.playing ? stopPlay() : startPlay();
+  });
+
+  // Speed buttons
+  document.querySelectorAll('.speed-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.speed-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      state.speed = parseInt(btn.dataset.speed, 10);
+      if (state.playing) { stopPlay(); startPlay(); }
+    });
+  });
+
+  // Scrubber
+  document.getElementById('scrubber')?.addEventListener('input', e => {
+    stopPlay();
+    setStep(parseInt(e.target.value, 10));
+  });
+
+  // Phase tabs
+  document.getElementById('btn-phase-failure')?.addEventListener('click', () => switchPhase('failure'));
+  document.getElementById('btn-phase-search')?.addEventListener('click', () => switchPhase('search'));
+
+  // Keyboard shortcuts
+  document.addEventListener('keydown', e => {
+    if (e.target.tagName === 'INPUT') return;
+    if (e.key === 'ArrowRight' || e.key === 'ArrowDown') { stopPlay(); setStep(state.idx + 1); }
+    if (e.key === 'ArrowLeft'  || e.key === 'ArrowUp')   { stopPlay(); setStep(state.idx - 1); }
+    if (e.key === ' ') { e.preventDefault(); state.playing ? stopPlay() : startPlay(); }
+    if (e.key === 'Home') { stopPlay(); setStep(0); }
+    if (e.key === 'End')  { stopPlay(); setStep(state.steps.length - 1); }
+  });
+
+  // Auto-run on load with defaults
+  runVisualizer();
+});
+</script>
+</body>
+</html>
