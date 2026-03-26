@@ -251,6 +251,68 @@ function computeFailureSteps(P) {
   }
   return steps;
 }
+
+function computeSearchSteps(T, P, sp) {
+  const n = T.length, m = P.length;
+  const steps = [];
+  const matches = [];
+
+  function snap(i, j, event, pseudoLine, statusKaTeX, extraHighlights) {
+    const tHi = {};
+    const pHi = {};
+    for (let k = 0; k < n; k++) tHi[k] = 'default';
+    for (let k = 0; k < m; k++) pHi[k] = 'default';
+    // mark matched regions
+    for (const start of matches) {
+      for (let k = start; k < start + m; k++) tHi[k] = 'done';
+    }
+    // active window: align P[0..j-1] under T[i-j..i-1], current positions
+    for (let k = 0; k < j; k++) {
+      if (tHi[i - j + k] !== 'done') tHi[i - j + k] = 'match';
+      pHi[k] = 'match';
+    }
+    if (i < n) tHi[i] = tHi[i] === 'done' ? 'done' : (event === 'compare_match' || event === 'compare_mismatch' ? (event === 'compare_match' ? 'cur' : 'mismatch') : 'cur');
+    if (j < m) pHi[j] = event === 'compare_match' ? 'match' : (event === 'compare_mismatch' ? 'mismatch' : 'cur');
+    if (extraHighlights) {
+      if (extraHighlights.T) Object.assign(tHi, extraHighlights.T);
+      if (extraHighlights.P) Object.assign(pHi, extraHighlights.P);
+    }
+    steps.push({ phase: 'search', pseudoLine, i, j, sp, matches: matches.slice(),
+      highlights: { T: tHi, P: pHi }, statusKaTeX, event });
+  }
+
+  if (m === 0) return steps;
+
+  let i = 0, j = 0;
+  snap(i, j, 'init', 0, `i = 0,\\; j = 0`);
+
+  while (i < n) {
+    snap(i, j, 'enter_iter', 2, `i = ${i},\\; j = ${j}`);
+    if (T[i] === P[j]) {
+      snap(i, j, 'compare_match', 3, `T[${i}] = P[${j}] = \\texttt{'${T[i]}'}\\; \\to\\; i{+}{+},\\; j{+}{+}`);
+      i++; j++;
+      if (j === m) {
+        const start = i - m;
+        matches.push(start);
+        snap(i, j, 'match_found', 6, `\\text{match at } T[${start}..${i-1}]`);
+        j = sp[j - 1];
+        snap(i, j, 'after_match', 7, `j \\leftarrow \\text{sp}[${m - 1}] = ${j}`);
+      }
+    } else {
+      if (j > 0) {
+        snap(i, j, 'compare_mismatch', 4, `T[${i}] = \\texttt{'${T[i]}'}\\; \\neq\\; P[${j}] = \\texttt{'${P[j]}'},\\; j > 0 \\to j = \\text{sp}[${j-1}]`);
+        const jPrev = j;
+        j = sp[j - 1];
+        snap(i, j, 'fallback', 5, `j \\leftarrow \\text{sp}[${jPrev - 1}] = ${j}`);
+      } else {
+        snap(i, j, 'compare_mismatch', 4, `T[${i}] = \\texttt{'${T[i]}'}\\; \\neq\\; P[0] = \\texttt{'${P[0]}'},\\; j = 0 \\to i{+}{+}`);
+        i++;
+      }
+    }
+  }
+  snap(i, j, 'done', 8, `\\text{search complete, }${matches.length}\\text{ match(es)}`);
+  return steps;
+}
 </script>
 </body>
 </html>
