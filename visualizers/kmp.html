@@ -42,32 +42,33 @@ html, body { height: 100%; overflow: hidden; font-family: 'Cabin', sans-serif; }
 
 /* Input sub-bar */
 #input-bar {
-  background: var(--input-bar); color: #c4e0cf;
-  padding: 0 16px; height: 38px;
+  background: var(--canvas-bg);
+  padding: 14px 32px;
   display: flex; align-items: center; gap: 14px;
-  flex-shrink: 0; border-top: 1px solid rgba(255,255,255,0.06);
+  flex-shrink: 0;
+  border-bottom: 1px solid #e0d9c8;
 }
 .input-group { display: flex; align-items: center; gap: 6px; }
-.input-label { font-size: 11px; font-weight: 600; color: #a8d4bb; letter-spacing: 0.3px; }
+.input-label { font-size: 11px; font-weight: 700; color: #8c7430; letter-spacing: 0.3px; text-transform: uppercase; }
 .string-input {
-  background: rgba(255,255,255,0.1);
-  border: 1px solid rgba(255,255,255,0.2);
-  border-radius: 3px; color: white;
-  font-family: 'Courier New', monospace; font-size: 12px;
-  padding: 3px 8px; height: 26px; outline: none;
-  transition: border-color 0.15s;
+  background: var(--ops-panel);
+  border: 1.5px solid rgba(255,255,255,0.18);
+  border-radius: 4px; color: white;
+  font-family: 'Courier New', monospace; font-size: 12px; font-weight: 600;
+  padding: 5px 10px; height: 28px; outline: none;
+  transition: border-color 0.15s, background 0.15s;
 }
-.string-input:focus { border-color: var(--current); background: rgba(255,255,255,0.15); }
+.string-input:focus { border-color: var(--current); background: #245e40; }
 .string-input.error { border-color: var(--mismatch); }
 #btn-run {
   background: var(--current); color: #111; border: none;
-  border-radius: 3px; padding: 3px 12px; height: 26px;
+  border-radius: 3px; padding: 3px 12px; height: 28px;
   font-size: 11px; font-weight: 700; font-family: 'Cabin', sans-serif;
   cursor: pointer; transition: opacity 0.15s;
 }
 #btn-run:disabled { opacity: 0.4; cursor: not-allowed; }
-#input-hint { font-size: 10px; opacity: 0.5; margin-left: 4px; }
-#input-error { font-size: 10px; color: #f4a5a5; margin-left: 4px; }
+#input-hint { font-size: 10px; color: #999; margin-left: 4px; }
+#input-error { font-size: 10px; color: var(--mismatch); margin-left: 4px; }
 
 /* Main body */
 #body { display: flex; flex: 1; min-height: 0; }
@@ -88,6 +89,26 @@ html, body { height: 100%; overflow: hidden; font-family: 'Cabin', sans-serif; }
 }
 .op-btn:hover { background: rgba(255,255,255,0.1); }
 .op-btn.active { background: rgba(255,255,255,0.18); color: white; font-weight: 600; }
+
+/* Nav links — same as aa-sidebar in the Quarto site */
+.nav-label {
+  font-size: 10px; font-weight: 700; letter-spacing: 0.1em;
+  text-transform: uppercase; color: var(--current);
+  padding: 4px 10px; margin-bottom: 2px;
+}
+.nav-sep {
+  height: 1px; background: rgba(255,255,255,0.08);
+  margin: 8px 0;
+}
+.nav-link {
+  display: block; padding: 7px 10px; border-radius: 3px;
+  font-size: 11px; color: #c4e0cf; font-family: 'Cabin', sans-serif;
+  text-decoration: none; transition: background 0.1s;
+}
+.nav-link:hover { background: rgba(255,255,255,0.1); color: #fff; }
+.nav-link.active { background: var(--match); color: #fff; font-weight: 600; }
+.nav-link.viz-sub { font-size: 10px; padding: 3px 10px 3px 18px; color: #d4c88a; }
+.nav-link.viz-sub:hover { color: #fff; }
 
 /* Canvas + status */
 #canvas-wrap { flex: 1; display: flex; flex-direction: column; min-width: 0; }
@@ -278,25 +299,35 @@ html, body { height: 100%; overflow: hidden; font-family: 'Cabin', sans-serif; }
     <span class="alg">KMP STRING MATCHING</span>
     <span class="mode">Exploration Mode</span>
   </div>
-  <div id="input-bar">
-    <div class="input-group">
-      <label class="input-label" for="input-T">Text T</label>
-      <input id="input-T" class="string-input" value="cacacaocacao" style="width:160px">
-    </div>
-    <div class="input-group">
-      <label class="input-label" for="input-P">Pattern P</label>
-      <input id="input-P" class="string-input" value="cacao" style="width:100px">
-    </div>
-    <button id="btn-run">Run ▶</button>
-    <span id="input-hint">Enter to run</span>
-    <span id="input-error"></span>
-  </div>
   <div id="body">
     <div id="ops-panel">
+      <div class="nav-label">String Matching</div>
+      <a class="nav-link" href="../notebooks/01-naive.html">Naive</a>
+      <a class="nav-link active" href="../notebooks/02-kmp.html">KMP</a>
+      <a class="nav-link viz-sub" href="#">↳ visualizer</a>
+      <a class="nav-link" href="../notebooks/03-z-algorithm.html">Z-Algorithm</a>
+      <a class="nav-link" href="../notebooks/04-boyer-moore.html">Boyer-Moore</a>
+      <a class="nav-link" href="../notebooks/05-suffix-structures.html">Suffix Structures</a>
+      <a class="nav-link" href="../notebooks/06-algorithm-comparison.html">Comparison</a>
+      <a class="nav-link" href="../notebooks/07-keyword-tree.html">Keyword Tree</a>
+      <div class="nav-sep"></div>
       <button class="op-btn" id="btn-phase-failure" data-phase="failure">Build Failure Function</button>
       <button class="op-btn" id="btn-phase-search" data-phase="search">Search</button>
     </div>
     <div id="canvas-wrap">
+      <div id="input-bar">
+        <div class="input-group">
+          <label class="input-label" for="input-T">Text T</label>
+          <input id="input-T" class="string-input" value="cacacaocacao" style="width:160px">
+        </div>
+        <div class="input-group">
+          <label class="input-label" for="input-P">Pattern P</label>
+          <input id="input-P" class="string-input" value="cacao" style="width:100px">
+        </div>
+        <button id="btn-run">Run ▶</button>
+        <span id="input-hint">Enter to run</span>
+        <span id="input-error"></span>
+      </div>
       <div id="canvas">
         <div id="canvas-placeholder">Select an operation to begin</div>
       </div>

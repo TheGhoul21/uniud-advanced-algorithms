@@ -1,0 +1,58 @@
+<div id="aa-topbar">
+  <a href="/" class="aa-brand">AA-VIZ</a>
+  <span class="aa-sep">/</span>
+  <span class="aa-page-name" id="aa-page-name"></span>
+</div>
+
+<nav id="aa-sidebar">
+  <div class="aa-sidebar-label">String Matching</div>
+  <a class="aa-sidebar-link" data-page="01-naive" href="01-naive.html">Naive</a>
+  <a class="aa-sidebar-link" data-page="02-kmp" href="02-kmp.html">KMP</a>
+  <a class="aa-sidebar-link aa-viz-link" href="../visualizers/kmp.html" target="_blank">↳ visualizer</a>
+  <a class="aa-sidebar-link" data-page="03-z-algorithm" href="03-z-algorithm.html">Z-Algorithm</a>
+  <a class="aa-sidebar-link" data-page="04-boyer-moore" href="04-boyer-moore.html">Boyer-Moore</a>
+  <a class="aa-sidebar-link" data-page="05-suffix-structures" href="05-suffix-structures.html">Suffix Structures</a>
+  <a class="aa-sidebar-link" data-page="06-algorithm-comparison" href="06-algorithm-comparison.html">Comparison</a>
+  <a class="aa-sidebar-link" data-page="07-keyword-tree" href="07-keyword-tree.html">Keyword Tree</a>
+</nav>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  // Populate page name from the title
+  var t = document.querySelector('h1.title');
+  var el = document.getElementById('aa-page-name');
+  if (t && el) el.textContent = t.textContent;
+
+  // Move topbar to the very top of body
+  var bar = document.getElementById('aa-topbar');
+  if (bar) document.body.insertBefore(bar, document.body.firstChild);
+
+  // Move sidebar right after topbar
+  var sidebar = document.getElementById('aa-sidebar');
+  if (sidebar && bar) bar.after(sidebar);
+
+  // Highlight active page in sidebar
+  var path = window.location.pathname;
+  document.querySelectorAll('.aa-sidebar-link[data-page]').forEach(function(link) {
+    if (path.indexOf(link.dataset.page) !== -1) {
+      link.classList.add('active');
+    }
+  });
+
+  // Hide title block and Quarto sidebar
+  var tb = document.getElementById('title-block-header');
+  if (tb) tb.style.display = 'none';
+  var ms = document.getElementById('quarto-margin-sidebar');
+  if (ms) ms.style.display = 'none';
+
+  // Wrap Quarto content in a flex layout with the sidebar
+  var content = document.getElementById('quarto-content');
+  if (sidebar && content) {
+    var wrapper = document.createElement('div');
+    wrapper.id = 'aa-layout';
+    sidebar.after(wrapper);
+    wrapper.appendChild(sidebar);
+    wrapper.appendChild(content);
+  }
+});
+</script>
