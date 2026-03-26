@@ -134,6 +134,7 @@ html, body { height: 100%; overflow: hidden; font-family: 'Cabin', sans-serif; }
   font-weight: 600;
   border-radius: 4px;
   transition: background 0.15s;
+  transform-origin: center;
   user-select: none;
 }
 
@@ -147,6 +148,7 @@ html, body { height: 100%; overflow: hidden; font-family: 'Cabin', sans-serif; }
   font-size: 13px;
   border-radius: 3px;
   transition: background 0.15s;
+  transform-origin: center;
 }
 
 /* char-box states */
@@ -586,6 +588,53 @@ function highlightPseudoLine(lineIdx) {
 }
 
 // ============================================================
+//  Animation — pulse boxes whose state changed
+// ============================================================
+function snapshotStates() {
+  // Returns a map of "ns:idx" → data-state
+  const map = {};
+  document.querySelectorAll('[data-ns][data-idx][data-state]').forEach(el => {
+    map[`${el.dataset.ns}:${el.dataset.idx}`] = el.dataset.state;
+  });
+  return map;
+}
+
+function animateDiff(prevSnapshot) {
+  if (typeof anime === 'undefined') return;
+  document.querySelectorAll('[data-ns][data-idx][data-state]').forEach(el => {
+    const key = `${el.dataset.ns}:${el.dataset.idx}`;
+    const prevState = prevSnapshot[key];
+    const curState = el.dataset.state;
+    if (prevState !== curState) {
+      // Pulse: scale up then back
+      anime({
+        targets: el,
+        scale: [1, 1.18, 1],
+        duration: 280,
+        easing: 'easeOutBack',
+      });
+      // Extra glow for match/done state transitions
+      if (curState === 'match' || curState === 'done') {
+        anime({
+          targets: el,
+          boxShadow: ['0 0 0px rgba(46,125,82,0)', '0 0 10px rgba(46,125,82,0.7)', '0 0 0px rgba(46,125,82,0)'],
+          duration: 500,
+          easing: 'easeOutQuad',
+        });
+      }
+      if (curState === 'mismatch') {
+        anime({
+          targets: el,
+          boxShadow: ['0 0 0px rgba(192,57,43,0)', '0 0 10px rgba(192,57,43,0.6)', '0 0 0px rgba(192,57,43,0)'],
+          duration: 500,
+          easing: 'easeOutQuad',
+        });
+      }
+    }
+  });
+}
+
+// ============================================================
 //  App state
 // ============================================================
 const state = {
@@ -605,10 +654,12 @@ function setStep(idx) {
   idx = Math.max(0, Math.min(idx, state.steps.length - 1));
   state.idx = idx;
   const step = state.steps[idx];
+  const prevSnapshot = snapshotStates();
   renderStep(step);
   renderStatus(step);
   highlightPseudoLine(step.pseudoLine);
   updateStepCounter();
+  animateDiff(prevSnapshot);
 }
 
 function updateStepCounter() {
