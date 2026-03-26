@@ -1,6 +1,11 @@
 project:
   type: website
   output-dir: _site
+  render:
+    - "*.qmd"
+    - "notebooks/*.qmd"
+  resources:
+    - "visualizers/"
 
 website:
   title: "Advanced Algorithms — UniUD"
@@ -13,6 +18,10 @@ website:
 
 format:
   html:
+    theme: [cosmo, custom.scss]
+    toc: true
+    toc-depth: 3
+  live-html:
     theme: [cosmo, custom.scss]
     toc: true
     toc-depth: 3

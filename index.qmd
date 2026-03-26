@@ -2,13 +2,30 @@
 title: "Advanced Algorithms — Interactive Companions"
 ---
 
-Interactive visualizations for the **Advanced Algorithms** course at the University of Udine.
+```{=html}
+<div style="
+  background: linear-gradient(135deg, #13392a 0%, #1e5a3c 60%, #2e7d52 100%);
+  color: #f0ebe0;
+  padding: 3rem 2.5rem 2.5rem;
+  border-radius: 8px;
+  margin-bottom: 2.5rem;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.18);
+  border-bottom: 4px solid #b99b3c;
+">
+  <div style="font-size:0.78rem; text-transform:uppercase; letter-spacing:0.1em; color:#b99b3c; font-weight:700; margin-bottom:0.5rem;">
+    Università degli Studi di Udine · A.A. 2025–2026
+  </div>
+  <h1 style="font-size:2.2rem; font-weight:700; color:#fff; margin:0 0 0.7rem 0; border:none; padding:0;">
+    Advanced Algorithms
+  </h1>
+  <p style="font-size:1.05rem; color:rgba(240,235,224,0.88); max-width:600px; margin:0; line-height:1.6;">
+    Interactive visualizations for the course lecture notes. Step through classic algorithms
+    with custom inputs — all running directly in your browser, no installation required.
+  </p>
+</div>
+```
 
-Each notebook lets you step through classic algorithms with sliders and custom inputs — all running directly in your browser via [Pyodide](https://pyodide.org), no installation required.
-
-## Notebooks
-
-### Chapter 1 — String Matching
+## Chapter 1 — String Matching
 
 1. [**Naive String Matching**](notebooks/01-naive.qmd) — Step through every alignment of P against T
 2. [**KMP**](notebooks/02-kmp.qmd) — Failure function (sp values) and search with fallback arrows

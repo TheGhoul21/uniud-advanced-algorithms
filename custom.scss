@@ -1,88 +1,214 @@
 /*-- scss:defaults --*/
 
-// Palette — mirrors visualizers/kmp.html CSS variables
-$green-dark:   #13392a;
-$green-mid:    #1e5a3c;
-$green-link:   #2e7d52;
-$green-done:   #d4e8db;
-$gold:         #b99b3c;
-$gold-dark:    #8c7430;
-$warm-white:   #faf8f2;
-$warm-off:     #ece8d8;
+// ── Palette (mirrors visualizers/kmp.html) ──────────────────────────────────
+$green-darkest:  #0f2d20;
+$green-dark:     #13392a;
+$green-mid:      #1e5a3c;
+$green-link:     #2e7d52;
+$green-done:     #d4e8db;
+$gold:           #b99b3c;
+$gold-dark:      #8c7430;
+$gold-light:     #d4c88a;
+$warm-white:     #faf8f2;
+$warm-off:       #ece8d8;
+$warm-mid:       #e0d9c8;
+$text-main:      #1a1a1a;
 
-// Bootstrap / Quarto overrides
-$body-bg:            $warm-white;
-$body-color:         #1a1a1a;
-$link-color:         $green-link;
-$link-hover-color:   darken($green-link, 12%);
+// ── Typography ───────────────────────────────────────────────────────────────
+$font-family-sans-serif: 'Cabin', ui-sans-serif, system-ui, sans-serif;
+$font-family-monospace:  'Cabin', 'Courier New', monospace;
+$font-size-base:         1rem;
+$line-height-base:       1.65;
 
-$navbar-bg:          $green-dark;
-$navbar-fg:          #f0ebe0;
-$navbar-hl:          $gold;          // active link in navbar
+// ── Bootstrap / Quarto overrides ─────────────────────────────────────────────
+$body-bg:          $warm-white;
+$body-color:       $text-main;
+$link-color:       $green-link;
+$link-hover-color: $green-dark;
 
-$code-bg:            $warm-off;
-$code-color:         #2a2a2a;
+$navbar-bg:        $green-dark;
+$navbar-fg:        #f0ebe0;
+$navbar-hl:        $gold-light;
 
-$headings-color:     $green-dark;
-$toc-color:          $green-mid;
-$toc-active-color:   $green-link;
+$headings-font-weight: 700;
+$headings-color:        $green-dark;
 
-$border-color:       #d8d2c4;
+$code-bg:    $warm-off;
+$code-color: #2a2a2a;
+
+$border-color: #d0cabb;
+
+$toc-color:        $text-main;
+$toc-active-color: $green-link;
+$toc-font-size:    0.85rem;
 
 /*-- scss:rules --*/
 
-// Navbar refinements
+// ── Google Fonts ─────────────────────────────────────────────────────────────
+@import url('https://fonts.googleapis.com/css2?family=Cabin:ital,wght@0,400;0,600;0,700;1,400&display=swap');
+
+// ── Navbar ───────────────────────────────────────────────────────────────────
 .navbar {
+  padding-top: 0.6rem;
+  padding-bottom: 0.6rem;
   border-bottom: 3px solid $gold;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.18);
+  box-shadow: 0 2px 12px rgba(0,0,0,0.22);
 
   .navbar-brand {
+    font-size: 1.05rem;
     font-weight: 700;
+    letter-spacing: 0.03em;
+    color: #f0ebe0 !important;
+  }
+
+  .nav-link {
+    font-size: 0.88rem;
+    font-weight: 600;
     letter-spacing: 0.02em;
+    color: rgba(240,235,224,0.82) !important;
+    transition: color 0.15s;
+
+    &:hover, &.active {
+      color: $gold-light !important;
+    }
   }
 }
 
-// Gold accent rule under page headings
-h1 {
+// ── Body & layout ────────────────────────────────────────────────────────────
+body {
+  font-family: 'Cabin', sans-serif;
+  background: $warm-white;
+}
+
+// Warm tint behind the main content column
+#quarto-content {
+  background: $warm-white;
+}
+
+// ── Headings ─────────────────────────────────────────────────────────────────
+h1.title {
+  font-size: 2rem;
+  font-weight: 700;
+  color: $green-dark;
   border-bottom: 2.5px solid $green-link;
-  padding-bottom: 0.3em;
-  margin-bottom: 0.8em;
+  padding-bottom: 0.35em;
+  margin-bottom: 0.2em;
 }
 
-// Section headings get the mid-green number tint (like LaTeX notes)
-h2 .header-section-number,
-h3 .header-section-number {
+h1:not(.title) {
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: $green-dark;
+  border-bottom: 2px solid rgba($green-link, 0.35);
+  padding-bottom: 0.25em;
+  margin-top: 1.8em;
+}
+
+h2 {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: $green-mid;
+  margin-top: 1.6em;
+  padding-bottom: 0.15em;
+  border-bottom: 1px solid rgba($green-done, 0.8);
+}
+
+h3 {
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: mix($green-mid, #333, 60%);
+  margin-top: 1.4em;
+}
+
+// Section number tint (like LaTeX notes)
+.header-section-number {
   color: mix($green-link, white, 55%);
+  margin-right: 0.4em;
 }
 
-// TOC
+// ── TOC ───────────────────────────────────────────────────────────────────────
 #TOC {
   border-left: 3px solid $gold;
-  padding-left: 0.8em;
+  padding-left: 0.75em;
+  font-size: 0.84rem;
 
-  .active > a {
+  .toc-title {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    color: $gold-dark;
+    font-weight: 700;
+    margin-bottom: 0.5em;
+  }
+
+  a {
+    color: mix($text-main, $green-dark, 75%);
+    text-decoration: none;
+    &:hover { color: $green-link; }
+  }
+
+  li.active > a {
     color: $green-link;
     font-weight: 600;
   }
 }
 
-// Inline code
+// ── Code ─────────────────────────────────────────────────────────────────────
 code:not(pre code) {
   background: $warm-off;
   color: #2a2a2a;
   padding: 0.1em 0.35em;
   border-radius: 3px;
+  font-size: 0.88em;
 }
 
-// Footer strip
+pre.sourceCode {
+  background: $warm-off;
+  border: 1px solid $warm-mid;
+  border-radius: 5px;
+}
+
+// ── Callout / info boxes ──────────────────────────────────────────────────────
+.callout-note {
+  border-left-color: $green-link;
+}
+.callout-tip {
+  border-left-color: $gold;
+}
+
+// ── Tables ────────────────────────────────────────────────────────────────────
+table {
+  font-size: 0.92rem;
+}
+thead {
+  background: $green-done;
+  color: $green-dark;
+}
+tbody tr:nth-child(even) {
+  background: mix($warm-white, $warm-off, 50%);
+}
+
+// ── Links ─────────────────────────────────────────────────────────────────────
+a {
+  text-decoration: none;
+  &:hover { text-decoration: underline; }
+}
+
+// ── Footer gold strip ─────────────────────────────────────────────────────────
+// (fixed bar at bottom — matches visualizer bottom-bar aesthetic)
 body::after {
   content: '';
   display: block;
   height: 4px;
-  background: linear-gradient(90deg, #{$green-dark} 0%, #{$green-mid} 60%, #{$gold} 100%);
+  background: linear-gradient(90deg, #{$green-dark} 0%, #{$green-mid} 55%, #{$gold} 100%);
   position: fixed;
   bottom: 0;
   left: 0;
   right: 0;
-  z-index: 999;
+  z-index: 9999;
+}
+
+// Prevent content being hidden behind the strip
+main {
+  padding-bottom: 12px;
 }
