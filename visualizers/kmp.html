@@ -236,8 +236,9 @@ function computeFailureSteps(P) {
     snap(i, j, 'enter_iter', 2, `i = ${i},\\; j = \\text{sp}[${i-1}] = ${j}`);
     while (j > 0 && P[i] !== P[j]) {
       snap(i, j, 'compare_mismatch', 3, `P[${i}] = \\texttt{'${P[i]}'}\\; \\neq\\; P[${j}] = \\texttt{'${P[j]}'},\\; j > 0 \\to j = \\text{sp}[${j-1}]`, { [i]: 'mismatch', [j]: 'mismatch' });
+      const jPrev = j;
       j = sp[j - 1];
-      snap(i, j, 'fallback', 4, `j \\leftarrow \\text{sp}[${sp[i > 0 ? i-1 : 0]}] = ${j}`);
+      snap(i, j, 'fallback', 4, `j \\leftarrow \\text{sp}[${jPrev - 1}] = ${j}`);
     }
     if (P[i] === P[j]) {
       snap(i, j, 'compare_match', 5, `P[${i}] = P[${j}] = \\texttt{'${P[i]}'}\\; \\to\\; j = ${j+1}`, { [i]: 'match', [j]: 'match' });
