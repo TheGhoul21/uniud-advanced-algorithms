@@ -224,7 +224,7 @@ def bits_str(val, m):
 
 
 def draw_shift_and(T, P, step_idx):
-    """Draw the current state of the Shift-And algorithm."""
+    """Draw the current state of the Shift-And algorithm with a sliding window."""
     steps = shift_and_trace(T, P)
     if step_idx >= len(steps):
         step_idx = len(steps) - 1
@@ -233,35 +233,58 @@ def draw_shift_and(T, P, step_idx):
     j = step["j"]
     matrix = step["matrix"]
 
-    fig_w = max(8, n * 1.1 + 3)
+    # ── Sliding window: show at most WIN columns, centred on j ────
+    WIN = 16
+    if n <= WIN:
+        win_lo, win_hi = 0, n
+    else:
+        centre = max(j, 0)
+        win_lo = max(0, centre - WIN // 2)
+        win_hi = min(n, win_lo + WIN)
+        if win_hi == n:
+            win_lo = max(0, win_hi - WIN)
+    win_n = win_hi - win_lo  # number of visible columns
+
+    fig_w = max(8, win_n * 1.1 + 3)
     fig, axes = plt.subplots(2, 1, figsize=(fig_w, max(5, m * 1.1 + 4)),
                              gridspec_kw={"height_ratios": [max(2.5, m * 1.1 + 1.5), 2.2]})
 
     # ── Top panel: DP matrix ──────────────────────────────
     ax = axes[0]
-    ax.set_xlim(-2.0, n + 0.8)
+    ax.set_xlim(-2.0, win_n + 0.8)
     ax.set_ylim(-0.5, m * 1.1 + 2.3)
     ax.set_aspect("equal")
     ax.axis("off")
 
     top = m * 1.1 + 1.5
 
-    # Column indices
-    for jj in range(n):
-        ax.text(jj + 0.45, top + 0.8, str(jj), ha="center", va="center",
+    # Column indices (original j values)
+    for vis_col, jj in enumerate(range(win_lo, win_hi)):
+        ax.text(vis_col + 0.45, top + 0.8, str(jj), ha="center", va="center",
                 fontsize=9, color="#888")
 
-    # T row
+    # Ellipsis indicators
+    if win_lo > 0:
+        ax.text(-0.3, top + 0.45, "…", ha="center", va="center",
+                fontsize=14, color="#aaa")
+    if win_hi < n:
+        ax.text(win_n + 0.3, top + 0.45, "…", ha="center", va="center",
+                fontsize=14, color="#aaa")
+
+    # T row (only visible window)
+    t_vis = T[win_lo:win_hi]
     t_highlights = {}
     if j >= 0:
-        for jj in range(j + 1):
-            t_highlights[jj] = COLORS["skip"]
-        t_highlights[j] = COLORS["current"]
+        for jj in range(win_lo, min(j + 1, win_hi)):
+            t_highlights[jj - win_lo] = COLORS["skip"]
+        if win_lo <= j < win_hi:
+            t_highlights[j - win_lo] = COLORS["current"]
     for mstart in step["matches"]:
         for k in range(m):
-            if mstart + k < n:
-                t_highlights[mstart + k] = COLORS["match"]
-    draw_string_row(ax, top, T, label="T")
+            abs_j = mstart + k
+            if win_lo <= abs_j < win_hi:
+                t_highlights[abs_j - win_lo] = COLORS["match"]
+    draw_string_row(ax, top, t_vis, label="T", highlights=t_highlights)
 
     # P column (left of matrix)
     for i in range(m):
@@ -275,50 +298,51 @@ def draw_shift_and(T, P, step_idx):
         ax.add_patch(rect)
         ax.text(-1.05, row_y + 0.45, P[i],
                 ha="center", va="center", fontsize=13, fontweight="bold")
-        # Row index
         ax.text(-1.95, row_y + 0.45, str(i), ha="center", va="center",
                 fontsize=9, color="#888")
 
     ax.text(-1.5, top + 0.45, "P", ha="right", va="center", fontsize=12, color="#555")
 
-    # Matrix cells (filled so far)
-    for col_j, col in enumerate(matrix):
-        for i, bit in enumerate(col):
-            row_y = top - 1.2 - i * 1.1
-            if bit:
-                color = COLORS["match"] if col_j <= j else COLORS["default"]
-            else:
-                color = "#f5f5f5"
-            if col_j == j:
+    # Matrix cells (only visible window)
+    for vis_col, col_j in enumerate(range(win_lo, win_hi)):
+        if col_j < len(matrix):
+            col = matrix[col_j]
+            for i, bit in enumerate(col):
+                row_y = top - 1.2 - i * 1.1
                 if bit:
-                    color = COLORS["match"]
+                    color = COLORS["match"] if col_j <= j else COLORS["default"]
                 else:
-                    color = COLORS["current"] + "55"
-            rect = mpatches.FancyBboxPatch(
-                (col_j, row_y), 0.9, 0.9,
-                boxstyle="round,pad=0.05",
-                facecolor=color, edgecolor="#ccc" if not bit else "#555",
-                linewidth=0.8 if not bit else 1.2,
-            )
-            ax.add_patch(rect)
-            ax.text(col_j + 0.45, row_y + 0.45, str(bit),
-                    ha="center", va="center", fontsize=12,
-                    fontweight="bold" if bit else "normal",
-                    color="#222" if bit else "#bbb")
+                    color = "#f5f5f5"
+                if col_j == j:
+                    color = COLORS["match"] if bit else COLORS["current"] + "55"
+                rect = mpatches.FancyBboxPatch(
+                    (vis_col, row_y), 0.9, 0.9,
+                    boxstyle="round,pad=0.05",
+                    facecolor=color, edgecolor="#ccc" if not bit else "#555",
+                    linewidth=0.8 if not bit else 1.2,
+                )
+                ax.add_patch(rect)
+                ax.text(vis_col + 0.45, row_y + 0.45, str(bit),
+                        ha="center", va="center", fontsize=12,
+                        fontweight="bold" if bit else "normal",
+                        color="#222" if bit else "#bbb")
 
     # Highlight last row for occurrences
-    if matrix:
+    vis_cols_filled = min(len(matrix), win_hi) - win_lo
+    if vis_cols_filled > 0:
         last_row_y = top - 1.2 - (m - 1) * 1.1
-        ax.plot([-0.15, len(matrix) + 0.05], [last_row_y - 0.1, last_row_y - 0.1],
+        ax.plot([-0.15, vis_cols_filled + 0.05], [last_row_y - 0.1, last_row_y - 0.1],
                 color=COLORS["match"], linewidth=2, alpha=0.5)
 
     # Title
     if j < 0:
         title = "Initial state — M = 0"
     elif step["event"] == "match_found":
-        title = f"j = {j}: T[{j}] = '{step['char']}' → occurrence found at position {step['matches'][-1]}!"
+        title = f"j = {j}: T[{j}] = '{step['char']}' → match at position {step['matches'][-1]}!  ({len(step['matches'])} total)"
     else:
         title = f"j = {j}: T[{j}] = '{step['char']}' — {len(step['matches'])} match(es) so far"
+    if n > WIN:
+        title += f"   [showing columns {win_lo}–{win_hi - 1} of {n}]"
     ax.set_title(title, fontsize=12, pad=8)
 
     # ── Bottom panel: bit-vector operation detail ────────
@@ -367,7 +391,6 @@ def draw_shift_and(T, P, step_idx):
 
         draw_bits(ax2, col_x, 0.0, f"M_new", R_b, hl_ones)
 
-        # Arrow from shifted to result
         ax2.annotate("", xy=(col_x + m * 0.35, 0.0 + 0.75), xytext=(col_x + m * 0.35, 0.8 - 0.05),
                      arrowprops=dict(arrowstyle="->", color="#888", lw=1.5))
     else:
