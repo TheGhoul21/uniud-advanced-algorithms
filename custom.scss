@@ -329,9 +329,7 @@ form[class*=" oi-"],
 
 // Text inputs — dark green background, cream text, gold focus ring
 [class^="oi-"] input[type="text"],
-[class^="oi-"] input[type="number"],
-.observablehq input[type="text"],
-.observablehq input[type="number"] {
+.observablehq input[type="text"] {
   font-family: 'Courier New', monospace;
   font-size: 0.92rem;
   font-weight: 600;
@@ -351,6 +349,29 @@ form[class*=" oi-"],
 
   &::placeholder {
     color: rgba(255,255,255,0.35);
+  }
+}
+
+// Number inputs — compact style so they don't dominate when paired with range sliders
+[class^="oi-"] input[type="number"],
+.observablehq input[type="number"] {
+  font-family: 'Cabin', sans-serif;
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: $green-dark;
+  background: $warm-off;
+  border: 1.5px solid $warm-mid;
+  border-radius: 4px;
+  padding: 5px 8px;
+  width: 65px !important;
+  max-width: 80px !important;
+  flex: 0 0 auto !important;
+  text-align: center;
+
+  &:focus {
+    outline: none;
+    border-color: $gold;
+    box-shadow: 0 0 0 2px rgba($gold, 0.25);
   }
 }
 
