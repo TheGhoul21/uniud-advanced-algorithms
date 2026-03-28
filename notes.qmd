@@ -1,0 +1,111 @@
+---
+title: "Lecture Notes"
+format:
+  html:
+    toc: false
+    page-layout: full
+    title-block-style: none
+---
+
+```{=html}
+<style>
+#title-block-header { display: none; }
+#quarto-content { padding: 0 !important; }
+#quarto-margin-sidebar { display: none !important; }
+.page-columns { display: block !important; }
+main.content { margin: 0 !important; max-width: 100% !important; padding: 0 !important; }
+body::after { display: none !important; }
+footer.footer { display: none !important; }
+
+.notes-layout {
+  display: flex;
+  min-height: calc(100vh - 40px);
+}
+.notes-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.notes-toolbar {
+  background: #faf8f2;
+  padding: 10px 24px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border-bottom: 1px solid #e0d9c8;
+  flex-shrink: 0;
+}
+.notes-toolbar .notes-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: #13392a;
+}
+.notes-toolbar .notes-sep {
+  color: #ccc;
+}
+.notes-toolbar .notes-file {
+  font-size: 12px;
+  color: #888;
+}
+.notes-toolbar a {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: #1e5a3c;
+  color: #d4e8db;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 5px 12px;
+  border-radius: 3px;
+  text-decoration: none;
+  transition: background 0.15s;
+}
+.notes-toolbar a:hover {
+  background: #2e7d52;
+  text-decoration: none;
+}
+.notes-viewer {
+  flex: 1;
+}
+.notes-viewer iframe {
+  width: 100%;
+  height: 100%;
+  border: none;
+  display: block;
+}
+
+@media (max-width: 768px) {
+  .notes-layout { flex-direction: column; }
+}
+</style>
+
+<div class="notes-layout">
+  <nav id="aa-sidebar">
+    <div class="aa-sidebar-label">String Matching</div>
+    <a class="aa-sidebar-link" href="notebooks/01-naive.html">Naive</a>
+    <a class="aa-sidebar-link" href="notebooks/02-kmp.html">KMP</a>
+    <a class="aa-sidebar-link aa-viz-link" href="visualizers/kmp.html" target="_blank">↳ visualizer</a>
+    <a class="aa-sidebar-link" href="notebooks/03-z-algorithm.html">Z-Algorithm</a>
+    <a class="aa-sidebar-link" href="notebooks/04-boyer-moore.html">Boyer-Moore</a>
+    <a class="aa-sidebar-link" href="notebooks/05-suffix-structures.html">Suffix Structures</a>
+    <a class="aa-sidebar-link" href="notebooks/06-algorithm-comparison.html">Comparison</a>
+    <a class="aa-sidebar-link" href="notebooks/07-keyword-tree.html">Keyword Tree</a>
+    <div style="height:1px; background:rgba(255,255,255,0.08); margin:8px 0;"></div>
+    <a class="aa-sidebar-link active" href="notes.html">Lecture Notes</a>
+  </nav>
+
+  <div class="notes-content">
+    <div class="notes-toolbar">
+      <span class="notes-title">Lecture Notes</span>
+      <span class="notes-sep">/</span>
+      <span class="notes-file">main.pdf</span>
+      <a href="main.pdf" target="_blank">Open in system reader</a>
+    </div>
+    <div class="notes-viewer">
+      <iframe src="main.pdf"></iframe>
+    </div>
+  </div>
+</div>
+```

@@ -4,8 +4,6 @@ subtitle: "Interactive visualizations for Chapter 1 of the Advanced Algorithms n
 engine: knitr
 format:
   live-html:
-    toc: true
-    toc-depth: 3
     pyodide:
       packages:
         - matplotlib
@@ -22,6 +20,8 @@ format:
 #| edit: false
 #| output: false
 
+import warnings
+warnings.filterwarnings("ignore", message=".*tight_layout.*")
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 import numpy as np

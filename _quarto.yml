@@ -6,6 +6,7 @@ project:
     - "notebooks/*.qmd"
   resources:
     - "visualizers/"
+    - "main.pdf"
 
 website:
   title: "Advanced Algorithms — UniUD"
@@ -21,7 +22,18 @@ format:
     theme: [cosmo, custom.scss]
     toc: true
     toc-depth: 3
+    include-in-header:
+      - text: |
+          <link rel="preconnect" href="https://fonts.googleapis.com">
+          <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+          <link href="https://fonts.googleapis.com/css2?family=Cabin:ital,wght@0,400;0,600;0,700;1,400&display=swap" rel="stylesheet">
   live-html:
     theme: [cosmo, custom.scss]
-    toc: true
-    toc-depth: 3
+    toc: false
+    include-in-header:
+      - text: |
+          <link rel="preconnect" href="https://fonts.googleapis.com">
+          <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+          <link href="https://fonts.googleapis.com/css2?family=Cabin:ital,wght@0,400;0,600;0,700;1,400&display=swap" rel="stylesheet">
+    include-before-body:
+      - _topbar.html
