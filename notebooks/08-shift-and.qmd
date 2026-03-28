@@ -1,0 +1,477 @@
+---
+title: "Shift-And Algorithm"
+subtitle: "Interactive visualizations for Chapter 1 of the Advanced Algorithms notes"
+engine: knitr
+format:
+  live-html:
+    toc: true
+    toc-depth: 3
+    pyodide:
+      packages:
+        - matplotlib
+        - numpy
+      cell-options:
+        autorun: true
+        edit: false
+        echo: false
+---
+
+```{pyodide}
+#| autorun: true
+#| edit: false
+#| output: false
+
+import matplotlib.pyplot as plt
+import matplotlib.patches as mpatches
+import numpy as np
+
+plt.rcParams.update({
+    "font.family": "monospace",
+    "font.size": 13,
+    "figure.facecolor": "#fafafa",
+    "figure.dpi": 120,
+    "savefig.dpi": 120,
+})
+
+COLORS = {
+    "match": "#4CAF50",
+    "mismatch": "#F44336",
+    "current": "#FFC107",
+    "skip": "#90CAF9",
+    "default": "#E0E0E0",
+    "pattern": "#BBDEFB",
+    "border": "#7E57C2",
+}
+
+
+def draw_string_row(ax, y, string, label="", highlights=None, offset=0):
+    """Draw a row of character boxes at vertical position y."""
+    highlights = highlights or {}
+    for i, ch in enumerate(string):
+        color = highlights.get(i, COLORS["default"])
+        rect = mpatches.FancyBboxPatch(
+            (i + offset, y), 0.9, 0.9,
+            boxstyle="round,pad=0.05",
+            facecolor=color, edgecolor="#555", linewidth=1.2,
+        )
+        ax.add_patch(rect)
+        ax.text(i + offset + 0.45, y + 0.45, ch,
+                ha="center", va="center", fontsize=14, fontweight="bold")
+    if label:
+        ax.text(offset - 0.3, y + 0.45, label,
+                ha="right", va="center", fontsize=12, color="#555")
+```
+
+## Alphabet masks
+
+Before running the algorithm, we pre-compute one bit vector per alphabet character.
+$U_x[i] = 1$ if and only if $P[i] = x$.
+These masks are the ingredient that encodes the pattern into the bit-parallel framework.
+
+```{pyodide}
+#| autorun: true
+#| edit: false
+#| output: false
+
+def compute_masks(P):
+    """Compute alphabet bitmask U_x for each character x in P."""
+    m = len(P)
+    masks = {}
+    for x in set(P):
+        mask = 0
+        for i in range(m):
+            if P[i] == x:
+                mask |= (1 << i)
+        masks[x] = mask
+    return masks
+
+
+def draw_masks(P):
+    """Visualise the alphabet masks as a grid: one row per character, one column per position."""
+    masks = compute_masks(P)
+    m = len(P)
+    chars = sorted(masks.keys())
+    n_chars = len(chars)
+
+    fig_w = max(6, m * 1.1 + 2)
+    fig_h = max(2.5, (n_chars + 1) * 1.15 + 1)
+    fig, ax = plt.subplots(figsize=(fig_w, fig_h))
+    ax.set_xlim(-1.5, m + 0.5)
+    ax.set_ylim(-0.5, (n_chars + 1) * 1.15 + 0.8)
+    ax.set_aspect("equal")
+    ax.axis("off")
+
+    top_y = (n_chars + 1) * 1.15
+
+    # Column indices
+    for i in range(m):
+        ax.text(i + 0.45, top_y + 0.5, str(i), ha="center", va="center",
+                fontsize=10, color="#888")
+
+    # P row
+    draw_string_row(ax, top_y - 0.3, P, label="P", highlights={i: COLORS["pattern"] for i in range(m)})
+
+    # Mask rows
+    for ci, x in enumerate(chars):
+        row_y = top_y - 0.3 - (ci + 1) * 1.15
+        ax.text(-0.3, row_y + 0.45, f"U_{x}",
+                ha="right", va="center", fontsize=12, color="#555", fontstyle="italic")
+        mask = masks[x]
+        for i in range(m):
+            bit = (mask >> i) & 1
+            color = COLORS["match"] if bit else COLORS["default"]
+            rect = mpatches.FancyBboxPatch(
+                (i, row_y), 0.9, 0.9,
+                boxstyle="round,pad=0.05",
+                facecolor=color, edgecolor="#555", linewidth=1.2,
+            )
+            ax.add_patch(rect)
+            ax.text(i + 0.45, row_y + 0.45, str(bit),
+                    ha="center", va="center", fontsize=14, fontweight="bold")
+
+    ax.set_title(f"Alphabet masks for P = \"{P}\"", fontsize=13, pad=10)
+    plt.tight_layout()
+    plt.show()
+```
+
+```{ojs}
+//| echo: false
+viewof P_masks = Inputs.text({label: "P:", value: "cacao", width: 400})
+```
+
+```{pyodide}
+#| autorun: true
+#| edit: false
+#| input: [P_masks]
+
+if P_masks:
+    draw_masks(P_masks)
+```
+
+
+## Shift-And — step by step
+
+The algorithm processes $T$ left to right.
+At each position $j$ it updates a single bit vector $M$ (one column of the dynamic programming matrix) using:
+
+$$M_j = ((M_{j-1} \ll 1) \mid 1) \;\&\; U_{T[j]}$$
+
+The bit at position $i$ of $M_j$ tells us: "the prefix $P[0..i]$ is a suffix of $T[0..j]$."
+When the **last bit** (position $m{-}1$) is 1, we have found a full occurrence of $P$.
+
+Use the slider to step through the algorithm one text position at a time.
+The top section shows the DP matrix filling column by column;
+the bottom section shows the bit-vector operations in detail.
+
+
+```{pyodide}
+#| autorun: true
+#| edit: false
+#| output: false
+
+def shift_and_trace(T, P):
+    """Generate one step per text position j."""
+    n, m = len(T), len(P)
+    masks = compute_masks(P)
+    steps = []
+    M = 0
+    matches = []
+
+    # Step 0: initial state (M = 0, no column processed yet)
+    matrix_cols = []
+    steps.append({
+        "j": -1,
+        "M_before": 0,
+        "shifted": 0,
+        "mask": 0,
+        "M_after": 0,
+        "m": m,
+        "matches": list(matches),
+        "matrix": [col[:] for col in matrix_cols],
+        "event": "init",
+        "char": "",
+    })
+
+    for j in range(n):
+        M_before = M
+        shifted = ((M << 1) | 1) & ((1 << m) - 1)
+        U = masks.get(T[j], 0)
+        M = shifted & U
+        col = [(M >> i) & 1 for i in range(m)]
+        matrix_cols.append(col)
+        found = (M >> (m - 1)) & 1
+        if found:
+            matches.append(j - m + 1)
+        steps.append({
+            "j": j,
+            "M_before": M_before,
+            "shifted": shifted,
+            "mask": U,
+            "M_after": M,
+            "m": m,
+            "matches": list(matches),
+            "matrix": [c[:] for c in matrix_cols],
+            "event": "match_found" if found else "scan",
+            "char": T[j],
+        })
+
+    return steps
+
+
+def bits_str(val, m):
+    """Format an integer as a bit string of length m (LSB = position 0 on the left)."""
+    return "".join(str((val >> i) & 1) for i in range(m))
+
+
+def draw_shift_and(T, P, step_idx):
+    """Draw the current state of the Shift-And algorithm."""
+    steps = shift_and_trace(T, P)
+    if step_idx >= len(steps):
+        step_idx = len(steps) - 1
+    step = steps[step_idx]
+    n, m = len(T), len(P)
+    j = step["j"]
+    matrix = step["matrix"]
+
+    fig_w = max(8, n * 1.1 + 3)
+    fig, axes = plt.subplots(2, 1, figsize=(fig_w, max(5, m * 1.1 + 4)),
+                             gridspec_kw={"height_ratios": [max(2.5, m * 1.1 + 1.5), 2.2]})
+
+    # ── Top panel: DP matrix ──────────────────────────────
+    ax = axes[0]
+    ax.set_xlim(-2.0, n + 0.8)
+    ax.set_ylim(-0.5, m * 1.1 + 2.3)
+    ax.set_aspect("equal")
+    ax.axis("off")
+
+    top = m * 1.1 + 1.5
+
+    # Column indices
+    for jj in range(n):
+        ax.text(jj + 0.45, top + 0.8, str(jj), ha="center", va="center",
+                fontsize=9, color="#888")
+
+    # T row
+    t_highlights = {}
+    if j >= 0:
+        for jj in range(j + 1):
+            t_highlights[jj] = COLORS["skip"]
+        t_highlights[j] = COLORS["current"]
+    for mstart in step["matches"]:
+        for k in range(m):
+            if mstart + k < n:
+                t_highlights[mstart + k] = COLORS["match"]
+    draw_string_row(ax, top, T, label="T")
+
+    # P column (left of matrix)
+    for i in range(m):
+        row_y = top - 1.2 - i * 1.1
+        color = COLORS["pattern"]
+        rect = mpatches.FancyBboxPatch(
+            (-1.5, row_y), 0.9, 0.9,
+            boxstyle="round,pad=0.05",
+            facecolor=color, edgecolor="#555", linewidth=1.0,
+        )
+        ax.add_patch(rect)
+        ax.text(-1.05, row_y + 0.45, P[i],
+                ha="center", va="center", fontsize=13, fontweight="bold")
+        # Row index
+        ax.text(-1.95, row_y + 0.45, str(i), ha="center", va="center",
+                fontsize=9, color="#888")
+
+    ax.text(-1.5, top + 0.45, "P", ha="right", va="center", fontsize=12, color="#555")
+
+    # Matrix cells (filled so far)
+    for col_j, col in enumerate(matrix):
+        for i, bit in enumerate(col):
+            row_y = top - 1.2 - i * 1.1
+            if bit:
+                color = COLORS["match"] if col_j <= j else COLORS["default"]
+            else:
+                color = "#f5f5f5"
+            if col_j == j:
+                if bit:
+                    color = COLORS["match"]
+                else:
+                    color = COLORS["current"] + "55"
+            rect = mpatches.FancyBboxPatch(
+                (col_j, row_y), 0.9, 0.9,
+                boxstyle="round,pad=0.05",
+                facecolor=color, edgecolor="#ccc" if not bit else "#555",
+                linewidth=0.8 if not bit else 1.2,
+            )
+            ax.add_patch(rect)
+            ax.text(col_j + 0.45, row_y + 0.45, str(bit),
+                    ha="center", va="center", fontsize=12,
+                    fontweight="bold" if bit else "normal",
+                    color="#222" if bit else "#bbb")
+
+    # Highlight last row for occurrences
+    if matrix:
+        last_row_y = top - 1.2 - (m - 1) * 1.1
+        ax.plot([-0.15, len(matrix) + 0.05], [last_row_y - 0.1, last_row_y - 0.1],
+                color=COLORS["match"], linewidth=2, alpha=0.5)
+
+    # Title
+    if j < 0:
+        title = "Initial state — M = 0"
+    elif step["event"] == "match_found":
+        title = f"j = {j}: T[{j}] = '{step['char']}' → occurrence found at position {step['matches'][-1]}!"
+    else:
+        title = f"j = {j}: T[{j}] = '{step['char']}' — {len(step['matches'])} match(es) so far"
+    ax.set_title(title, fontsize=12, pad=8)
+
+    # ── Bottom panel: bit-vector operation detail ────────
+    ax2 = axes[1]
+    ax2.set_xlim(-0.5, max(m * 1.2 + 8, 12))
+    ax2.set_ylim(-0.3, 2.5)
+    ax2.set_aspect("equal")
+    ax2.axis("off")
+
+    if j >= 0:
+        M_b = bits_str(step["M_before"], m)
+        sh_b = bits_str(step["shifted"], m)
+        U_b = bits_str(step["mask"], m)
+        R_b = bits_str(step["M_after"], m)
+
+        def draw_bits(ax, x, y, label, bits, highlight_fn=None):
+            ax.text(x - 0.2, y + 0.35, label, ha="right", va="center",
+                    fontsize=10, color="#555", fontstyle="italic")
+            for i, b in enumerate(bits):
+                color = COLORS["default"]
+                if highlight_fn:
+                    color = highlight_fn(i, b)
+                rect = mpatches.FancyBboxPatch(
+                    (x + i * 0.7, y), 0.6, 0.7,
+                    boxstyle="round,pad=0.03",
+                    facecolor=color, edgecolor="#aaa", linewidth=0.8,
+                )
+                ax.add_patch(rect)
+                ax.text(x + i * 0.7 + 0.3, y + 0.35, b,
+                        ha="center", va="center", fontsize=11, fontweight="bold")
+
+        col_x = 1.5
+        def hl_ones(i, b):
+            return COLORS["match"] if b == "1" else COLORS["default"]
+
+        draw_bits(ax2, col_x, 1.6, f"M_prev", M_b)
+        draw_bits(ax2, col_x, 0.8, f"shifted", sh_b, hl_ones)
+
+        sep_x = col_x + m * 0.7 + 0.3
+        ax2.text(sep_x, 0.8 + 0.35, "&", ha="center", va="center",
+                 fontsize=14, fontweight="bold", color="#555")
+
+        draw_bits(ax2, sep_x + 0.6, 0.8, f"", U_b, hl_ones)
+        ax2.text(sep_x + 0.6 + m * 0.7 + 0.3, 0.8 + 0.35, f"(U_{step['char']})",
+                 ha="left", va="center", fontsize=10, color="#555", fontstyle="italic")
+
+        draw_bits(ax2, col_x, 0.0, f"M_new", R_b, hl_ones)
+
+        # Arrow from shifted to result
+        ax2.annotate("", xy=(col_x + m * 0.35, 0.0 + 0.75), xytext=(col_x + m * 0.35, 0.8 - 0.05),
+                     arrowprops=dict(arrowstyle="->", color="#888", lw=1.5))
+    else:
+        ax2.text(2, 1.0, "No operation yet — M is initialised to all zeros.",
+                 fontsize=11, color="#888")
+
+    plt.tight_layout()
+    plt.show()
+```
+
+
+```{ojs}
+//| echo: false
+viewof T_sa = Inputs.text({label: "T:", value: "cacacaocacao", width: 400})
+viewof P_sa = Inputs.text({label: "P:", value: "cacao", width: 400})
+```
+
+```{pyodide}
+#| autorun: true
+#| edit: false
+#| output: false
+#| input: [T_sa, P_sa]
+#| define: [sa_max_step]
+
+_sa_steps = shift_and_trace(T_sa, P_sa) if T_sa and P_sa and len(P_sa) <= len(T_sa) else []
+sa_max_step = max(len(_sa_steps) - 1, 0)
+```
+
+```{ojs}
+//| echo: false
+viewof step_sa = Inputs.range([0, sa_max_step], {step: 1, value: 0, label: "Step:"})
+```
+
+```{pyodide}
+#| autorun: true
+#| edit: false
+#| input: [T_sa, P_sa, step_sa]
+
+if T_sa and P_sa and len(P_sa) <= len(T_sa):
+    draw_shift_and(T_sa, P_sa, int(step_sa))
+```
+
+
+## Comparison count
+
+How many bit-level operations does the Shift-And algorithm need?
+Each text position requires exactly **one** shift, **one** OR, and **one** AND — all on a single machine word.
+Move the slider to see the total count grow linearly with $|T|$.
+
+```{pyodide}
+#| autorun: true
+#| edit: false
+#| output: false
+
+def draw_sa_stats(T, P, step_idx):
+    """Show operation counts as the algorithm progresses."""
+    steps = shift_and_trace(T, P)
+    if step_idx >= len(steps):
+        step_idx = len(steps) - 1
+    step = steps[step_idx]
+    n, m = len(T), len(P)
+    j = step["j"]
+    n_processed = j + 1 if j >= 0 else 0
+
+    fig, ax = plt.subplots(figsize=(max(6, n * 0.5 + 2), 2.5))
+
+    positions = list(range(n))
+    processed = [1] * n_processed + [0] * (n - n_processed)
+    bar_colors = []
+    for jj in range(n):
+        if jj < n_processed:
+            is_match_end = any(ms + m - 1 == jj for ms in step["matches"])
+            bar_colors.append(COLORS["match"] if is_match_end else COLORS["skip"])
+        else:
+            bar_colors.append(COLORS["default"])
+
+    ax.bar(positions, [1]*n, color=bar_colors, edgecolor="#aaa", linewidth=0.5)
+
+    for jj in range(n):
+        ax.text(jj, 0.5, T[jj], ha="center", va="center", fontsize=10, fontweight="bold")
+
+    ax.set_xlim(-0.6, n - 0.4)
+    ax.set_ylim(0, 1.8)
+    ax.set_yticks([])
+    ax.set_xticks(range(n))
+    ax.set_xticklabels([str(i) for i in range(n)], fontsize=8)
+    ax.set_xlabel("Position in T", fontsize=10)
+
+    ops = n_processed * 3  # 3 bitwise ops per position
+    ax.set_title(
+        f"Processed {n_processed} / {n} positions — "
+        f"{ops} bitwise ops — {len(step['matches'])} match(es)",
+        fontsize=11, pad=8
+    )
+
+    plt.tight_layout()
+    plt.show()
+```
+
+```{pyodide}
+#| autorun: true
+#| edit: false
+#| input: [T_sa, P_sa, step_sa]
+
+if T_sa and P_sa and len(P_sa) <= len(T_sa):
+    draw_sa_stats(T_sa, P_sa, int(step_sa))
+```

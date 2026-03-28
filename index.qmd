@@ -35,3 +35,4 @@ title: "Advanced Algorithms — Interactive Companions"
 5. [**Suffix Trie & Suffix Tree**](notebooks/05-suffix-structures.qmd) — Build and visualize suffix structures
 6. [**Algorithm Comparison**](notebooks/06-algorithm-comparison.qmd) — Side-by-side character comparison counts
 7. [**Keyword Tree**](notebooks/07-keyword-tree.qmd) — Multiple pattern matching: tree builder and search visualization
+8. [**Shift-And**](notebooks/08-shift-and.qmd) — Bit-parallel matching: alphabet masks, DP matrix, and bit-vector operations
