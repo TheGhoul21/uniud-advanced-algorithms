@@ -448,7 +448,61 @@ sa_max_step = max(len(_sa_steps) - 1, 0)
 
 ```{ojs}
 //| echo: false
-viewof step_sa = Inputs.range([0, sa_max_step], {step: 1, value: 0, label: "Step:"})
+viewof step_sa = {
+  const wrap = htl.html`<div style="
+    display: flex; align-items: center; gap: 14px;
+    font-family: Cabin, sans-serif; padding: 8px 0;
+  ">
+    <label style="
+      font-size: 0.82rem; font-weight: 700; letter-spacing: 0.06em;
+      text-transform: uppercase; color: #8c7430; min-width: 50px;
+    ">Step:</label>
+    <input type="range" min="0" max="${sa_max_step}" value="0" step="1" style="
+      flex: 1; height: 8px; -webkit-appearance: none; appearance: none;
+      background: linear-gradient(90deg, #1e5a3c, #e0d9c8);
+      border-radius: 4px; outline: none; cursor: pointer;
+    " />
+    <span style="
+      font-family: Cabin, sans-serif; font-size: 0.92rem; font-weight: 700;
+      color: #13392a; background: #ece8d8; border: 1px solid #d0cabb;
+      border-radius: 4px; padding: 4px 10px; min-width: 50px; text-align: center;
+    ">0</span>
+  </div>`;
+  const slider = wrap.querySelector("input[type=range]");
+  const display = wrap.querySelector("span");
+
+  // Update max when sa_max_step changes
+  slider.max = sa_max_step;
+
+  slider.oninput = () => {
+    display.textContent = slider.value;
+    wrap.value = +slider.value;
+    wrap.dispatchEvent(new Event("input", {bubbles: true}));
+  };
+
+  // Style the thumb via a <style> tag
+  const style = htl.html`<style>
+    input[type=range]::-webkit-slider-thumb {
+      -webkit-appearance: none; appearance: none;
+      width: 22px; height: 22px; border-radius: 50%;
+      background: #b99b3c; border: 2.5px solid #13392a;
+      cursor: pointer; box-shadow: 0 2px 6px rgba(0,0,0,0.25);
+      transition: transform 0.12s;
+    }
+    input[type=range]::-webkit-slider-thumb:hover {
+      transform: scale(1.15);
+    }
+    input[type=range]::-moz-range-thumb {
+      width: 22px; height: 22px; border-radius: 50%;
+      background: #b99b3c; border: 2.5px solid #13392a;
+      cursor: pointer; box-shadow: 0 2px 6px rgba(0,0,0,0.25);
+    }
+  </style>`;
+
+  wrap.prepend(style);
+  wrap.value = 0;
+  return wrap;
+}
 ```
 
 ```{pyodide}
