@@ -374,18 +374,8 @@ form[class*=" oi-"],
     box-shadow: 0 0 0 2px rgba($gold, 0.25);
   }
 
-  // Make the native spinner arrows bigger by scaling the input taller
-  // and forcing the spin-button area wider
-  height: 36px !important;
-
-  &::-webkit-inner-spin-button {
-    opacity: 1 !important;
-    width: 20px;
-    height: 100%;
-    cursor: pointer;
-    transform: scale(1.5);
-    margin-right: 2px;
-  }
+  // Taller input so native spinner arrows are easier to click
+  height: 38px !important;
 }
 
 // Range slider — gold thumb, green-to-cream track
