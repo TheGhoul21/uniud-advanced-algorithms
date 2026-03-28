@@ -243,33 +243,47 @@ def draw_shift_and(T, P, step_idx):
         win_hi = min(n, win_lo + WIN)
         if win_hi == n:
             win_lo = max(0, win_hi - WIN)
-    win_n = win_hi - win_lo  # number of visible columns
+    win_n = win_hi - win_lo
 
-    fig_w = max(8, win_n * 1.1 + 3)
-    fig, axes = plt.subplots(2, 1, figsize=(fig_w, max(5, m * 1.1 + 4)),
-                             gridspec_kw={"height_ratios": [max(2.5, m * 1.1 + 1.5), 2.2]})
+    # ── Sizing: fill the width generously ─────────────────
+    CW = 1.15          # cell pitch (width + gap)
+    CS = 1.05          # cell box size
+    fig_w = max(10, win_n * CW + 4)
+    fig_h = max(6, m * CW + 6.5)
+    fig, axes = plt.subplots(2, 1, figsize=(fig_w, fig_h),
+                             gridspec_kw={"height_ratios": [max(3, m * CW + 2.5), 3]})
 
     # ── Top panel: DP matrix ──────────────────────────────
     ax = axes[0]
-    ax.set_xlim(-2.0, win_n + 0.8)
-    ax.set_ylim(-0.5, m * 1.1 + 2.3)
+    ax.set_xlim(-2.8, win_n * CW + 1.0)
+    ax.set_ylim(-0.8, m * CW + 3.0)
     ax.set_aspect("equal")
     ax.axis("off")
 
-    top = m * 1.1 + 1.5
+    top = m * CW + 1.8
 
-    # Column indices (original j values)
+    # Column indices — prominent, with background highlight for current
     for vis_col, jj in enumerate(range(win_lo, win_hi)):
-        ax.text(vis_col + 0.45, top + 0.8, str(jj), ha="center", va="center",
-                fontsize=9, color="#888")
+        x = vis_col * CW + CS / 2
+        is_current = (jj == j)
+        ax.text(x, top + 1.1, str(jj), ha="center", va="center",
+                fontsize=12 if is_current else 11,
+                fontweight="bold" if is_current else "normal",
+                color="#222" if is_current else "#777",
+                bbox=dict(boxstyle="round,pad=0.2", facecolor=COLORS["current"], alpha=0.7,
+                          edgecolor="none") if is_current else dict(alpha=0))
+
+    # j label
+    ax.text(win_n * CW / 2, top + 1.7, "$j$", ha="center", va="center",
+            fontsize=14, color="#555", fontstyle="italic")
 
     # Ellipsis indicators
     if win_lo > 0:
-        ax.text(-0.3, top + 0.45, "…", ha="center", va="center",
-                fontsize=14, color="#aaa")
+        ax.text(-0.5, top + CS / 2, "…", ha="center", va="center",
+                fontsize=18, color="#999")
     if win_hi < n:
-        ax.text(win_n + 0.3, top + 0.45, "…", ha="center", va="center",
-                fontsize=14, color="#aaa")
+        ax.text(win_n * CW + 0.3, top + CS / 2, "…", ha="center", va="center",
+                fontsize=18, color="#999")
 
     # T row (only visible window)
     t_vis = T[win_lo:win_hi]
@@ -284,31 +298,41 @@ def draw_shift_and(T, P, step_idx):
             abs_j = mstart + k
             if win_lo <= abs_j < win_hi:
                 t_highlights[abs_j - win_lo] = COLORS["match"]
-    draw_string_row(ax, top, t_vis, label="T", highlights=t_highlights)
+    # Draw T with scaled cells
+    for vi, ch in enumerate(t_vis):
+        color = t_highlights.get(vi, COLORS["default"])
+        rect = mpatches.FancyBboxPatch(
+            (vi * CW, top), CS, CS,
+            boxstyle="round,pad=0.05",
+            facecolor=color, edgecolor="#555", linewidth=1.4,
+        )
+        ax.add_patch(rect)
+        ax.text(vi * CW + CS / 2, top + CS / 2, ch,
+                ha="center", va="center", fontsize=16, fontweight="bold")
+    ax.text(-0.4, top + CS / 2, "T", ha="right", va="center", fontsize=14, color="#555")
 
     # P column (left of matrix)
     for i in range(m):
-        row_y = top - 1.2 - i * 1.1
-        color = COLORS["pattern"]
+        row_y = top - 1.4 - i * CW
         rect = mpatches.FancyBboxPatch(
-            (-1.5, row_y), 0.9, 0.9,
+            (-1.8, row_y), CS, CS,
             boxstyle="round,pad=0.05",
-            facecolor=color, edgecolor="#555", linewidth=1.0,
+            facecolor=COLORS["pattern"], edgecolor="#555", linewidth=1.2,
         )
         ax.add_patch(rect)
-        ax.text(-1.05, row_y + 0.45, P[i],
-                ha="center", va="center", fontsize=13, fontweight="bold")
-        ax.text(-1.95, row_y + 0.45, str(i), ha="center", va="center",
-                fontsize=9, color="#888")
+        ax.text(-1.8 + CS / 2, row_y + CS / 2, P[i],
+                ha="center", va="center", fontsize=15, fontweight="bold")
+        ax.text(-2.4, row_y + CS / 2, str(i), ha="center", va="center",
+                fontsize=11, color="#777")
 
-    ax.text(-1.5, top + 0.45, "P", ha="right", va="center", fontsize=12, color="#555")
+    ax.text(-2.2, top + CS / 2, "P", ha="right", va="center", fontsize=14, color="#555")
 
     # Matrix cells (only visible window)
     for vis_col, col_j in enumerate(range(win_lo, win_hi)):
         if col_j < len(matrix):
             col = matrix[col_j]
             for i, bit in enumerate(col):
-                row_y = top - 1.2 - i * 1.1
+                row_y = top - 1.4 - i * CW
                 if bit:
                     color = COLORS["match"] if col_j <= j else COLORS["default"]
                 else:
@@ -316,39 +340,41 @@ def draw_shift_and(T, P, step_idx):
                 if col_j == j:
                     color = COLORS["match"] if bit else COLORS["current"] + "55"
                 rect = mpatches.FancyBboxPatch(
-                    (vis_col, row_y), 0.9, 0.9,
+                    (vis_col * CW, row_y), CS, CS,
                     boxstyle="round,pad=0.05",
                     facecolor=color, edgecolor="#ccc" if not bit else "#555",
-                    linewidth=0.8 if not bit else 1.2,
+                    linewidth=1.0 if not bit else 1.4,
                 )
                 ax.add_patch(rect)
-                ax.text(vis_col + 0.45, row_y + 0.45, str(bit),
-                        ha="center", va="center", fontsize=12,
+                ax.text(vis_col * CW + CS / 2, row_y + CS / 2, str(bit),
+                        ha="center", va="center", fontsize=14,
                         fontweight="bold" if bit else "normal",
                         color="#222" if bit else "#bbb")
 
     # Highlight last row for occurrences
     vis_cols_filled = min(len(matrix), win_hi) - win_lo
     if vis_cols_filled > 0:
-        last_row_y = top - 1.2 - (m - 1) * 1.1
-        ax.plot([-0.15, vis_cols_filled + 0.05], [last_row_y - 0.1, last_row_y - 0.1],
-                color=COLORS["match"], linewidth=2, alpha=0.5)
+        last_row_y = top - 1.4 - (m - 1) * CW
+        ax.plot([-0.15, vis_cols_filled * CW + 0.1], [last_row_y - 0.15, last_row_y - 0.15],
+                color=COLORS["match"], linewidth=2.5, alpha=0.5)
 
     # Title
     if j < 0:
         title = "Initial state — M = 0"
     elif step["event"] == "match_found":
-        title = f"j = {j}: T[{j}] = '{step['char']}' → match at position {step['matches'][-1]}!  ({len(step['matches'])} total)"
+        title = f"j = {j}:  T[{j}] = '{step['char']}'  →  match at position {step['matches'][-1]}!  ({len(step['matches'])} total)"
     else:
-        title = f"j = {j}: T[{j}] = '{step['char']}' — {len(step['matches'])} match(es) so far"
+        title = f"j = {j}:  T[{j}] = '{step['char']}'  —  {len(step['matches'])} match(es) so far"
     if n > WIN:
-        title += f"   [showing columns {win_lo}–{win_hi - 1} of {n}]"
-    ax.set_title(title, fontsize=12, pad=8)
+        title += f"      [columns {win_lo}–{win_hi - 1} of {n}]"
+    ax.set_title(title, fontsize=14, fontweight="bold", pad=12)
 
     # ── Bottom panel: bit-vector operation detail ────────
     ax2 = axes[1]
-    ax2.set_xlim(-0.5, max(m * 1.2 + 8, 12))
-    ax2.set_ylim(-0.3, 2.5)
+    BW = 0.85   # bit box pitch
+    BS = 0.78   # bit box size
+    ax2.set_xlim(-0.5, max(m * BW * 2 + 10, 14))
+    ax2.set_ylim(-0.5, 3.2)
     ax2.set_aspect("equal")
     ax2.axis("off")
 
@@ -359,43 +385,44 @@ def draw_shift_and(T, P, step_idx):
         R_b = bits_str(step["M_after"], m)
 
         def draw_bits(ax, x, y, label, bits, highlight_fn=None):
-            ax.text(x - 0.2, y + 0.35, label, ha="right", va="center",
-                    fontsize=10, color="#555", fontstyle="italic")
+            ax.text(x - 0.3, y + BS / 2, label, ha="right", va="center",
+                    fontsize=12, color="#555", fontstyle="italic")
             for i, b in enumerate(bits):
                 color = COLORS["default"]
                 if highlight_fn:
                     color = highlight_fn(i, b)
                 rect = mpatches.FancyBboxPatch(
-                    (x + i * 0.7, y), 0.6, 0.7,
+                    (x + i * BW, y), BS, BS,
                     boxstyle="round,pad=0.03",
-                    facecolor=color, edgecolor="#aaa", linewidth=0.8,
+                    facecolor=color, edgecolor="#aaa", linewidth=1.0,
                 )
                 ax.add_patch(rect)
-                ax.text(x + i * 0.7 + 0.3, y + 0.35, b,
-                        ha="center", va="center", fontsize=11, fontweight="bold")
+                ax.text(x + i * BW + BS / 2, y + BS / 2, b,
+                        ha="center", va="center", fontsize=13, fontweight="bold")
 
-        col_x = 1.5
+        col_x = 2.0
         def hl_ones(i, b):
             return COLORS["match"] if b == "1" else COLORS["default"]
 
-        draw_bits(ax2, col_x, 1.6, f"M_prev", M_b)
-        draw_bits(ax2, col_x, 0.8, f"shifted", sh_b, hl_ones)
+        draw_bits(ax2, col_x, 2.1, "M_prev", M_b)
+        draw_bits(ax2, col_x, 1.05, "shifted", sh_b, hl_ones)
 
-        sep_x = col_x + m * 0.7 + 0.3
-        ax2.text(sep_x, 0.8 + 0.35, "&", ha="center", va="center",
-                 fontsize=14, fontweight="bold", color="#555")
+        sep_x = col_x + m * BW + 0.4
+        ax2.text(sep_x, 1.05 + BS / 2, "&", ha="center", va="center",
+                 fontsize=16, fontweight="bold", color="#555")
 
-        draw_bits(ax2, sep_x + 0.6, 0.8, f"", U_b, hl_ones)
-        ax2.text(sep_x + 0.6 + m * 0.7 + 0.3, 0.8 + 0.35, f"(U_{step['char']})",
-                 ha="left", va="center", fontsize=10, color="#555", fontstyle="italic")
+        draw_bits(ax2, sep_x + 0.7, 1.05, "", U_b, hl_ones)
+        ax2.text(sep_x + 0.7 + m * BW + 0.3, 1.05 + BS / 2, f"(U_{step['char']})",
+                 ha="left", va="center", fontsize=12, color="#555", fontstyle="italic")
 
-        draw_bits(ax2, col_x, 0.0, f"M_new", R_b, hl_ones)
+        draw_bits(ax2, col_x, 0.0, "M_new", R_b, hl_ones)
 
-        ax2.annotate("", xy=(col_x + m * 0.35, 0.0 + 0.75), xytext=(col_x + m * 0.35, 0.8 - 0.05),
-                     arrowprops=dict(arrowstyle="->", color="#888", lw=1.5))
+        ax2.annotate("", xy=(col_x + m * BW / 2, 0.0 + BS + 0.05),
+                     xytext=(col_x + m * BW / 2, 1.05 - 0.05),
+                     arrowprops=dict(arrowstyle="->", color="#888", lw=1.8))
     else:
-        ax2.text(2, 1.0, "No operation yet — M is initialised to all zeros.",
-                 fontsize=11, color="#888")
+        ax2.text(3, 1.5, "No operation yet — M is initialised to all zeros.",
+                 fontsize=13, color="#888")
 
     plt.tight_layout()
     plt.show()
