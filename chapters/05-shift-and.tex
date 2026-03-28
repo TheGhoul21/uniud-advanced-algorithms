@@ -1,0 +1,400 @@
+\section{Shift-And Algorithm}
+\label{sec:shift-and}
+
+We turn to a different perspective on exact pattern matching---one that works
+\emph{from the bottom up}, at the level of individual bits inside machine words.
+
+\aside{The same matrix will reappear when we tackle
+\emph{approximate} string matching (matching with errors).}
+
+The Shift-And algorithm combines two ideas:
+\begin{enumerate}[nosep]
+  \item \textbf{Bit vectors.}  Represent states as sequences of bits (words of
+        memory) so that many comparisons happen in a single CPU instruction.
+  \item \textbf{Dynamic programming.}  Define a matrix that records which
+        prefixes of~$P$ are ``alive'' at every position of~$T$, then compute it
+        column by column.
+\end{enumerate}
+
+Before diving into the algorithm itself, let us briefly recall these two
+ingredients.
+
+% ── Intermezzo: bit vectors ──────────────────────────────
+\begin{intermezzo}{Bit vectors and bit-level parallelism}
+A \emph{bit vector} is simply a sequence of bits---zeros and ones---packed into
+a machine word.  A modern CPU has registers of width $w$~bits (typically
+$w = 64$); a single register can therefore store 64 independent boolean values.
+
+The key advantage is \emph{parallelism for free}: a bitwise AND (\texttt{\&}),
+OR (\texttt{\textbar}), or shift (\texttt{<{}<}, \texttt{>{}>}) on a $w$-bit register
+operates on all~$w$ bits in one clock cycle.  If we encode a problem so that
+each ``slot'' of the answer is one bit, we effectively perform $w$~operations at
+the cost of one.
+
+\smallskip\noindent
+\textbf{Example.}  Let $A = 10110$ and $B = 11010$.  Then:
+\begin{center}
+\begin{tabular}{rl}
+  $A \;\texttt{\&}\; B$ & $= 10010$ \quad (AND: both bits must be 1) \\
+  $A \;\texttt{|}\; B$  & $= 11110$ \quad (OR: at least one bit is 1) \\
+  $A \;\texttt{<{}<}\; 1$ & $= 01100$ \quad (left-shift by one position)
+\end{tabular}
+\end{center}
+Each of these is a \emph{single CPU instruction}, regardless of how many bits
+are in the word.
+\end{intermezzo}
+
+% ── Intermezzo: dynamic programming ────────────────────────
+\begin{intermezzo}{Dynamic programming}
+\emph{Dynamic programming} (often abbreviated DP) is a general technique for
+solving problems that can be decomposed into overlapping subproblems.  The idea
+is straightforward:
+
+\begin{enumerate}[nosep]
+  \item Define a table (matrix, array, \ldots) whose entries represent solutions
+        to ``smaller'' instances of the problem.
+  \item Write a \emph{recurrence}: a formula that computes each entry from
+        entries that have already been filled in.
+  \item Fill the table in an order that respects the dependencies, so that every
+        entry we need is ready when we need it.
+\end{enumerate}
+
+The payoff is that we solve each subproblem exactly once and store its answer,
+rather than recomputing it every time it is needed (which is what a naive
+recursive approach would do).
+
+In the context of the Shift-And algorithm, the ``table'' is a bit matrix~$M$
+where $M[i,j]$ tells us whether a certain prefix of~$P$ matches a certain
+suffix of~$T$.  We will fill this table column by column, left to right,
+using the recurrence derived below.
+
+\smallskip\noindent
+\textbf{Important.}  The full $m \times n$ matrix is \emph{never materialised
+in memory}.  Since each column depends only on the immediately preceding
+column, we only need to keep \emph{one column at a time}---a single machine
+word when $m \le w$.  This is a common space optimisation in dynamic programming.
+\end{intermezzo}
+
+% ── Section ──────────────────────────────────────────────
+\subsection{Working assumption}
+
+\begin{remark}
+  We assume $|P| \le w$, where $w$ is the machine word size (typically~64).
+  Under this assumption every column of the matrix fits in a single register,
+  and shift/AND operations cost $\Oh{1}$.
+\end{remark}
+
+Working with a very large text~$T$ is not a problem: the algorithm scans~$T$
+once, left to right, spending constant time per character.
+When $|P| > w$ the bit vector is split into $\lceil m/w \rceil$ machine words
+and the cost per text character rises to $\Oh{\lceil m/w \rceil}$.
+
+% ── Section ──────────────────────────────────────────────
+\subsection{The matrix}
+
+Define a bit matrix $M$ of size $m \times n$ (rows indexed by the pattern,
+columns by the text):
+
+\begin{definition}[Shift-And matrix]
+\label{def:sa-matrix}
+  \[
+    M[i,j] \;=\;
+    \begin{cases}
+      1 & \text{if } P[1 \mathinner{.\,.} i]
+          \text{ is a suffix of } T[1 \mathinner{.\,.} j],\\[2pt]
+      0 & \text{otherwise.}
+    \end{cases}
+  \]
+\end{definition}
+
+In words: $M[i,j] = 1$ exactly when the first $i$ characters of the pattern
+match the last $i$ characters of $T[1 \mathinner{.\,.} j]$.
+
+\begin{observation}
+  An occurrence of~$P$ ending at position~$j$ of~$T$ corresponds to
+  $M[m,j] = 1$.  Therefore, the set of all 1s in the \emph{last row} gives us
+  every occurrence.
+\end{observation}
+
+\aside{The 1s in the other rows carry information too:
+they mark partial matches that may extend as we read more of~$T$.}
+
+As noted above, this matrix is never stored in full: the algorithm computes it
+one column at a time, overwriting the previous column at each step.
+
+% ── Figure: DP matrix diagram ──────────────────────────────
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[
+  cell/.style={
+    minimum width=7mm, minimum height=7mm,
+    font=\ttfamily\small, inner sep=0pt,
+    text centered, rounded corners=2pt,
+  },
+  Tcell/.style={cell, draw=blue!50!black, fill=blue!8},
+  Pcell/.style={cell, draw=accent!50!black, fill=accent!8},
+  hitcell/.style={cell, draw=green!55!black, fill=green!18, font=\small\bfseries},
+  blankcell/.style={cell, draw=gray!25, fill=gray!4, text=gray!50},
+]
+\def\cw{0.82}
+
+% ── column index j ───────────────────────────────────────
+\node[font=\small\sffamily, text=gray] at ({2.5*\cw}, 1.9) {$j$};
+\foreach \j [count=\k from 0] in {1,...,6}
+  \node[font=\tiny\sffamily, text=gray!70] at ({\k*\cw}, 1.5) {\j};
+
+% ── T row (just above the matrix, with moderate gap) ──────
+\node[font=\small\sffamily, anchor=east] at (-0.55, 0.9) {$T$};
+\foreach \j/\c in {1/a, 2/b, 3/c, 4/a, 5/b, 6/c}
+  \node[Tcell] at ({(\j-1)*\cw}, 0.9) {\c};
+
+% ── row index i (far left, clear of P boxes) ─────────────
+\node[font=\small\sffamily, text=gray] at (-2.1, {-1*\cw}) {$i$};
+\foreach \i [count=\k from 0] in {1,2,3}
+  \node[font=\tiny\sffamily, text=gray!70] at (-1.7, {-\k*\cw}) {\i};
+
+% ── P column (left of matrix, shifted right of i indices) ─
+\node[font=\small\sffamily, anchor=east] at (-2.45, {-1*\cw}) {$P$};
+\foreach \i/\c in {1/a, 2/b, 3/c}
+  \node[Pcell] at (-1.2, {-(\i-1)*\cw}) {\c};
+
+% ── Matrix cells ──────────────────────────────────────────
+% Row i=1
+\foreach \j/\v in {1/1, 2/0, 3/0, 4/1, 5/0, 6/0} {
+  \ifnum\v=1
+    \node[hitcell] at ({(\j-1)*\cw}, 0) {\v};
+  \else
+    \node[blankcell] at ({(\j-1)*\cw}, 0) {0};
+  \fi
+}
+% Row i=2
+\foreach \j/\v in {1/0, 2/1, 3/0, 4/0, 5/1, 6/0} {
+  \ifnum\v=1
+    \node[hitcell] at ({(\j-1)*\cw}, {-1*\cw}) {\v};
+  \else
+    \node[blankcell] at ({(\j-1)*\cw}, {-1*\cw}) {0};
+  \fi
+}
+% Row i=3 (last row)
+\foreach \j/\v in {1/0, 2/0, 3/1, 4/0, 5/0, 6/1} {
+  \ifnum\v=1
+    \node[hitcell] at ({(\j-1)*\cw}, {-2*\cw}) {\v};
+  \else
+    \node[blankcell] at ({(\j-1)*\cw}, {-2*\cw}) {0};
+  \fi
+}
+
+% ── Highlight last row ────────────────────────────────────
+\draw[green!55!black, thick, rounded corners=3pt]
+  ([xshift=-5pt, yshift=-5pt] {0*\cw-0.35},{-2*\cw - 0.35})
+  rectangle
+  ([xshift=5pt, yshift=5pt] {5*\cw+0.35},{-2*\cw + 0.35});
+
+\node[font=\footnotesize\sffamily, text=green!45!black, anchor=west]
+  at ({5*\cw + 0.65}, {-2*\cw}) {occurrences};
+
+\end{tikzpicture}
+\caption{%
+  Shift-And matrix for $P = \texttt{abc}$ and $T = \texttt{abcabc}$.
+  The 1s in the last row ($i = m = 3$) mark positions $j = 3$ and $j = 6$
+  where an occurrence of~$P$ ends.
+  Note that the full matrix is never stored: the algorithm keeps only one
+  column at a time.
+}
+\label{fig:sa-matrix}
+\end{figure}
+
+% ── Section ──────────────────────────────────────────────
+\subsection{Recurrence}
+
+How do we compute $M[i,j]$?  A prefix $P[1 \mathinner{.\,.} i]$ is a suffix of
+$T[1 \mathinner{.\,.} j]$ if and only if two conditions hold simultaneously:
+
+\begin{enumerate}[nosep]
+  \item $P[1 \mathinner{.\,.} i{-}1]$ is already a suffix of
+        $T[1 \mathinner{.\,.} j{-}1]$
+        \aside{This is the \emph{shift}: the shorter prefix was alive at the
+        previous position.}
+        (i.e.\ $M[i{-}1,\, j{-}1] = 1$), and
+  \item The last characters match: $P[i] = T[j]$.
+\end{enumerate}
+
+Formally:
+\[
+  M[i,j] = 1
+  \quad\iff\quad
+  M[i{-}1,\, j{-}1] = 1
+  \;\;\text{AND}\;\;
+  P[i] = T[j],
+\]
+with the convention that $M[0, j] = 1$ for all~$j$ (the empty prefix is always
+a suffix).
+
+This is where the name comes from: condition~(a) is a \textbf{shift} (look one
+row up and one column left), and condition~(b) is an \textbf{AND} with the
+alphabet mask.
+
+% ── Section ──────────────────────────────────────────────
+\subsection{Bit-vector reformulation}
+
+The key insight is that we can compute an entire column of~$M$ in one shot by
+encoding it as a bit vector.
+
+\subsubsection*{Alphabet masks}
+
+For each character $x \in \Sigma$, pre-compute a bit vector $U_x$ of length~$m$:
+\[
+  U_x[i] =
+  \begin{cases}
+    1 & \text{if } P[i] = x,\\
+    0 & \text{otherwise.}
+  \end{cases}
+\]
+This records every position in the pattern where character~$x$ appears.
+
+\begin{example}
+  For $P = \texttt{abab}$ over $\Sigma = \{a,b\}$:
+  \[
+    U_a = 1010, \qquad U_b = 0101.
+  \]
+\end{example}
+
+\subsubsection*{Column update}
+
+Let $M_j$ denote the $j$-th column of~$M$, viewed as a single bit vector of
+length~$m$ (bit~1 is the top, bit~$m$ is the bottom).  The recurrence becomes:
+
+\[
+  M_j \;=\; \bigl(\operatorname{shift}(M_{j-1}) \;\mathbin{\texttt{\&}}\; U_{T[j]}\bigr),
+\]
+where $\operatorname{shift}$ means:
+\begin{itemize}[nosep]
+  \item Shift the vector \emph{down} by one position (toward higher indices),
+  \item Insert a~$1$ at the top (position~1), because the empty prefix is
+        always alive,
+  \item The bit that falls off the bottom ($M[m]$) is discarded.
+\end{itemize}
+
+\aside{In C-like code the ``shift down'' on a bit vector stored
+LSB\,=\,position~1 is simply a left shift: \texttt{(M\,<{}<\,1)\,|\,1}.}
+
+On a machine register this is:
+\[
+  M_j \;=\; \bigl((M_{j-1} \ll 1) \mathbin{|} 1\bigr) \;\mathbin{\texttt{\&}}\; U_{T[j]}.
+\]
+
+% ── Figure: shift-and step ────────────────────────────────
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[
+  box/.style={
+    minimum width=8mm, minimum height=7mm,
+    draw=gray!50, fill=accent!6,
+    font=\ttfamily\small, inner sep=0pt,
+    text centered, rounded corners=2pt,
+  },
+  label/.style={font=\small\sffamily, text=gray!70},
+  arrow/.style={-{Stealth[length=5pt]}, thick, accent!60},
+]
+\def\bw{0.9}
+
+% Column M[j-1]
+\node[label] at (0, 1.4) {$M_{j-1}$};
+\foreach \i/\v in {1/b_1, 2/b_2, 3/b_3, 4/b_4}
+  \node[box] (A\i) at (0, {-(\i-1)*\bw}) {$\v$};
+
+% Arrow
+\draw[arrow] (1.3, {-1.5*\bw}) -- node[above, font=\footnotesize\sffamily] {shift} (2.5, {-1.5*\bw});
+
+% Shifted + OR 1
+\node[label] at (3.8, 1.4) {$\operatorname{shift}$};
+\node[box, fill=green!12] (B1) at (3.8, 0) {$1$};
+\foreach \i/\v in {2/b_1, 3/b_2, 4/b_3}
+  \node[box] (B\i) at (3.8, {-(\i-1)*\bw}) {$\v$};
+\node[font=\tiny\sffamily, text=gray!50, anchor=west] at (4.4, {-4*\bw+0.3})
+  {$b_4$ discarded};
+
+% Arrow
+\draw[arrow] (5.1, {-1.5*\bw}) -- node[above, font=\footnotesize\sffamily] {AND} (6.3, {-1.5*\bw});
+
+% Mask U_{T[j]}
+\node[label] at (7.6, 1.4) {$U_{T[j]}$};
+\foreach \i/\v in {1/u_1, 2/u_2, 3/u_3, 4/u_4}
+  \node[box, fill=accentgold!15] (C\i) at (7.6, {-(\i-1)*\bw}) {$\v$};
+
+% Arrow
+\draw[arrow] (8.9, {-1.5*\bw}) -- node[above, font=\footnotesize\sffamily] {$=$} (9.8, {-1.5*\bw});
+
+% Result M[j]
+\node[label] at (10.8, 1.4) {$M_j$};
+\foreach \i in {1,...,4}
+  \node[box, fill=accent!12] (D\i) at (10.8, {-(\i-1)*\bw}) {$\cdot$};
+
+\end{tikzpicture}
+\caption{%
+  One step of the Shift-And algorithm.  The previous column is shifted down
+  (with a~$1$ inserted at the top), then AND-ed with the alphabet mask for the
+  current text character.
+}
+\label{fig:sa-step}
+\end{figure}
+
+% ── Section ──────────────────────────────────────────────
+\subsection{Algorithm}
+
+\begin{algorithm}[H]
+\caption{Shift-And exact matching}
+\label{alg:shift-and}
+\KwIn{Text $T[1 \mathinner{.\,.} n]$, pattern $P[1 \mathinner{.\,.} m]$
+      with $m \le w$}
+\KwOut{All positions $j$ where $P$ occurs in $T$}
+\BlankLine
+\tcp{Pre-compute alphabet masks}
+\ForEach{$x \in \Sigma$}{
+  $U_x \leftarrow \mathbf{0}$\;
+  \For{$i \leftarrow 1$ \KwTo $m$}{
+    \If{$P[i] = x$}{
+      $U_x \leftarrow U_x \mathbin{|} (1 \ll (i{-}1))$\;
+    }
+  }
+}
+\BlankLine
+\tcp{Scan text}
+$M \leftarrow 0$\;
+\For{$j \leftarrow 1$ \KwTo $n$}{
+  $M \leftarrow \bigl((M \ll 1) \mathbin{|} 1\bigr) \;\mathbin{\texttt{\&}}\; U_{T[j]}$\;
+  \If{$M \;\mathbin{\texttt{\&}}\; (1 \ll (m{-}1)) \neq 0$}{
+    output ``occurrence ending at position $j$''\;
+  }
+}
+\end{algorithm}
+
+% ── Section ──────────────────────────────────────────────
+\subsection{Complexity}
+
+\begin{itemize}[nosep]
+  \item \textbf{Time.}
+    Pre-processing the alphabet masks takes $\Oh{|\Sigma| \cdot m}$.
+    When $m \le w$, each iteration of the main loop costs $\Oh{1}$
+    (a shift, an OR, and an AND---three CPU instructions).
+    The loop runs $n$ times, so the total search time is $\Oh{n}$.
+
+    If $m > w$, each column requires $\lceil m/w \rceil$ words, and the
+    cost per text character rises to $\Oh{\lceil m/w \rceil}$, giving
+    $\Oh{n \cdot \lceil m/w \rceil}$ overall.
+
+  \item \textbf{Space.}
+    $\Oh{|\Sigma| \cdot \lceil m/w \rceil}$ for the masks, plus a single
+    register for the current column~$M$.
+    The full $m \times n$ matrix is \emph{never materialised}: we only
+    keep one column at a time.
+\end{itemize}
+
+\begin{remark}
+  The Shift-And algorithm is particularly attractive in bioinformatics
+  (DNA sequencing), where the alphabet is small ($|\Sigma| = 4$), patterns
+  are short, and the text can be very long.
+  The same dynamic programming framework extends naturally to
+  \emph{approximate matching} (allowing a bounded number of mismatches,
+  insertions, or deletions)---a topic we will revisit later.
+\end{remark}
