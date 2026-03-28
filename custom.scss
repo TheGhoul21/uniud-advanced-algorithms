@@ -354,28 +354,30 @@ form[class*=" oi-"],
   }
 }
 
-// Range slider — gold track with dark green thumb
-[class^="oi-"] input[type="range"],
-.observablehq input[type="range"] {
-  -webkit-appearance: none;
-  appearance: none;
-  height: 6px;
-  background: $warm-mid;
-  border-radius: 3px;
-  outline: none;
+// Range slider — gold thumb, green-to-cream track
+// Broad selector to catch OJS inputs regardless of wrapper class
+input[type="range"] {
+  -webkit-appearance: none !important;
+  appearance: none !important;
+  height: 8px !important;
+  background: linear-gradient(90deg, $green-mid, $warm-mid) !important;
+  border-radius: 4px !important;
+  border: none !important;
+  outline: none !important;
   flex: 1;
-  max-width: 400px;
+  max-width: 100%;
+  cursor: pointer;
 
   &::-webkit-slider-thumb {
     -webkit-appearance: none;
     appearance: none;
-    width: 18px;
-    height: 18px;
+    width: 22px;
+    height: 22px;
     border-radius: 50%;
     background: $gold;
-    border: 2px solid $green-dark;
+    border: 2.5px solid $green-dark;
     cursor: pointer;
-    box-shadow: 0 1px 4px rgba(0,0,0,0.2);
+    box-shadow: 0 2px 6px rgba(0,0,0,0.25);
     transition: transform 0.12s, box-shadow 0.12s;
   }
 
@@ -385,24 +387,24 @@ form[class*=" oi-"],
   }
 
   &::-moz-range-thumb {
-    width: 18px;
-    height: 18px;
+    width: 22px;
+    height: 22px;
     border-radius: 50%;
     background: $gold;
-    border: 2px solid $green-dark;
+    border: 2.5px solid $green-dark;
     cursor: pointer;
-    box-shadow: 0 1px 4px rgba(0,0,0,0.2);
+    box-shadow: 0 2px 6px rgba(0,0,0,0.25);
   }
 
   &::-webkit-slider-runnable-track {
-    height: 6px;
-    border-radius: 3px;
+    height: 8px;
+    border-radius: 4px;
     background: linear-gradient(90deg, $green-mid, $warm-mid);
   }
 
   &::-moz-range-track {
-    height: 6px;
-    border-radius: 3px;
+    height: 8px;
+    border-radius: 4px;
     background: linear-gradient(90deg, $green-mid, $warm-mid);
   }
 }
