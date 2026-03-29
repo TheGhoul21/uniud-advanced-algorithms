@@ -2,46 +2,50 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
     <loc>https://TheGhoul21.github.io/uniud-advanced-algorithms/notes.html</loc>
-    <lastmod>2026-03-29T04:12:13.110Z</lastmod>
+    <lastmod>2026-03-29T07:17:42.000Z</lastmod>
   </url>
   <url>
-    <loc>https://TheGhoul21.github.io/uniud-advanced-algorithms/notebooks/07-keyword-tree.html</loc>
-    <lastmod>2026-03-29T04:12:13.109Z</lastmod>
-  </url>
-  <url>
-    <loc>https://TheGhoul21.github.io/uniud-advanced-algorithms/notebooks/05-suffix-structures.html</loc>
-    <lastmod>2026-03-29T04:12:13.105Z</lastmod>
-  </url>
-  <url>
-    <loc>https://TheGhoul21.github.io/uniud-advanced-algorithms/notebooks/03-z-algorithm.html</loc>
-    <lastmod>2026-03-29T04:12:13.101Z</lastmod>
-  </url>
-  <url>
-    <loc>https://TheGhoul21.github.io/uniud-advanced-algorithms/notebooks/01-string-matching.html</loc>
-    <lastmod>2026-03-29T04:12:13.099Z</lastmod>
-  </url>
-  <url>
-    <loc>https://TheGhoul21.github.io/uniud-advanced-algorithms/index.html</loc>
-    <lastmod>2026-03-29T04:12:13.092Z</lastmod>
-  </url>
-  <url>
-    <loc>https://TheGhoul21.github.io/uniud-advanced-algorithms/notebooks/01-naive.html</loc>
-    <lastmod>2026-03-29T04:12:13.098Z</lastmod>
-  </url>
-  <url>
-    <loc>https://TheGhoul21.github.io/uniud-advanced-algorithms/notebooks/02-kmp.html</loc>
-    <lastmod>2026-03-29T04:12:13.100Z</lastmod>
-  </url>
-  <url>
-    <loc>https://TheGhoul21.github.io/uniud-advanced-algorithms/notebooks/04-boyer-moore.html</loc>
-    <lastmod>2026-03-29T04:12:13.102Z</lastmod>
+    <loc>https://TheGhoul21.github.io/uniud-advanced-algorithms/notebooks/08-rabin-karp.html</loc>
+    <lastmod>2026-03-29T07:17:42.000Z</lastmod>
   </url>
   <url>
     <loc>https://TheGhoul21.github.io/uniud-advanced-algorithms/notebooks/06-algorithm-comparison.html</loc>
-    <lastmod>2026-03-29T04:12:13.105Z</lastmod>
+    <lastmod>2026-03-29T07:17:41.996Z</lastmod>
   </url>
   <url>
-    <loc>https://TheGhoul21.github.io/uniud-advanced-algorithms/notebooks/08-shift-and.html</loc>
-    <lastmod>2026-03-29T04:12:13.109Z</lastmod>
+    <loc>https://TheGhoul21.github.io/uniud-advanced-algorithms/notebooks/04-boyer-moore.html</loc>
+    <lastmod>2026-03-29T07:17:41.993Z</lastmod>
+  </url>
+  <url>
+    <loc>https://TheGhoul21.github.io/uniud-advanced-algorithms/notebooks/02-kmp.html</loc>
+    <lastmod>2026-03-29T07:17:41.991Z</lastmod>
+  </url>
+  <url>
+    <loc>https://TheGhoul21.github.io/uniud-advanced-algorithms/notebooks/01-naive.html</loc>
+    <lastmod>2026-03-29T07:17:41.989Z</lastmod>
+  </url>
+  <url>
+    <loc>https://TheGhoul21.github.io/uniud-advanced-algorithms/index.html</loc>
+    <lastmod>2026-03-29T07:17:41.982Z</lastmod>
+  </url>
+  <url>
+    <loc>https://TheGhoul21.github.io/uniud-advanced-algorithms/notebooks/01-string-matching.html</loc>
+    <lastmod>2026-03-29T07:17:41.989Z</lastmod>
+  </url>
+  <url>
+    <loc>https://TheGhoul21.github.io/uniud-advanced-algorithms/notebooks/03-z-algorithm.html</loc>
+    <lastmod>2026-03-29T07:17:41.991Z</lastmod>
+  </url>
+  <url>
+    <loc>https://TheGhoul21.github.io/uniud-advanced-algorithms/notebooks/05-suffix-structures.html</loc>
+    <lastmod>2026-03-29T07:17:41.995Z</lastmod>
+  </url>
+  <url>
+    <loc>https://TheGhoul21.github.io/uniud-advanced-algorithms/notebooks/07-keyword-tree.html</loc>
+    <lastmod>2026-03-29T07:17:42.000Z</lastmod>
+  </url>
+  <url>
+    <loc>https://TheGhoul21.github.io/uniud-advanced-algorithms/notebooks/09-shift-and.html</loc>
+    <lastmod>2026-03-29T07:17:42.000Z</lastmod>
   </url>
 </urlset>

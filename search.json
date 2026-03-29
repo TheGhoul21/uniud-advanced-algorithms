@@ -7,60 +7,88 @@
     "text": "String Matching\n    Naive\n    KMP\n    ↳ visualizer\n    Z-Algorithm\n    Boyer-Moore\n    Suffix Structures\n    Comparison\n    Keyword Tree\n    \n    Lecture Notes\n  \n\n  \n    \n      Lecture Notes\n      /\n      main.pdf\n      Open in system reader"
   },
   {
-    "objectID": "notebooks/07-keyword-tree.html",
-    "href": "notebooks/07-keyword-tree.html",
-    "title": "Keyword Tree — Multiple Pattern Matching",
+    "objectID": "notebooks/08-rabin-karp.html",
+    "href": "notebooks/08-rabin-karp.html",
+    "title": "Rabin-Karp",
     "section": "",
     "text": "AA-VIZ\n  /"
   },
   {
-    "objectID": "notebooks/07-keyword-tree.html#building-the-keyword-tree",
-    "href": "notebooks/07-keyword-tree.html#building-the-keyword-tree",
-    "title": "Keyword Tree — Multiple Pattern Matching",
-    "section": "Building the Keyword Tree",
-    "text": "Building the Keyword Tree\nEnter a comma-separated list of patterns and see the resulting keyword tree. The stats panel shows size (number of edges), height (longest pattern), and maximum fan-out.\n\n\n\n\n\n\n\n\n\nviewof patterns_input = Inputs.text({\n  label: \"Patterns (comma-separated):\",\n  value: \"potato, tatoo, theater, other\",\n  width: 500\n})"
+    "objectID": "notebooks/08-rabin-karp.html#rabin-karp-rolling-hash-search",
+    "href": "notebooks/08-rabin-karp.html#rabin-karp-rolling-hash-search",
+    "title": "Rabin-Karp",
+    "section": "Rabin-Karp — Rolling Hash Search",
+    "text": "Rabin-Karp — Rolling Hash Search\nStep through the Rabin-Karp algorithm. At each window position, the fingerprint (hash mod q) of the current window is compared against the pattern’s fingerprint:\n\nOrange window = no hash match → skip instantly\nPurple window = hash hit → must verify character-by-character\nGreen window = verified true match\nRed window = spurious hit (hash matched but characters differ)\n\nTry small values of q (e.g. 3, 5) to see spurious hits in action.\n\n\n\n\n\n\n\n\n\nviewof T_rk = Inputs.text({label: \"T:\", value: \"abracadabra\", width: 400})\nviewof P_rk = Inputs.text({label: \"P:\", value: \"abra\", width: 400})\nviewof q_rk = Inputs.range([2, 997], {step: 1, value: 101, label: \"q (prime):\"})\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nviewof step_rk = Inputs.range([0, rk_max_step], {step: 1, value: 0, label: \"Step:\"})"
   },
   {
-    "objectID": "notebooks/07-keyword-tree.html#searching-with-the-keyword-tree",
-    "href": "notebooks/07-keyword-tree.html#searching-with-the-keyword-tree",
-    "title": "Keyword Tree — Multiple Pattern Matching",
-    "section": "Searching with the Keyword Tree",
-    "text": "Searching with the Keyword Tree\nEnter a text and patterns. Step through each starting position to see the descent from the root: active edges light up, non-matching branches are grayed out.\n\n\n\n\n\n\n\n\n\nviewof T_kw_search = Inputs.text({\n  label: \"T:\",\n  value: \"a]potato that was put in a theater\",\n  width: 500\n})\nviewof P_kw_search = Inputs.text({\n  label: \"Patterns (comma-separated):\",\n  value: \"potato, tatoo, theater, other\",\n  width: 500\n})\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nviewof step_kw = Inputs.range([0, kw_max_step], {step: 1, value: 0, label: \"Step (starting position):\"})"
+    "objectID": "notebooks/08-rabin-karp.html#effect-of-q-on-spurious-hits",
+    "href": "notebooks/08-rabin-karp.html#effect-of-q-on-spurious-hits",
+    "title": "Rabin-Karp",
+    "section": "Effect of q on Spurious Hits",
+    "text": "Effect of q on Spurious Hits\nThe bar chart below compares four values of q on the same input. Small q → many spurious hits (red bars). Large prime q → almost none."
   },
   {
-    "objectID": "notebooks/07-keyword-tree.html#aho-corasick-failure-links-output-links",
-    "href": "notebooks/07-keyword-tree.html#aho-corasick-failure-links-output-links",
-    "title": "Keyword Tree — Multiple Pattern Matching",
-    "section": "Aho-Corasick: Failure Links & Output Links",
-    "text": "Aho-Corasick: Failure Links & Output Links\nThe keyword tree alone restarts from the root at every position. The Aho-Corasick automaton adds two types of pointers:\n\nFailure links (red dashed): when the descent gets stuck, jump to the longest proper suffix of the current path that is also a prefix of some pattern.\nOutput links (green dotted): chain together all patterns that end along the failure-link path, so patterns ending at internal nodes are not missed.\n\n\n\n\n\n\n\n\n\n\nviewof P_ac = Inputs.text({\n  label: \"Patterns (comma-separated):\",\n  value: \"he, she, his, hers\",\n  width: 500\n})"
-  },
-  {
-    "objectID": "notebooks/05-suffix-structures.html",
-    "href": "notebooks/05-suffix-structures.html",
-    "title": "Suffix Trie & Suffix Tree",
+    "objectID": "notebooks/06-algorithm-comparison.html",
+    "href": "notebooks/06-algorithm-comparison.html",
+    "title": "Algorithm Comparison",
     "section": "",
     "text": "AA-VIZ\n  /"
   },
   {
-    "objectID": "notebooks/05-suffix-structures.html#suffix-trie-suffix-tree",
-    "href": "notebooks/05-suffix-structures.html#suffix-trie-suffix-tree",
-    "title": "Suffix Trie & Suffix Tree",
-    "section": "Suffix Trie & Suffix Tree",
-    "text": "Suffix Trie & Suffix Tree\nBuild and visualize the suffix trie and its compacted suffix tree for any input string.\n\n\n\n\n\n\n\n\n\nviewof T_tree = Inputs.text({label: \"T:\", value: \"cacao$\", width: 300})\nviewof tree_view = Inputs.radio([\"Suffix Trie\", \"Suffix Tree\"], {value: \"Suffix Trie\", label: \"View:\"})"
+    "objectID": "notebooks/06-algorithm-comparison.html#algorithm-comparison",
+    "href": "notebooks/06-algorithm-comparison.html#algorithm-comparison",
+    "title": "Algorithm Comparison",
+    "section": "Algorithm Comparison",
+    "text": "Algorithm Comparison\nRun all algorithms on the same input and compare the number of character comparisons.\n\n\n\n\n\n\n\n\n\nviewof T_cmp = Inputs.text({label: \"T:\", value: \"abcaabcabcaab\", width: 500})\nviewof P_cmp = Inputs.text({label: \"P:\", value: \"abcab\", width: 500})"
   },
   {
-    "objectID": "notebooks/03-z-algorithm.html",
-    "href": "notebooks/03-z-algorithm.html",
-    "title": "Z-Algorithm",
+    "objectID": "notebooks/04-boyer-moore.html",
+    "href": "notebooks/04-boyer-moore.html",
+    "title": "Boyer-Moore — Bad Character Rule",
     "section": "",
     "text": "AA-VIZ\n  /"
   },
   {
-    "objectID": "notebooks/03-z-algorithm.html#z-algorithm",
-    "href": "notebooks/03-z-algorithm.html#z-algorithm",
-    "title": "Z-Algorithm",
-    "section": "Z-Algorithm",
-    "text": "Z-Algorithm\nVisualize the Z-array: Z[k] = length of the longest substring starting at k that matches a prefix of S.\n\n\n\n\n\n\n\n\n\nviewof S_z = Inputs.text({label: \"S:\", value: \"aabxaabxcaabxaabxay\", width: 500})\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nviewof step_z = Inputs.range([0, z_max_step], {step: 1, value: 0, label: \"Step:\"})"
+    "objectID": "notebooks/04-boyer-moore.html#boyer-moore-bad-character-rule",
+    "href": "notebooks/04-boyer-moore.html#boyer-moore-bad-character-rule",
+    "title": "Boyer-Moore — Bad Character Rule",
+    "section": "Boyer-Moore — Bad Character Rule",
+    "text": "Boyer-Moore — Bad Character Rule\nStep through the Boyer-Moore search. The algorithm scans the pattern right-to-left and uses the bad character rule to skip alignments.\n\n\n\n\n\n\n\n\n\nviewof T_bm = Inputs.text({label: \"T:\", value: \"abcaabcabcaab\", width: 400})\nviewof P_bm = Inputs.text({label: \"P:\", value: \"abcab\", width: 400})\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nviewof step_bm = Inputs.range([0, bm_max_step], {step: 1, value: 0, label: \"Step:\"})"
+  },
+  {
+    "objectID": "notebooks/02-kmp.html",
+    "href": "notebooks/02-kmp.html",
+    "title": "KMP — Failure Function & Search",
+    "section": "",
+    "text": "AA-VIZ\n  /"
+  },
+  {
+    "objectID": "notebooks/02-kmp.html#kmp-failure-function-sp-values-search",
+    "href": "notebooks/02-kmp.html#kmp-failure-function-sp-values-search",
+    "title": "KMP — Failure Function & Search",
+    "section": "KMP — Failure Function (sp values) & Search",
+    "text": "KMP — Failure Function (sp values) & Search\nVisualize the sp (border) array computation and then step through the KMP search showing how mismatches use the failure function to skip alignments.\n\n\n\n\n\n\n\n\n\nFailure Function Table\n\nviewof P_sp = Inputs.text({label: \"P:\", value: \"abcabcab\", width: 400})\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nKMP Search — Step by Step\nWatch how KMP uses the failure function to avoid re-scanning characters. The arrow shows where j falls back to on a mismatch.\n\n\n\n\n\n\n\n\n\nviewof T_kmp = Inputs.text({label: \"T:\", value: \"abcaabcabcaab\", width: 400})\nviewof P_kmp = Inputs.text({label: \"P:\", value: \"abcab\", width: 400})\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nviewof step_kmp = Inputs.range([0, kmp_max_step], {step: 1, value: 0, label: \"Step:\"})"
+  },
+  {
+    "objectID": "notebooks/01-naive.html",
+    "href": "notebooks/01-naive.html",
+    "title": "Naive String Matching",
+    "section": "",
+    "text": "AA-VIZ\n  /"
+  },
+  {
+    "objectID": "notebooks/01-naive.html#naive-string-matching",
+    "href": "notebooks/01-naive.html#naive-string-matching",
+    "title": "Naive String Matching",
+    "section": "Naive String Matching",
+    "text": "Naive String Matching\nStep through every single character comparison. At each shift s, the algorithm compares P[0] vs T[s], then P[1] vs T[s+1], and so on. On a mismatch it backtracks to the next shift and starts over from P[0] — this is the repeated work that makes the naive approach slow.\n\n\n\n\n\n\n\n\n\nviewof T_naive = Inputs.text({label: \"T:\", value: \"abcaabcabcaab\", width: 400})\nviewof P_naive = Inputs.text({label: \"P:\", value: \"abcab\", width: 400})\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nviewof step_naive = Inputs.range([0, naive_max_step], {step: 1, value: 0, label: \"Step:\"})"
+  },
+  {
+    "objectID": "index.html",
+    "href": "index.html",
+    "title": "Advanced Algorithms",
+    "section": "",
+    "text": "AA-VIZ\n  /\n  Interactive Companions\n\n\n\n\n  Università degli Studi di Udine · A.A. 2025–2026\n  Advanced Algorithms\n  \n    Interactive visualizations for the course lecture notes. Step through classic\n    algorithms with custom inputs — all running directly in your browser.\n  \n\n\n\n\n\n  \n  \n    String Matching\n    Naive\n    KMP\n    ↳ visualizer\n    Z-Algorithm\n    Boyer-Moore\n    Suffix Structures\n    Comparison\n    Keyword Tree\n    Rabin-Karp\n    Shift-And\n  \n\n  \n  \n    Chapter 1 — String Matching\n    \n\n      \n        01\n        Naive String Matching\n        Step through every alignment of pattern P against text T\n      \n\n      \n        02\n        KMP\n        Failure function (sp values) and search with fallback arrows\n        Standalone visualizer\n      \n\n      \n        03\n        Z-Algorithm\n        Z-array computation with Z-box reuse\n      \n\n      \n        04\n        Boyer-Moore\n        Right-to-left scanning with the bad character rule\n      \n\n      \n        05\n        Suffix Trie & Suffix Tree\n        Build and visualize suffix structures interactively\n      \n\n      \n        06\n        Algorithm Comparison\n        Side-by-side character comparison counts across algorithms\n      \n\n      \n        07\n        Keyword Tree\n        Multiple pattern matching: tree builder and search visualization\n      \n\n      \n        08\n        Rabin-Karp\n        Rolling hash fingerprinting: watch hash collisions and spurious hits in action\n      \n\n      \n        09\n        Shift-And\n        Bit-parallel matching: alphabet masks, DP matrix, and bit-vector operations\n      \n\n    \n\n    \n    \n      Lecture Notes\n      \n        PDF\n        Full Course Notes\n        Browse the complete lecture notes with an in-browser PDF reader\n      \n    \n\n  \n\n\n\n\n\n  \n    9 notebooks\n    Chapter 1 — String Matching\n  \n  All interactive · runs in-browser"
   },
   {
     "objectID": "notebooks/01-string-matching.html",
@@ -119,92 +147,92 @@
     "text": "7. Keyword Tree — Multiple Pattern Matching\n\n7a. Building the Keyword Tree\nEnter a comma-separated list of patterns and see the resulting keyword tree. The stats panel shows size (number of edges), height (longest pattern), and maximum fan-out.\n\n\n\n\n\n\n\n\n\nviewof patterns_input = Inputs.text({\n  label: \"Patterns (comma-separated):\",\n  value: \"potato, tatoo, theater, other\",\n  width: 500\n})\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n7b. Searching with the Keyword Tree\nEnter a text and patterns. Step through each starting position to see the descent from the root: active edges light up, non-matching branches are grayed out.\n\n\n\n\n\n\n\n\n\nviewof T_kw_search = Inputs.text({\n  label: \"T:\",\n  value: \"a]potato that was put in a theater\",\n  width: 500\n})\nviewof P_kw_search = Inputs.text({\n  label: \"Patterns (comma-separated):\",\n  value: \"potato, tatoo, theater, other\",\n  width: 500\n})\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nviewof step_kw = Inputs.range([0, kw_max_step], {step: 1, value: 0, label: \"Step (starting position):\"})"
   },
   {
-    "objectID": "index.html",
-    "href": "index.html",
-    "title": "Advanced Algorithms",
-    "section": "",
-    "text": "AA-VIZ\n  /\n  Interactive Companions\n\n\n\n\n  Università degli Studi di Udine · A.A. 2025–2026\n  Advanced Algorithms\n  \n    Interactive visualizations for the course lecture notes. Step through classic\n    algorithms with custom inputs — all running directly in your browser.\n  \n\n\n\n\n\n  \n  \n    String Matching\n    Naive\n    KMP\n    ↳ visualizer\n    Z-Algorithm\n    Boyer-Moore\n    Suffix Structures\n    Comparison\n    Keyword Tree\n    Shift-And\n  \n\n  \n  \n    Chapter 1 — String Matching\n    \n\n      \n        01\n        Naive String Matching\n        Step through every alignment of pattern P against text T\n      \n\n      \n        02\n        KMP\n        Failure function (sp values) and search with fallback arrows\n        Standalone visualizer\n      \n\n      \n        03\n        Z-Algorithm\n        Z-array computation with Z-box reuse\n      \n\n      \n        04\n        Boyer-Moore\n        Right-to-left scanning with the bad character rule\n      \n\n      \n        05\n        Suffix Trie & Suffix Tree\n        Build and visualize suffix structures interactively\n      \n\n      \n        06\n        Algorithm Comparison\n        Side-by-side character comparison counts across algorithms\n      \n\n      \n        07\n        Keyword Tree\n        Multiple pattern matching: tree builder and search visualization\n      \n\n      \n        08\n        Shift-And\n        Bit-parallel matching: alphabet masks, DP matrix, and bit-vector operations\n      \n\n    \n\n    \n    \n      Lecture Notes\n      \n        PDF\n        Full Course Notes\n        Browse the complete lecture notes with an in-browser PDF reader\n      \n    \n\n  \n\n\n\n\n\n  \n    8 notebooks\n    Chapter 1 — String Matching\n  \n  All interactive · runs in-browser"
-  },
-  {
-    "objectID": "notebooks/01-naive.html",
-    "href": "notebooks/01-naive.html",
-    "title": "Naive String Matching",
+    "objectID": "notebooks/03-z-algorithm.html",
+    "href": "notebooks/03-z-algorithm.html",
+    "title": "Z-Algorithm",
     "section": "",
     "text": "AA-VIZ\n  /"
   },
   {
-    "objectID": "notebooks/01-naive.html#naive-string-matching",
-    "href": "notebooks/01-naive.html#naive-string-matching",
-    "title": "Naive String Matching",
-    "section": "Naive String Matching",
-    "text": "Naive String Matching\nStep through every single character comparison. At each shift s, the algorithm compares P[0] vs T[s], then P[1] vs T[s+1], and so on. On a mismatch it backtracks to the next shift and starts over from P[0] — this is the repeated work that makes the naive approach slow.\n\n\n\n\n\n\n\n\n\nviewof T_naive = Inputs.text({label: \"T:\", value: \"abcaabcabcaab\", width: 400})\nviewof P_naive = Inputs.text({label: \"P:\", value: \"abcab\", width: 400})\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nviewof step_naive = Inputs.range([0, naive_max_step], {step: 1, value: 0, label: \"Step:\"})"
+    "objectID": "notebooks/03-z-algorithm.html#z-algorithm",
+    "href": "notebooks/03-z-algorithm.html#z-algorithm",
+    "title": "Z-Algorithm",
+    "section": "Z-Algorithm",
+    "text": "Z-Algorithm\nVisualize the Z-array: Z[k] = length of the longest substring starting at k that matches a prefix of S.\n\n\n\n\n\n\n\n\n\nviewof S_z = Inputs.text({label: \"S:\", value: \"aabxaabxcaabxaabxay\", width: 500})\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nviewof step_z = Inputs.range([0, z_max_step], {step: 1, value: 0, label: \"Step:\"})"
   },
   {
-    "objectID": "notebooks/02-kmp.html",
-    "href": "notebooks/02-kmp.html",
-    "title": "KMP — Failure Function & Search",
+    "objectID": "notebooks/05-suffix-structures.html",
+    "href": "notebooks/05-suffix-structures.html",
+    "title": "Suffix Trie & Suffix Tree",
     "section": "",
     "text": "AA-VIZ\n  /"
   },
   {
-    "objectID": "notebooks/02-kmp.html#kmp-failure-function-sp-values-search",
-    "href": "notebooks/02-kmp.html#kmp-failure-function-sp-values-search",
-    "title": "KMP — Failure Function & Search",
-    "section": "KMP — Failure Function (sp values) & Search",
-    "text": "KMP — Failure Function (sp values) & Search\nVisualize the sp (border) array computation and then step through the KMP search showing how mismatches use the failure function to skip alignments.\n\n\n\n\n\n\n\n\n\nFailure Function Table\n\nviewof P_sp = Inputs.text({label: \"P:\", value: \"abcabcab\", width: 400})\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nKMP Search — Step by Step\nWatch how KMP uses the failure function to avoid re-scanning characters. The arrow shows where j falls back to on a mismatch.\n\n\n\n\n\n\n\n\n\nviewof T_kmp = Inputs.text({label: \"T:\", value: \"abcaabcabcaab\", width: 400})\nviewof P_kmp = Inputs.text({label: \"P:\", value: \"abcab\", width: 400})\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nviewof step_kmp = Inputs.range([0, kmp_max_step], {step: 1, value: 0, label: \"Step:\"})"
+    "objectID": "notebooks/05-suffix-structures.html#suffix-trie-suffix-tree",
+    "href": "notebooks/05-suffix-structures.html#suffix-trie-suffix-tree",
+    "title": "Suffix Trie & Suffix Tree",
+    "section": "Suffix Trie & Suffix Tree",
+    "text": "Suffix Trie & Suffix Tree\nBuild and visualize the suffix trie and its compacted suffix tree for any input string.\n\n\n\n\n\n\n\n\n\nviewof T_tree = Inputs.text({label: \"T:\", value: \"cacao$\", width: 300})\nviewof tree_view = Inputs.radio([\"Suffix Trie\", \"Suffix Tree\"], {value: \"Suffix Trie\", label: \"View:\"})"
   },
   {
-    "objectID": "notebooks/04-boyer-moore.html",
-    "href": "notebooks/04-boyer-moore.html",
-    "title": "Boyer-Moore — Bad Character Rule",
+    "objectID": "notebooks/05-suffix-structures.html#online-construction-phase-by-phase",
+    "href": "notebooks/05-suffix-structures.html#online-construction-phase-by-phase",
+    "title": "Suffix Trie & Suffix Tree",
+    "section": "Online Construction — Phase by Phase",
+    "text": "Online Construction — Phase by Phase\nWatch how the suffix trie grows character by character (Ukkonen’s online approach on the trie). At each phase, the algorithm appends a character and walks the boundary path, adding new transitions until it reaches a state that already has the corresponding edge.\n\nGreen nodes = new states created in this phase\nYellow nodes = boundary path states visited (but not new)\nBlue nodes = existing states (unchanged)\n\n\n\n\n\n\n\n\n\n\nviewof T_phase = Inputs.text({label: \"T:\", value: \"cacao$\", width: 300})\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nviewof step_phase = Inputs.range([0, phase_max_step], {step: 1, value: 0, label: \"Phase:\"})"
+  },
+  {
+    "objectID": "notebooks/07-keyword-tree.html",
+    "href": "notebooks/07-keyword-tree.html",
+    "title": "Keyword Tree — Multiple Pattern Matching",
     "section": "",
     "text": "AA-VIZ\n  /"
   },
   {
-    "objectID": "notebooks/04-boyer-moore.html#boyer-moore-bad-character-rule",
-    "href": "notebooks/04-boyer-moore.html#boyer-moore-bad-character-rule",
-    "title": "Boyer-Moore — Bad Character Rule",
-    "section": "Boyer-Moore — Bad Character Rule",
-    "text": "Boyer-Moore — Bad Character Rule\nStep through the Boyer-Moore search. The algorithm scans the pattern right-to-left and uses the bad character rule to skip alignments.\n\n\n\n\n\n\n\n\n\nviewof T_bm = Inputs.text({label: \"T:\", value: \"abcaabcabcaab\", width: 400})\nviewof P_bm = Inputs.text({label: \"P:\", value: \"abcab\", width: 400})\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nviewof step_bm = Inputs.range([0, bm_max_step], {step: 1, value: 0, label: \"Step:\"})"
+    "objectID": "notebooks/07-keyword-tree.html#building-the-keyword-tree",
+    "href": "notebooks/07-keyword-tree.html#building-the-keyword-tree",
+    "title": "Keyword Tree — Multiple Pattern Matching",
+    "section": "Building the Keyword Tree",
+    "text": "Building the Keyword Tree\nEnter a comma-separated list of patterns and see the resulting keyword tree. The stats panel shows size (number of edges), height (longest pattern), and maximum fan-out.\n\n\n\n\n\n\n\n\n\nviewof patterns_input = Inputs.text({\n  label: \"Patterns (comma-separated):\",\n  value: \"potato, tatoo, theater, other\",\n  width: 500\n})"
   },
   {
-    "objectID": "notebooks/06-algorithm-comparison.html",
-    "href": "notebooks/06-algorithm-comparison.html",
-    "title": "Algorithm Comparison",
-    "section": "",
-    "text": "AA-VIZ\n  /"
+    "objectID": "notebooks/07-keyword-tree.html#searching-with-the-keyword-tree",
+    "href": "notebooks/07-keyword-tree.html#searching-with-the-keyword-tree",
+    "title": "Keyword Tree — Multiple Pattern Matching",
+    "section": "Searching with the Keyword Tree",
+    "text": "Searching with the Keyword Tree\nEnter a text and patterns. Step through each starting position to see the descent from the root: active edges light up, non-matching branches are grayed out.\n\n\n\n\n\n\n\n\n\nviewof T_kw_search = Inputs.text({\n  label: \"T:\",\n  value: \"a]potato that was put in a theater\",\n  width: 500\n})\nviewof P_kw_search = Inputs.text({\n  label: \"Patterns (comma-separated):\",\n  value: \"potato, tatoo, theater, other\",\n  width: 500\n})\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nviewof step_kw = Inputs.range([0, kw_max_step], {step: 1, value: 0, label: \"Step (starting position):\"})"
   },
   {
-    "objectID": "notebooks/06-algorithm-comparison.html#algorithm-comparison",
-    "href": "notebooks/06-algorithm-comparison.html#algorithm-comparison",
-    "title": "Algorithm Comparison",
-    "section": "Algorithm Comparison",
-    "text": "Algorithm Comparison\nRun all algorithms on the same input and compare the number of character comparisons.\n\n\n\n\n\n\n\n\n\nviewof T_cmp = Inputs.text({label: \"T:\", value: \"abcaabcabcaab\", width: 500})\nviewof P_cmp = Inputs.text({label: \"P:\", value: \"abcab\", width: 500})"
+    "objectID": "notebooks/07-keyword-tree.html#aho-corasick-failure-links-output-links",
+    "href": "notebooks/07-keyword-tree.html#aho-corasick-failure-links-output-links",
+    "title": "Keyword Tree — Multiple Pattern Matching",
+    "section": "Aho-Corasick: Failure Links & Output Links",
+    "text": "Aho-Corasick: Failure Links & Output Links\nThe keyword tree alone restarts from the root at every position. The Aho-Corasick automaton adds two types of pointers:\n\nFailure links (red dashed): when the descent gets stuck, jump to the longest proper suffix of the current path that is also a prefix of some pattern.\nOutput links (green dotted): chain together all patterns that end along the failure-link path, so patterns ending at internal nodes are not missed.\n\n\n\n\n\n\n\n\n\n\nviewof P_ac = Inputs.text({\n  label: \"Patterns (comma-separated):\",\n  value: \"he, she, his, hers\",\n  width: 500\n})"
   },
   {
-    "objectID": "notebooks/08-shift-and.html",
-    "href": "notebooks/08-shift-and.html",
+    "objectID": "notebooks/09-shift-and.html",
+    "href": "notebooks/09-shift-and.html",
     "title": "Shift-And Algorithm",
     "section": "",
     "text": "AA-VIZ\n  /"
   },
   {
-    "objectID": "notebooks/08-shift-and.html#alphabet-masks",
-    "href": "notebooks/08-shift-and.html#alphabet-masks",
+    "objectID": "notebooks/09-shift-and.html#alphabet-masks",
+    "href": "notebooks/09-shift-and.html#alphabet-masks",
     "title": "Shift-And Algorithm",
     "section": "Alphabet masks",
     "text": "Alphabet masks\nBefore running the algorithm, we pre-compute one bit vector per alphabet character. \\(U_x[i] = 1\\) if and only if \\(P[i] = x\\). These masks are the ingredient that encodes the pattern into the bit-parallel framework.\n\n\n\n\n\n\n\n\n\nviewof P_masks = Inputs.text({label: \"P:\", value: \"cacao\", width: 400})"
   },
   {
-    "objectID": "notebooks/08-shift-and.html#shift-and-step-by-step",
-    "href": "notebooks/08-shift-and.html#shift-and-step-by-step",
+    "objectID": "notebooks/09-shift-and.html#shift-and-step-by-step",
+    "href": "notebooks/09-shift-and.html#shift-and-step-by-step",
     "title": "Shift-And Algorithm",
     "section": "Shift-And — step by step",
     "text": "Shift-And — step by step\nThe algorithm processes \\(T\\) left to right. At each position \\(j\\) it updates a single bit vector \\(M\\) (one column of the dynamic programming matrix) using:\n\\[M_j = ((M_{j-1} \\ll 1) \\mid 1) \\;\\&\\; U_{T[j]}\\]\nThe bit at position \\(i\\) of \\(M_j\\) tells us: “the prefix \\(P[0..i]\\) is a suffix of \\(T[0..j]\\).” When the last bit (position \\(m{-}1\\)) is 1, we have found a full occurrence of \\(P\\).\nUse the slider to step through the algorithm one text position at a time. The top section shows the DP matrix filling column by column; the bottom section shows the bit-vector operations in detail.\n\n\n\n\n\n\n\n\n\nviewof T_sa = Inputs.text({label: \"T:\", value: \"cacacaocacao\", width: 400})\nviewof P_sa = Inputs.text({label: \"P:\", value: \"cacao\", width: 400})\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nviewof step_sa = Inputs.range([0, sa_max_step], {step: 1, value: 0, label: \"Step:\"})"
   },
   {
-    "objectID": "notebooks/08-shift-and.html#comparison-count",
-    "href": "notebooks/08-shift-and.html#comparison-count",
+    "objectID": "notebooks/09-shift-and.html#comparison-count",
+    "href": "notebooks/09-shift-and.html#comparison-count",
     "title": "Shift-And Algorithm",
     "section": "Comparison count",
     "text": "Comparison count\nHow many bit-level operations does the Shift-And algorithm need? Each text position requires exactly one shift, one OR, and one AND — all on a single machine word. Move the slider to see the total count grow linearly with \\(|T|\\)."
