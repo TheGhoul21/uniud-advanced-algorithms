@@ -1,0 +1,359 @@
+---
+title: "Rabin-Karp"
+subtitle: "Interactive visualizations for Chapter 1 of the Advanced Algorithms notes"
+engine: knitr
+format:
+  live-html:
+    pyodide:
+      packages:
+        - matplotlib
+        - numpy
+      cell-options:
+        autorun: true
+        edit: false
+        echo: false
+---
+
+```{pyodide}
+#| autorun: true
+#| edit: false
+#| output: false
+
+import warnings
+warnings.filterwarnings("ignore", message=".*tight_layout.*")
+import matplotlib.pyplot as plt
+import matplotlib.patches as mpatches
+import numpy as np
+
+plt.rcParams.update({
+    "font.family": "monospace",
+    "font.size": 13,
+    "figure.facecolor": "#fafafa",
+    "figure.dpi": 120,
+    "savefig.dpi": 120,
+})
+
+COLORS = {
+    "match": "#4CAF50",
+    "mismatch": "#F44336",
+    "current": "#FFC107",
+    "skip": "#90CAF9",
+    "default": "#E0E0E0",
+    "pattern": "#BBDEFB",
+    "border": "#7E57C2",
+    "hash_match": "#CE93D8",
+    "hash_miss": "#FFCC80",
+    "verified": "#66BB6A",
+    "spurious": "#EF5350",
+}
+
+
+def draw_string_row(ax, y, string, label="", highlights=None, offset=0):
+    """Draw a row of character boxes at vertical position y."""
+    highlights = highlights or {}
+    for i, ch in enumerate(string):
+        color = highlights.get(i, COLORS["default"])
+        rect = mpatches.FancyBboxPatch(
+            (i + offset, y), 0.9, 0.9,
+            boxstyle="round,pad=0.05",
+            facecolor=color, edgecolor="#555", linewidth=1.2,
+        )
+        ax.add_patch(rect)
+        ax.text(i + offset + 0.45, y + 0.45, ch,
+                ha="center", va="center", fontsize=14, fontweight="bold")
+    if label:
+        ax.text(offset - 0.3, y + 0.45, label,
+                ha="right", va="center", fontsize=12, color="#555")
+```
+
+## Rabin-Karp — Rolling Hash Search
+
+Step through the Rabin-Karp algorithm. At each window position, the **fingerprint** (hash mod `q`) of the current window is compared against the pattern's fingerprint:
+
+- **Orange** window = no hash match → skip instantly
+- **Purple** window = hash hit → must verify character-by-character
+- **Green** window = verified true match
+- **Red** window = spurious hit (hash matched but characters differ)
+
+Try small values of `q` (e.g. 3, 5) to see spurious hits in action.
+
+```{pyodide}
+#| autorun: true
+#| edit: false
+#| output: false
+
+def char_to_digit(ch, alphabet):
+    return alphabet.index(ch)
+
+
+def rabin_karp_trace(T, P, q=101):
+    alphabet = sorted(set(T + P))
+    d = len(alphabet)
+    n, m = len(T), len(P)
+    if m > n or m == 0:
+        return [], alphabet, d
+
+    h = pow(d, m - 1, q)
+
+    p_hash = 0
+    for ch in P:
+        p_hash = (p_hash * d + char_to_digit(ch, alphabet)) % q
+
+    t_hash = 0
+    for j in range(m):
+        t_hash = (t_hash * d + char_to_digit(T[j], alphabet)) % q
+
+    snapshots = []
+    matches = []
+
+    for s in range(n - m + 1):
+        hit = (t_hash == p_hash)
+        is_match = False
+        verify_steps = []
+
+        if hit:
+            is_match = True
+            for k in range(m):
+                ok = T[s + k] == P[k]
+                verify_steps.append((k, ok))
+                if not ok:
+                    is_match = False
+                    break
+            if is_match:
+                matches.append(s)
+
+        snapshots.append({
+            "s": s,
+            "t_hash": t_hash,
+            "p_hash": p_hash,
+            "hit": hit,
+            "is_match": is_match,
+            "spurious": hit and not is_match,
+            "verify_steps": verify_steps,
+            "matches_so_far": list(matches),
+            "h": h, "d": d, "q": q,
+        })
+
+        if s < n - m:
+            old_digit = char_to_digit(T[s], alphabet)
+            new_digit = char_to_digit(T[s + m], alphabet)
+            t_hash = ((t_hash - old_digit * h) * d + new_digit) % q
+
+    return snapshots, alphabet, d
+
+
+def draw_rk_step(T, P, q, step_idx):
+    snapshots, alphabet, d = rabin_karp_trace(T, P, q)
+    if not snapshots:
+        return
+    step_idx = min(step_idx, len(snapshots) - 1)
+    snap = snapshots[step_idx]
+    n, m = len(T), len(P)
+    s = snap["s"]
+
+    fig, axes = plt.subplots(2, 1, figsize=(max(n * 0.9, 10), 7.5),
+                              gridspec_kw={"height_ratios": [3.5, 2.5]})
+
+    # ── Panel 1: T and P alignment with hash comparison ──
+    ax = axes[0]
+    ax.set_xlim(-2.5, n + 4.0)
+    ax.set_ylim(-1.5, 4.5)
+    ax.set_aspect("equal")
+    ax.axis("off")
+
+    for i in range(n):
+        ax.text(i + 0.45, 3.8, str(i), ha="center", fontsize=8, color="#999")
+
+    # T row highlights
+    t_hi = {}
+    if snap["is_match"]:
+        for k in range(m):
+            t_hi[s + k] = COLORS["verified"]
+    elif snap["spurious"]:
+        for k, ok in snap["verify_steps"]:
+            t_hi[s + k] = COLORS["match"] if ok else COLORS["spurious"]
+    elif snap["hit"]:
+        for k in range(m):
+            t_hi[s + k] = COLORS["hash_match"]
+    else:
+        for k in range(m):
+            t_hi[s + k] = COLORS["hash_miss"]
+    draw_string_row(ax, 2.5, T, label="T", highlights=t_hi)
+
+    # P row
+    p_hi = {}
+    if snap["is_match"]:
+        for k in range(m):
+            p_hi[k] = COLORS["verified"]
+    elif snap["spurious"]:
+        for k, ok in snap["verify_steps"]:
+            p_hi[k] = COLORS["match"] if ok else COLORS["spurious"]
+    elif snap["hit"]:
+        for k in range(m):
+            p_hi[k] = COLORS["hash_match"]
+    else:
+        for k in range(m):
+            p_hi[k] = COLORS["hash_miss"]
+    draw_string_row(ax, 0.9, P, label="P", highlights=p_hi, offset=s)
+
+    # Hash values on the right
+    hash_color = COLORS["verified"] if snap["is_match"] else (
+        COLORS["spurious"] if snap["spurious"] else (
+        COLORS["hash_match"] if snap["hit"] else "#999"))
+
+    ax.text(n + 1.0, 2.95, f"t_hash = {snap['t_hash']}",
+            fontsize=11, fontweight="bold", color=hash_color, va="center")
+    ax.text(n + 1.0, 1.35, f"p_hash = {snap['p_hash']}",
+            fontsize=11, fontweight="bold", color="#555", va="center")
+
+    cmp_sym = "==" if snap["hit"] else "!="
+    cmp_color = COLORS["match"] if snap["hit"] else COLORS["mismatch"]
+    ax.text(n + 1.0, 2.15, cmp_sym, fontsize=16, fontweight="bold",
+            color=cmp_color, va="center")
+
+    # Rolling hash formula
+    if s > 0:
+        old_ch = T[s - 1]
+        new_ch = T[s + m - 1] if s + m - 1 < n else "?"
+        formula = (f"t_hash = (({snapshots[s-1]['t_hash']} - "
+                   f"val('{old_ch}')·{snap['h']}) · {d} + "
+                   f"val('{new_ch}')) mod {snap['q']}")
+        ax.text(n / 2, -0.3, formula, ha="center", fontsize=9,
+                color="#666", fontstyle="italic",
+                bbox=dict(boxstyle="round,pad=0.3", facecolor="#F5F5F5",
+                          edgecolor="#CCC"))
+
+    # Event text
+    if snap["is_match"]:
+        event = f"MATCH at position {s}! (hash hit + verified)"
+        ev_color = COLORS["verified"]
+    elif snap["spurious"]:
+        fail_k = snap["verify_steps"][-1][0]
+        event = f"SPURIOUS HIT at s={s} (hash matched, mismatch at P[{fail_k}])"
+        ev_color = COLORS["spurious"]
+    else:
+        event = f"No hit at s={s} — skip"
+        ev_color = "#999"
+
+    total_hits = sum(1 for sn in snapshots[:step_idx+1] if sn["hit"])
+    total_spur = sum(1 for sn in snapshots[:step_idx+1] if sn["spurious"])
+    ax.set_title(
+        f"Step {step_idx+1}/{len(snapshots)} | s={s} | q={snap['q']} | d={d} | "
+        f"matches={snap['matches_so_far']} | spurious={total_spur}\n{event}",
+        fontsize=10, pad=8, color=ev_color)
+
+    # ── Panel 2: Hash timeline ──
+    ax2 = axes[1]
+    positions = list(range(len(snapshots)))
+    hashes = [sn["t_hash"] for sn in snapshots]
+    bar_colors = []
+    for i, sn in enumerate(snapshots):
+        if i > step_idx:
+            bar_colors.append("#E0E0E0")
+        elif sn["is_match"]:
+            bar_colors.append(COLORS["verified"])
+        elif sn["spurious"]:
+            bar_colors.append(COLORS["spurious"])
+        elif sn["hit"]:
+            bar_colors.append(COLORS["hash_match"])
+        else:
+            bar_colors.append(COLORS["hash_miss"])
+
+    # Draw bars one by one for per-bar alpha (pyodide matplotlib compat)
+    for i_bar in range(len(positions)):
+        a = 1.0 if i_bar <= step_idx else 0.3
+        ax2.bar(i_bar, hashes[i_bar], color=bar_colors[i_bar],
+                edgecolor="#777", linewidth=0.5, alpha=a)
+    ax2.axhline(y=snap["p_hash"], color=COLORS["border"], linestyle="--",
+                linewidth=2, alpha=0.7, label=f"p_hash = {snap['p_hash']}")
+    if step_idx < len(positions):
+        ax2.bar([step_idx], [hashes[step_idx]], color="none",
+                edgecolor="#000", linewidth=2.5)
+    ax2.legend(fontsize=9, loc="upper right")
+    ax2.set_xlabel("Window position s", fontsize=10)
+    ax2.set_ylabel("t_hash", fontsize=10)
+    ax2.set_xticks(positions)
+    ax2.set_xticklabels([str(p) for p in positions], fontsize=8)
+    ax2.set_title("Hash value per window (bars touch dashed line = hit)", fontsize=10, pad=5, loc="left")
+
+    plt.tight_layout()
+    plt.show()
+```
+
+```{ojs}
+//| echo: false
+viewof T_rk = Inputs.text({label: "T:", value: "abracadabra", width: 400})
+viewof P_rk = Inputs.text({label: "P:", value: "abra", width: 400})
+viewof q_rk = Inputs.range([2, 997], {step: 1, value: 101, label: "q (prime):"})
+```
+
+```{pyodide}
+#| autorun: true
+#| edit: false
+#| output: false
+#| input: [T_rk, P_rk, q_rk]
+#| define: [rk_max_step]
+
+_snaps, _, _ = rabin_karp_trace(T_rk, P_rk, int(q_rk)) if T_rk and P_rk and len(P_rk) <= len(T_rk) else ([], None, None)
+rk_max_step = max(len(_snaps) - 1, 0)
+```
+
+```{ojs}
+//| echo: false
+viewof step_rk = Inputs.range([0, rk_max_step], {step: 1, value: 0, label: "Step:"})
+```
+
+```{pyodide}
+#| autorun: true
+#| edit: false
+#| input: [T_rk, P_rk, q_rk, step_rk]
+
+if T_rk and P_rk and len(P_rk) <= len(T_rk):
+    draw_rk_step(T_rk, P_rk, int(q_rk), int(step_rk))
+```
+
+## Effect of `q` on Spurious Hits
+
+The bar chart below compares four values of `q` on the same input. Small `q` → many spurious hits (red bars). Large prime `q` → almost none.
+
+```{pyodide}
+#| autorun: true
+#| edit: false
+#| input: [T_rk, P_rk]
+
+if T_rk and P_rk and len(P_rk) <= len(T_rk):
+    fig, axes = plt.subplots(4, 1, figsize=(max(len(T_rk) * 0.6, 8), 10), squeeze=False)
+    for idx, q in enumerate([3, 7, 13, 101]):
+        ax = axes[idx, 0]
+        snapshots, alphabet, d = rabin_karp_trace(T_rk, P_rk, q)
+        if not snapshots:
+            continue
+        positions = list(range(len(snapshots)))
+        hashes = [sn["t_hash"] for sn in snapshots]
+        colors = []
+        for sn in snapshots:
+            if sn["is_match"]:
+                colors.append(COLORS["verified"])
+            elif sn["spurious"]:
+                colors.append(COLORS["spurious"])
+            else:
+                colors.append(COLORS["hash_miss"])
+        ax.bar(positions, hashes, color=colors, edgecolor="#777", linewidth=0.5)
+        ax.axhline(y=snapshots[0]["p_hash"], color=COLORS["border"],
+                    linestyle="--", linewidth=2, alpha=0.7)
+        n_spur = sum(1 for sn in snapshots if sn["spurious"])
+        n_match = sum(1 for sn in snapshots if sn["is_match"])
+        ax.set_title(f"q = {q}  |  matches: {n_match}  |  spurious: {n_spur}",
+                     fontsize=11, pad=6)
+        ax.set_ylabel("hash", fontsize=9)
+        if idx == 3:
+            ax.set_xlabel("Window position s", fontsize=10)
+        from matplotlib.patches import Patch
+        ax.legend(handles=[
+            Patch(facecolor=COLORS["verified"], edgecolor="#555", label="True match"),
+            Patch(facecolor=COLORS["spurious"], edgecolor="#555", label="Spurious hit"),
+            Patch(facecolor=COLORS["hash_miss"], edgecolor="#555", label="No hit"),
+        ], fontsize=8, loc="upper right")
+    plt.tight_layout()
+    plt.show()
+```
