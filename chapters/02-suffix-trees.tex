@@ -692,6 +692,16 @@ If it does not (because $w$ spans more than one edge), we
 \textbf{canonize} by walking down from $s$, consuming full edges one at
 a time, until the remaining string fits within a single edge.
 
+\aside{An important property of the generalised transitions in the
+suffix tree: each state $s$ has at most one $a$-transition for each
+character $a \in \Sigma$, and that transition is uniquely identified
+by its \emph{first character} $t_k$.
+This is because no two edges out of the same node can begin with the
+same character (the tree would not be well-defined otherwise).
+As a consequence, given a state $s$ and a character $a$, we can find
+(or determine the absence of) the corresponding edge in $\Oh{1}$ time
+with a hash table, or $\Oh{|\Sigma|}$ with an array.}
+
 \subsection{Online Construction of the Suffix Trie}
 
 Before tackling the linear-time suffix tree construction, it is
@@ -988,6 +998,44 @@ This means that once a leaf is created, it will \emph{never} need to
 be revisited --- it extends passively with every new character.
 The algorithm only needs to handle the second zone (creating new
 branches) and detect when to stop (the third zone).
+
+\paragraph{Suffix links in the suffix tree.}
+When we move from the suffix trie to the suffix tree, the suffix
+function $f$ is generalised to $f'$, now defined only for
+\textbf{branching states} (explicit internal nodes).
+For a branching state $\bar{x} \neq root$ with label $x = a\alpha$
+(where $a \in \Sigma$), the suffix link points to the branching state
+$\bar{y}$ whose label is $y = \alpha$ (i.e.\ $x$ with its first
+character removed): $f'(\bar{x}) = \bar{y}$.
+A crucial property is that $f'$ maps branching states to branching
+states: if $\bar{x}$ has at least two children labelled by different
+characters, so does $\bar{y}$, because every string that branches
+after $x$ also branches after $\alpha$.
+One can also think of ``implicit'' suffix links between implicit
+states, but these are never materialised in the data structure ---
+the \textsc{canonize} procedure handles them transparently.
+
+\aside{The fact that $f'$ maps branching to branching is important
+for the algorithm: after following a suffix link, we always land on
+an explicit node (or the root), so the active point remains a valid
+reference pair.}
+
+\paragraph{The challenge of implicit states.}
+There is one last difficulty that deserves attention.
+In the second zone of the boundary path (between the active point and
+the endpoint), the algorithm must create new branches from states that
+are \emph{not necessarily explicit} in the suffix tree.
+In the suffix trie, every state was a node, so creating a transition
+was straightforward.
+In the suffix tree, the state from which we need to branch may lie
+\emph{in the middle of a compacted edge} --- it is an implicit state.
+Before we can attach a new leaf, we must first \textbf{split} the edge,
+promoting the implicit state to an explicit branching node.
+This is exactly what the \textsc{test-and-split} procedure does: it
+checks whether we need to split, and if so, creates the new node.
+This is a by-product of the compaction trick that keeps the tree linear:
+the space saving comes at the cost of occasionally ``uncompressing'' a
+piece of edge when new branches appear.
 
 \paragraph{The procedures.}
 Ukkonen's algorithm maintains a \emph{reference pair} $(s, (k, i-1))$
@@ -1420,3 +1468,18 @@ simple tree queries:
   $\Oh{n}$-time preprocessing step unlocks $\Oh{m}$-time (or better)
   solutions to a wide family of substring problems.
 \end{observation}
+
+\begin{remark}[Suffix automata and DAWGs]
+  \label{rem:dawg}
+  The suffix trie $\mathrm{STrie}(T)$, augmented with suffix links,
+  also provides a natural characterisation of the \textbf{suffix
+  automaton} (also known as a \emph{Directed Acyclic Word Graph},
+  or \textbf{DAWG}) of $T$.
+  The DAWG is the minimal DFA that accepts exactly the set of all
+  suffixes of $T$; it can be obtained by merging equivalent states of
+  $\mathrm{STrie}(T)$ (i.e.\ states that accept the same set of
+  strings).
+  Ukkonen's paper shows that the suffix links give an elementary
+  criterion for identifying these equivalent states, leading to a
+  simple linear-time construction of the DAWG as well.
+\end{remark}

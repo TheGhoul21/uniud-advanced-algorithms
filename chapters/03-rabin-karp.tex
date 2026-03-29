@@ -1,12 +1,480 @@
 \section{Rabin--Karp Algorithm}
 \label{sec:rabin-karp}
 
-% ┌──────────────────────────────────────────────────────────┐
-% │  PLACEHOLDER — content pending confirmation              │
-% │  (material from A.A. 2024–2025 lectures)                 │
-% └──────────────────────────────────────────────────────────┘
+All the algorithms we have seen so far---naive, KMP, Boyer--Moore,
+Aho--Corasick---are \emph{comparison-based}: their main primitive is
+comparing two characters.
+The Rabin--Karp algorithm takes a completely different approach: it
+replaces character comparisons with \emph{arithmetic operations}.
+The idea is simple and elegant: interpret strings as numbers, and check
+whether the ``number'' of the pattern equals the ``number'' of the
+current window in the text.
 
-\emph{This section is under preparation.  It will cover the Rabin--Karp
-fingerprinting approach to exact (and multi-pattern) string matching,
-including rolling hash functions, expected-time analysis, and the
-Las~Vegas vs.\ Monte~Carlo variants.}
+\aside{Rabin--Karp was published by Richard Karp and Michael Rabin in
+1987, although the ideas had been circulating since the late 1970s.
+It is historically important as one of the first \emph{randomised}
+algorithms for string matching.}
+
+\subsection{Strings as Numbers}
+
+Without loss of generality, we can assume $\Sigma = \{0, 1, \ldots,
+d-1\}$ where $d = |\Sigma|$.
+If the original alphabet is not numeric, we simply map each character
+to a digit: for instance, with $\Sigma = \{\texttt{a}, \texttt{b},
+\texttt{c}, \texttt{d}\}$ we set $\texttt{a} \mapsto 0$,
+$\texttt{b} \mapsto 1$, $\texttt{c} \mapsto 2$, $\texttt{d} \mapsto 3$.
+This mapping takes $\Oh{n + m}$ time and is done once as a
+preprocessing step.
+
+% ── Figure: string-to-number mapping ─────────────────────
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[
+    cell/.style={minimum width=8mm, minimum height=8mm,
+                 font=\ttfamily\small, inner sep=0pt, text centered,
+                 draw=gray!40, rounded corners=1.5pt},
+    C/.style={cell, fill=blue!6},
+    N/.style={cell, fill=teal!10, text=teal!70!black},
+]
+\def\cw{1.05}
+
+% ── S row ─────────────────────────────────────────────────
+\node[font=\small\sffamily\bfseries, text=gray!60, anchor=east]
+  at ({-0.4*\cw}, 0) {$S =$};
+\foreach \i/\c in {1/b, 2/a, 3/d, 4/c, 5/c, 6/a, 7/b, 8/c, 9/d, 10/b}
+  \node[C] (S\i) at ({\i*\cw}, 0) {\c};
+
+% ── arrow ──────────────────────────────────────────────────
+\draw[-Stealth, thick, gray!60] ({5.5*\cw}, -0.65) -- ({5.5*\cw}, -1.35);
+
+% ── S' row ─────────────────────────────────────────────────
+\node[font=\small\sffamily\bfseries, text=gray!60, anchor=east]
+  at ({-0.4*\cw}, -2) {$S' =$};
+\foreach \i/\c in {1/1, 2/0, 3/3, 4/2, 5/2, 6/0, 7/1, 8/2, 9/3, 10/1}
+  \node[N] (N\i) at ({\i*\cw}, -2) {\c};
+
+% ── alphabet labels ──────────────────────────────────────
+\node[font=\small\sffamily, text=gray!50, anchor=west]
+  at ({11.2*\cw}, 0) {$\Sigma = \{\texttt{a,b,c,d}\}$};
+\node[font=\small\sffamily, text=gray!50, anchor=west]
+  at ({11.2*\cw}, -2) {$\Sigma' = \{0,1,2,3\}$};
+\end{tikzpicture}
+\caption{%
+  Mapping a string $S$ over $\Sigma = \{\texttt{a,b,c,d}\}$ to a
+  numeric string $S'$ over $\Sigma' = \{0,1,2,3\}$.
+  The mapping is $\texttt{a}\mapsto 0$, $\texttt{b}\mapsto 1$,
+  $\texttt{c}\mapsto 2$, $\texttt{d}\mapsto 3$.
+}
+\label{fig:rk-char-to-digit}
+\end{figure}
+
+Once both $T$ and $P$ are expressed as sequences of digits in base $d$,
+we can interpret any length-$m$ window of $T$ as a number.
+Formally, define for each position $s \in \{1, \ldots, n - m + 1\}$:
+\[
+  t_s \;=\; \bigl(T[s]\cdot d^{m-1} \;+\; T[s+1]\cdot d^{m-2}
+           \;+\; \cdots \;+\; T[s+m-1]\cdot d^{0}\bigr)
+\]
+and similarly for the pattern:
+\[
+  p \;=\; \bigl(P[1]\cdot d^{m-1} \;+\; P[2]\cdot d^{m-2}
+          \;+\; \cdots \;+\; P[m]\cdot d^{0}\bigr).
+\]
+Clearly, there is an occurrence of $P$ at position $s$ if and only if
+$t_s = p$.
+If we could compare these numbers in $\Oh{1}$ time, one scan through
+$T$ would give us an $\Oh{n}$ algorithm.
+
+\aside{The key obstacle is that $t_s$ and $p$ can be
+\emph{astronomically large}: a string of $m$ characters in base~$d$
+represents a number up to $d^m - 1$, which requires $\Om{m \log d}$
+bits.
+On a standard RAM machine, comparing two numbers of $m$ digits takes
+$\Oh{m}$ time---no better than character-by-character comparison.}
+
+\subsection{The Fingerprinting Idea}
+
+The Rabin--Karp approach side-steps the large-number problem by working
+\emph{modulo a prime} $q$.
+Instead of comparing $t_s$ and $p$ directly, we compare their
+\textbf{fingerprints}:
+\[
+  t_s \bmod q
+  \quad\stackrel{?}{=}\quad
+  p \bmod q.
+\]
+Since the fingerprints are numbers in $\{0, 1, \ldots, q-1\}$, each
+comparison takes $\Oh{1}$ time (assuming $q$ fits in a machine word).
+
+Two things can happen:
+
+\begin{enumerate}[nosep]
+  \item \textbf{$t_s \bmod q \neq p \bmod q$}: then certainly
+        $t_s \neq p$, so there is \textbf{no match} at position~$s$.
+        This is a \emph{true negative}---we can safely skip this
+        position.
+
+  \item \textbf{$t_s \bmod q = p \bmod q$}: this is a \textbf{hit}.
+        Unfortunately, it does \emph{not} guarantee $t_s = p$:
+        two different numbers can have the same remainder modulo $q$.
+        We call this a \textbf{spurious hit} (or \emph{false positive}).
+        When a hit occurs, we must verify character by character whether
+        $T[s, s+m-1] = P$, which costs $\Oh{m}$.
+\end{enumerate}
+
+\aside{Think of it as a cheap ``quick reject'' filter: most positions
+fail the modular test and are discarded instantly.
+Only the rare hits require the expensive $\Oh{m}$ verification.}
+
+\subsection{Rolling Hash via Horner's Rule}
+
+Computing $p \bmod q$ from scratch is easy: we apply Horner's rule.
+\[
+  p \bmod q \;=\;
+  \bigl(\!\bigl((P[1]\cdot d + P[2])\cdot d + P[3]\bigr)
+  \cdot d + \cdots + P[m]\bigr) \bmod q.
+\]
+This takes $\Oh{m}$ multiplications and additions, all performed modulo
+$q$ so that intermediate values never exceed $q \cdot d$.
+The same computation gives us $t_1 \bmod q$ (the fingerprint of the
+first window).
+
+The crucial observation is that we can compute $t_{s+1} \bmod q$ from
+$t_s \bmod q$ in $\Oh{1}$ time, without scanning $m$ characters again.
+The relationship between consecutive windows is:
+\begin{align*}
+  t_{s+1}
+  &= \bigl(T[s+1]\cdot d^{m-1} + T[s+2]\cdot d^{m-2} + \cdots
+     + T[s+m]\cdot d^{0}\bigr) \\
+  &= \bigl(t_s - T[s]\cdot d^{m-1}\bigr)\cdot d \;+\; T[s+m].
+\end{align*}
+In words: \emph{remove} the contribution of the leftmost character
+$T[s]$, \emph{shift} everything one position to the left (multiply by
+$d$), and \emph{add} the new rightmost character $T[s+m]$.
+
+Taking everything modulo $q$:
+\[
+  t_{s+1} \bmod q
+  \;=\;
+  \Bigl[\bigl(t_s - T[s]\cdot h\bigr)\cdot d \;+\; T[s+m]\Bigr] \bmod q,
+  \qquad
+  \text{where } h = d^{m-1} \bmod q.
+\]
+The value $h = d^{m-1} \bmod q$ is precomputed once in $\Oh{m}$ time (or
+$\Oh{\log m}$ using fast exponentiation).
+
+% ── Figure: rolling hash ─────────────────────────────────
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[
+    cell/.style={minimum width=8mm, minimum height=8mm,
+                 font=\ttfamily\small, inner sep=0pt, text centered,
+                 rounded corners=1.5pt},
+    C/.style={cell, draw=gray!40, fill=gray!6},
+    W/.style={cell, draw=teal!50, fill=teal!10, text=teal!70!black},
+    O/.style={cell, draw=red!50, fill=red!8, text=red!60!black},
+    N/.style={cell, draw=violet!50, fill=violet!10, text=violet!60!black},
+]
+\def\cw{0.95}
+
+% ── T row ─────────────────────────────────────────────────
+\node[font=\small\sffamily\bfseries, text=gray!60, anchor=east]
+  at ({-0.4*\cw}, 0) {$T$};
+\foreach \i/\c in {1/3, 2/1, 3/4, 4/1, 5/5, 6/9, 7/2, 8/6}
+  \node[C] (T\i) at ({\i*\cw}, 0) {\c};
+% indices
+\foreach \i in {1,...,8}
+  \node[font=\tiny\sffamily, text=gray!50, above=2pt] at ({\i*\cw}, 0.42) {\i};
+
+% ── Window s ──────────────────────────────────────────────
+\node[font=\scriptsize\sffamily, text=gray, anchor=east] at ({-0.55*\cw}, -1.4) {$t_s$:};
+\node[O] at ({2*\cw}, -1.4) {1};
+\node[W] at ({3*\cw}, -1.4) {4};
+\node[W] at ({4*\cw}, -1.4) {1};
+\node[W] at ({5*\cw}, -1.4) {5};
+% brace
+\draw[teal!50!black, thick, decorate,
+      decoration={brace, mirror, raise=6pt, amplitude=3pt}]
+  ({1.55*\cw}, -1.85) -- ({5.45*\cw}, -1.85)
+  node[midway, below=11pt, font=\scriptsize\sffamily, text=teal!50!black]
+  {window at position $s$};
+
+% ── Window s+1 ────────────────────────────────────────────
+\node[font=\scriptsize\sffamily, text=gray, anchor=east] at ({-0.55*\cw}, -3.0) {$t_{s+1}$:};
+\node[W] at ({3*\cw}, -3.0) {4};
+\node[W] at ({4*\cw}, -3.0) {1};
+\node[W] at ({5*\cw}, -3.0) {5};
+\node[N] at ({6*\cw}, -3.0) {9};
+% brace
+\draw[violet!50!black, thick, decorate,
+      decoration={brace, mirror, raise=6pt, amplitude=3pt}]
+  ({2.55*\cw}, -3.45) -- ({6.45*\cw}, -3.45)
+  node[midway, below=11pt, font=\scriptsize\sffamily, text=violet!50!black]
+  {window at position $s+1$};
+
+% ── Annotations ──────────────────────────────────────────
+\draw[-Stealth, red!60!black, thick]
+  ({2*\cw}, -0.5) -- ({2*\cw}, -1.0)
+  node[midway, right=4pt, font=\scriptsize\sffamily, text=red!60!black]
+  {remove};
+\draw[-Stealth, violet!60!black, thick]
+  ({6*\cw}, -0.5) -- ({6*\cw}, -2.6)
+  node[midway, right=4pt, font=\scriptsize\sffamily, text=violet!60!black]
+  {add};
+
+\end{tikzpicture}
+\caption{%
+  Rolling hash: computing $t_{s+1}$ from $t_s$.
+  The \textcolor{red!60!black}{\textbf{red}} digit $T[s]$ is
+  \emph{removed} from the high end, the remaining digits are shifted
+  left (multiplied by $d$), and the
+  \textcolor{violet!60!black}{\textbf{violet}} digit $T[s+m]$ is
+  \emph{added} at the low end.
+  Each update costs $\Oh{1}$ arithmetic operations modulo $q$.
+}
+\label{fig:rk-rolling-hash}
+\end{figure}
+
+This ``rolling'' update is the heart of Rabin--Karp: after the initial
+$\Oh{m}$ setup, each new window costs only $\Oh{1}$ to fingerprint.
+
+\subsection{The Algorithm}
+
+Putting the pieces together, the Rabin--Karp algorithm works in three
+phases:
+
+\begin{enumerate}[nosep]
+  \item \textbf{Preprocessing.}
+        Compute $h = d^{m-1} \bmod q$.
+        Compute $p = P \bmod q$ using Horner's rule.
+        Compute $t_1 = T[1,m] \bmod q$ using Horner's rule.
+        This takes $\Oh{m}$ time.
+
+  \item \textbf{Scanning.}
+        For each position $s = 1, 2, \ldots, n-m+1$:
+        \begin{itemize}[nosep]
+          \item If $t_s \equiv p \pmod{q}$: \emph{hit} --- verify
+                character by character whether $T[s,\,s+m-1] = P$.
+                If yes, report occurrence at position~$s$.
+          \item If $t_s \not\equiv p \pmod{q}$: skip (no match possible).
+          \item Compute $t_{s+1}$ from $t_s$ using the rolling hash
+                formula.
+        \end{itemize}
+
+  \item \textbf{Output.} All reported positions are true occurrences.
+\end{enumerate}
+
+\begin{algorithm}[H]
+  \caption{Rabin--Karp}
+  \label{alg:rabin-karp}
+  \KwIn{Text $T[1\ldots n]$, Pattern $P[1\ldots m]$, alphabet size $d$,
+        prime $q$}
+  \KwOut{All positions $s$ where $P$ occurs in $T$}
+  $h \gets d^{m-1} \bmod q$\;
+  \BlankLine
+  \tcp{Horner's rule for pattern fingerprint}
+  $p \gets 0$\;
+  \For{$j \gets 1$ \KwTo $m$}{
+    $p \gets (p \cdot d + P[j]) \bmod q$\;
+  }
+  \BlankLine
+  \tcp{Horner's rule for first window}
+  $t \gets 0$\;
+  \For{$j \gets 1$ \KwTo $m$}{
+    $t \gets (t \cdot d + T[j]) \bmod q$\;
+  }
+  \BlankLine
+  \tcp{Slide the window}
+  \For{$s \gets 1$ \KwTo $n - m + 1$}{
+    \If{$p = t$}{
+      \tcp{Hit: verify character by character}
+      $k \gets 0$\;
+      \While{$k < m$ \textbf{and} $P[k+1] = T[s+k]$}{
+        $k \gets k + 1$\;
+      }
+      \If{$k = m$}{
+        \textbf{output} $s$\;
+      }
+    }
+    \If{$s < n - m + 1$}{
+      $t \gets \bigl((t - T[s] \cdot h) \cdot d + T[s+m]\bigr)
+              \bmod q$\;
+    }
+  }
+\end{algorithm}
+
+\subsection{Correctness}
+
+The correctness relies on two observations:
+\begin{enumerate}[nosep]
+  \item \textbf{No false negatives.}
+        If $t_s \bmod q \neq p \bmod q$, then certainly $t_s \neq p$,
+        so skipping position~$s$ is safe.
+        We never miss a true occurrence.
+
+  \item \textbf{Hits are verified.}
+        When $t_s \bmod q = p \bmod q$, the algorithm performs a full
+        character-by-character comparison.
+        A position~$s$ is reported as an occurrence \emph{only if}
+        $T[s, s+m-1] = P$ holds exactly.
+        This eliminates all spurious hits from the output.
+\end{enumerate}
+
+\begin{formaldetails}[Rolling hash recurrence]
+\begin{lemma}
+  The rolling hash formula correctly maintains
+  $t \equiv t_s \pmod{q}$ throughout the algorithm.
+\end{lemma}
+\begin{proof}
+  After the preprocessing loop, $t = t_1 \bmod q$ by Horner's rule.
+  For the inductive step, suppose $t = t_s \bmod q$ at the start of
+  iteration~$s$.
+  The update computes:
+  \[
+    t' = \bigl((t_s - T[s]\cdot d^{m-1})\cdot d + T[s+m]\bigr) \bmod q.
+  \]
+  But $t_{s+1} = (t_s - T[s]\cdot d^{m-1})\cdot d + T[s+m]$ by the
+  definition of the window values, so $t' = t_{s+1} \bmod q$.
+\end{proof}
+\end{formaldetails}
+
+\subsection{Complexity}
+
+The running time depends on the number of spurious hits.
+
+\paragraph{Preprocessing.}
+Computing $h$, $p$, and $t_1$ takes $\Oh{m}$ time.
+
+\paragraph{Scanning.}
+In each of the $n - m + 1$ iterations, the rolling hash update and the
+modular comparison take $\Oh{1}$.
+The expensive part is the verification upon a hit: each verification
+costs $\Oh{m}$.
+
+Let $\nu$ denote the number of true occurrences and $c$ the number of
+spurious hits.
+The total running time is:
+\[
+  \Oh{m} + \Oh{n - m} + (\nu + c) \cdot \Oh{m}
+  \;=\;
+  \Oh{n + m\,(\nu + c)}.
+\]
+
+\paragraph{Worst case.}
+In the worst case, \emph{every} position is a hit (true or spurious),
+giving $\nu + c = n - m + 1$ and a total time of $\Oh{nm}$---no
+better than the naive algorithm.
+This happens, for instance, when $q = 2$, $P = \texttt{aa}$, and
+$T = \texttt{aaa\ldots a}$: every window matches both modulo~$q$ and
+exactly.
+
+\paragraph{Expected case.}
+The key insight is that by choosing $q$ to be a sufficiently large
+\emph{random prime}, the probability of a spurious hit becomes very
+small.
+
+\begin{definition}[Fingerprint]
+  For a positive integer $q$, the \textbf{fingerprint} of $P$ is
+  $H_q(P) = p \bmod q$, and the fingerprint of window $s$ is
+  $H_q(T_s) = t_s \bmod q$.
+  A \textbf{false match} at position $s$ occurs when
+  $H_q(P) = H_q(T_s)$ but $P \neq T[s, s+m-1]$.
+\end{definition}
+
+If $P \neq T[s, s+m-1]$, then $p \neq t_s$, so $q$ can only produce a
+false match if $q$ divides $|p - t_s|$.
+Since $|p - t_s| < d^m$, it has at most $\pi(d^m)$ distinct prime
+divisors, where $\pi(u)$ denotes the number of primes up to $u$.
+
+If we pick $q$ uniformly at random among all primes up to some bound
+$I$, the probability that $q$ divides $|p - t_s|$ at any single
+position~$s$ is at most $\pi(d^m) / \pi(I)$.
+
+\begin{theorem}[Karp--Rabin, 1987]
+  \label{thm:rabin-karp-error}
+  If $q$ is a random prime in $\{1, \ldots, I\}$ with $I = nm^2$,
+  then the probability of a false match at \emph{any single} position
+  is at most $\Oh{1/m}$.
+\end{theorem}
+
+\aside{%
+  By the prime number theorem,
+  $\pi(u) \approx u / \ln u$, so the bound works out to roughly
+  $\frac{\pi(d^m)}{\pi(nm^2)} \approx \frac{m \ln d}{\ln(nm^2)}
+  \cdot \frac{1}{m} = \Oh{1/m}$ for $d$ constant.}
+
+When $q$ is large enough (say $q \ge nm$) and chosen as a random
+prime, the expected number of spurious hits across all $n - m + 1$
+positions is $\Oh{n/m}$, giving an expected total time of:
+\[
+  \Oh{n + m} + \Oh{n/m}\cdot\Oh{m} = \Oh{n + m}.
+\]
+If the number of true occurrences $\nu$ is constant, this is
+\textbf{expected linear time}.
+
+\subsection{Las~Vegas vs.\ Monte~Carlo}
+
+The Rabin--Karp algorithm as presented above always verifies hits, so it
+\emph{never reports a false positive}.
+This makes it a \textbf{Las~Vegas} randomised algorithm: the output is
+always correct, but the running time is a random variable (it depends on
+how many spurious hits occur).
+
+\begin{description}[style=nextline, leftmargin=2cm]
+  \item[Las~Vegas variant.]
+    Always verify hits.
+    Output is \emph{always correct}.
+    Worst-case time $\Oh{nm}$, expected time $\Oh{n + m}$.
+
+  \item[Monte~Carlo variant.]
+    \emph{Skip} the verification step: when
+    $t_s \bmod q = p \bmod q$, report position~$s$ as an occurrence
+    without checking.
+    Running time is $\Oh{n + m}$ \emph{always} (deterministic), but
+    the output may contain false positives.
+    The probability of any false positive is bounded by
+    Theorem~\ref{thm:rabin-karp-error}.
+\end{description}
+
+\begin{remark}
+  We can further reduce the error probability by using $k$ independent
+  random primes $q_1, \ldots, q_k$ and declaring a match only when
+  \emph{all} $k$ fingerprints agree.
+  The probability of a false match drops to
+  $\Oh{(1/m)^k}$---exponentially small in $k$---at the cost of
+  a factor $k$ in running time.
+\end{remark}
+
+\subsection{Properties}
+
+\begin{center}
+\begin{tabular}{lcccc}
+  \toprule
+  & Online & Real-time & Blind & Succinct \\
+  \midrule
+  Rabin--Karp (Las~Vegas)
+    & \checkmark & $\times$ & $\times$ & \checkmark \\
+  Rabin--Karp (Monte~Carlo)
+    & \checkmark & \checkmark & \checkmark & \checkmark \\
+  \bottomrule
+\end{tabular}
+\end{center}
+
+The algorithm is \textbf{online}: it processes $T$ left-to-right.
+The Monte~Carlo variant is even \textbf{real-time} (each character
+costs $\Oh{1}$ amortised) and \textbf{blind} (no backtracking), since
+it never re-reads characters of $T$.
+The Las~Vegas variant can backtrack during verification, so it is
+neither real-time nor blind.
+
+Both variants are \textbf{succinct}: they use only $\Oh{1}$ extra space
+beyond storing $P$ and $T$ (just the variables $h$, $p$, $t$, and
+the current position).
+
+\aside{The Rabin--Karp approach generalises naturally to
+\emph{multi-pattern} matching: compute fingerprints for all patterns
+and store them in a hash set.
+Each position of $T$ is checked against the set in $\Oh{1}$ expected
+time.
+This gives expected $\Oh{n + km}$ time for $k$ patterns of length $m$,
+without building an Aho--Corasick automaton.}
