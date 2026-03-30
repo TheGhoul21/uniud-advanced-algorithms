@@ -667,3 +667,270 @@ if P_ac:
         _output = compute_output_links(_G_ac, _fail)
         draw_aho_corasick(_G_ac, _pats_ac, _fail, _output, _nstr)
 ```
+
+## Aho-Corasick Search — Step by Step
+
+Watch the automaton process the text character by character. At each step:
+
+- **Blue** node = current position in the automaton
+- **Red dashed** arrow = failure link followed (when the descent gets stuck)
+- **Green** nodes = patterns reported (via direct match or output link chain)
+
+```{pyodide}
+#| autorun: true
+#| edit: false
+#| output: false
+
+def ac_search_trace(T, patterns):
+    """Trace Aho-Corasick search step by step."""
+    G = build_keyword_tree(patterns)
+    fail, node_string = compute_failure_links(G)
+    output = compute_output_links(G, fail)
+
+    def get_child(node, ch):
+        for _, nb, data in G.out_edges(node, data=True):
+            if data["label"] == ch:
+                return nb
+        return None
+
+    snapshots = []
+    w = "root"
+    all_matches = []
+
+    for c in range(len(T)):
+        ch = T[c]
+        failure_chain = []  # nodes visited via failure links
+        old_w = w
+
+        # Follow failure links until we can advance
+        while w != "root" and get_child(w, ch) is None:
+            failure_chain.append(w)
+            w = fail.get(w, "root")
+
+        child = get_child(w, ch)
+        if child is not None:
+            w = child
+        # else: w stays at root
+
+        # Collect matches at w
+        matches_here = []
+        if G.nodes[w].get("is_leaf", False):
+            pat = G.nodes[w].get("pattern", node_string.get(w, ""))
+            matches_here.append((w, pat))
+
+        # Follow output links
+        u = output.get(w)
+        output_chain = []
+        while u is not None:
+            pat = G.nodes[u].get("pattern", node_string.get(u, ""))
+            matches_here.append((u, pat))
+            output_chain.append(u)
+            u = output.get(u)
+
+        for node, pat in matches_here:
+            all_matches.append((c - len(pat) + 1, pat))
+
+        snapshots.append({
+            "c": c,
+            "char": ch,
+            "w_before": old_w,
+            "w_after": w,
+            "failure_chain": failure_chain,
+            "output_chain": output_chain,
+            "matches_here": [(n, p) for n, p in matches_here],
+            "all_matches": list(all_matches),
+        })
+
+    return G, fail, output, node_string, snapshots
+
+
+def draw_ac_search_step(T, G, fail, output, node_string, snapshots, step_idx):
+    """Draw one step of AC search."""
+    snap = snapshots[step_idx]
+    c = snap["c"]
+    w = snap["w_after"]
+    w_before = snap["w_before"]
+    failure_chain = snap["failure_chain"]
+    output_chain = snap["output_chain"]
+    matches_here = snap["matches_here"]
+
+    pos = hierarchy_pos(G, root="root", width=max(len(G.nodes) * 0.3, 2.0))
+    depths = [G.nodes[n].get("depth", 0) for n in G.nodes]
+    height = max(depths) if depths else 0
+
+    fig, (ax_text, ax_tree) = plt.subplots(
+        2, 1, figsize=(max(len(T) * 0.85, 10), max(height * 1.3 + 2, 6)),
+        gridspec_kw={"height_ratios": [1, 3]})
+
+    # ── Text row ──
+    ax_text.set_xlim(-2.5, len(T) + 1.5)
+    ax_text.set_ylim(-0.5, 2.5)
+    ax_text.set_aspect("equal")
+    ax_text.axis("off")
+
+    for i in range(len(T)):
+        ax_text.text(i + 0.45, 2.2, str(i), ha="center", fontsize=8, color="#999")
+
+    t_hi = {}
+    # Highlight matched pattern spans
+    for start, pat in snap["all_matches"]:
+        for j in range(len(pat)):
+            if start + j < len(T):
+                t_hi[start + j] = COLORS["match"]
+    # Current character
+    t_hi[c] = "#42A5F5"  # blue
+    draw_string_row(ax_text, 0.8, T, label="T", highlights=t_hi)
+
+    ax_text.annotate(f"c={c}", xy=(c + 0.45, 0.8), xytext=(c + 0.45, 0.15),
+                     fontsize=10, color="#1565C0", ha="center", fontweight="bold",
+                     arrowprops=dict(arrowstyle="->", color="#1565C0", lw=1.5))
+
+    # Event text
+    if matches_here:
+        match_names = ", ".join([p for _, p in matches_here])
+        event = f"MATCH: {match_names}"
+        ev_color = COLORS["match"]
+    elif failure_chain:
+        event = f"failure link{'s' if len(failure_chain) > 1 else ''}: " + \
+                " → ".join([node_string.get(n, "?") or "ε" for n in failure_chain] +
+                           [node_string.get(w, "?") or "ε"])
+        ev_color = "#C62828"
+    else:
+        event = f"advance to '{node_string.get(w, '')}'"
+        ev_color = "#555"
+
+    ax_text.set_title(
+        f"Step {step_idx+1}/{len(snapshots)} | T[{c}]='{T[c]}' | "
+        f"total matches: {len(snap['all_matches'])}\n{event}",
+        fontsize=10, pad=8, color=ev_color)
+
+    # ── Tree ──
+    # Highlight sets
+    active_nodes = {w}
+    match_nodes = set(n for n, _ in matches_here)
+    fail_nodes = set(failure_chain)
+
+    for n in G.nodes:
+        x, y = pos[n]
+        if n in match_nodes:
+            color = "#66BB6A"
+            ec = "#2E7D32"
+            size = 500
+        elif n == w:
+            color = "#42A5F5"
+            ec = "#1565C0"
+            size = 500
+        elif n in fail_nodes:
+            color = "#FFCDD2"
+            ec = "#C62828"
+            size = 400
+        else:
+            is_leaf = G.nodes[n].get("is_leaf", False)
+            color = "#FFCC80" if is_leaf else "#E8E8E8"
+            ec = "#E65100" if is_leaf else "#CCC"
+            size = 350
+
+        ax_tree.scatter(x, y, s=size, c=color, edgecolors=ec,
+                        linewidths=2.0 if n in active_nodes | match_nodes else 1.0,
+                        zorder=5, alpha=1.0 if n in active_nodes | match_nodes | fail_nodes else 0.5)
+
+    # Tree edges
+    for u, v, data in G.edges(data=True):
+        x1, y1 = pos[u]
+        x2, y2 = pos[v]
+        alpha = 0.3 if (u not in active_nodes | fail_nodes and
+                        v not in active_nodes | fail_nodes) else 0.8
+        ax_tree.annotate("", xy=(x2, y2), xytext=(x1, y1),
+                         arrowprops=dict(arrowstyle="-|>", color="#777",
+                                         lw=1.5, alpha=alpha))
+        mx, my = (x1 + x2) / 2, (y1 + y2) / 2
+        ax_tree.text(mx + 0.08, my + 0.08, data["label"],
+                     fontsize=11, color="#9C27B0", fontfamily="monospace",
+                     alpha=alpha, ha="center")
+
+    # Failure links used in this step
+    for fn in failure_chain:
+        if fn in pos and fail.get(fn, "root") in pos:
+            target = fail[fn]
+            x1, y1 = pos[fn]
+            x2, y2 = pos[target]
+            ax_tree.annotate("", xy=(x2, y2), xytext=(x1, y1),
+                             arrowprops=dict(arrowstyle="-|>", color="#C62828",
+                                             lw=2.5, linestyle="dashed",
+                                             connectionstyle="arc3,rad=0.3"))
+
+    # Output links used
+    for on in output_chain:
+        if w in pos and on in pos:
+            x1, y1 = pos[w]
+            x2, y2 = pos[on]
+            ax_tree.annotate("", xy=(x2, y2), xytext=(x1, y1),
+                             arrowprops=dict(arrowstyle="-|>", color="#2E7D32",
+                                             lw=2.5, linestyle="dotted",
+                                             connectionstyle="arc3,rad=-0.3"))
+
+    # Node labels
+    for n in G.nodes:
+        x, y = pos[n]
+        s = node_string.get(n, "")
+        if n == "root":
+            ax_tree.text(x, y + 0.3, "root", ha="center", va="bottom",
+                         fontsize=8, color="#999")
+        elif G.nodes[n].get("is_leaf", False):
+            pat = G.nodes[n].get("pattern", s)
+            ax_tree.text(x, y - 0.3, pat, ha="center", va="top",
+                         fontsize=8, fontstyle="italic", color="#E65100",
+                         fontfamily="monospace")
+        elif s:
+            ax_tree.text(x, y + 0.25, s, ha="center", va="bottom",
+                         fontsize=7, color="#666", fontfamily="monospace")
+
+    ax_tree.axis("off")
+    plt.tight_layout()
+    plt.show()
+```
+
+```{ojs}
+//| echo: false
+viewof T_ac_search = Inputs.text({
+  label: "T:",
+  value: "ushers",
+  width: 500
+})
+viewof P_ac_search = Inputs.text({
+  label: "Patterns (comma-separated):",
+  value: "he, she, his, hers",
+  width: 500
+})
+```
+
+```{pyodide}
+#| autorun: true
+#| edit: false
+#| output: false
+#| input: [T_ac_search, P_ac_search]
+#| define: [ac_max_step]
+
+ac_max_step = 0
+if T_ac_search and P_ac_search:
+    _pats_acs = [p.strip() for p in P_ac_search.split(",") if p.strip()]
+    if _pats_acs:
+        ac_max_step = max(len(T_ac_search) - 1, 0)
+```
+
+```{ojs}
+//| echo: false
+viewof step_ac = Inputs.range([0, ac_max_step], {step: 1, value: 0, label: "Step:"})
+```
+
+```{pyodide}
+#| autorun: true
+#| edit: false
+#| input: [T_ac_search, P_ac_search, step_ac]
+
+if T_ac_search and P_ac_search:
+    _pats_acs = [p.strip() for p in P_ac_search.split(",") if p.strip()]
+    if _pats_acs:
+        _G_acs, _fail_acs, _out_acs, _nstr_acs, _snaps_acs = ac_search_trace(T_ac_search, _pats_acs)
+        draw_ac_search_step(T_ac_search, _G_acs, _fail_acs, _out_acs, _nstr_acs, _snaps_acs, int(step_ac))
+```
