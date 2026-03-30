@@ -51,6 +51,10 @@ In other words, $T[i,j]$ is a prefix of the suffix $T[i{,}]$.
 ]
 \def\cw{0.92}
 
+% ── Background fill FIRST (so cells draw on top) ────────────
+\fill[violet!8, rounded corners=5pt]
+  ({3*\cw - 0.48}, 0.48) rectangle ({5*\cw + 0.48}, -2.28);
+
 % ── T row ─────────────────────────────────────────────────────
 \node[font=\small\sffamily\bfseries, text=gray!60, anchor=east]
   at ({-0.4*\cw}, 0) {$T$};
@@ -87,11 +91,16 @@ In other words, $T[i,j]$ is a prefix of the suffix $T[i{,}]$.
   node[midway, below=12pt, font=\scriptsize\sffamily\bfseries,
        text=orange!50!black] {prefix of suffix $T[3{,}]$};
 
-% ── Connection: substring ↔ prefix of suffix ─────────────────
-\draw[<->, very thick, Stealth-Stealth, violet!50!black]
-  ({4*\cw + 0.5}, -0.1) -- ({4*\cw + 0.5}, -1.7)
-  node[midway, right=6pt, font=\scriptsize\sffamily, text=violet!50!black,
-       align=left] {same\\characters!};
+% ── Dashed border AFTER cells (draws on top) ─────────────────
+\draw[violet!50!black, thick, dashed, rounded corners=5pt]
+  ({3*\cw - 0.48}, 0.48) rectangle ({5*\cw + 0.48}, -2.28);
+
+% Label with arrow from box edge
+\node[font=\scriptsize\sffamily\bfseries, text=violet!50!black,
+      anchor=west, align=left]
+  (samelabel) at ({6.3*\cw}, -0.9) {same\\characters!};
+\draw[-Stealth, violet!50!black, thick]
+  ({5*\cw + 0.48}, -0.9) -- (samelabel.west);
 
 \end{tikzpicture}
 \caption{%
@@ -692,15 +701,12 @@ If it does not (because $w$ spans more than one edge), we
 \textbf{canonize} by walking down from $s$, consuming full edges one at
 a time, until the remaining string fits within a single edge.
 
-\aside{An important property of the generalised transitions in the
-suffix tree: each state $s$ has at most one $a$-transition for each
-character $a \in \Sigma$, and that transition is uniquely identified
-by its \emph{first character} $t_k$.
-This is because no two edges out of the same node can begin with the
-same character (the tree would not be well-defined otherwise).
-As a consequence, given a state $s$ and a character $a$, we can find
-(or determine the absence of) the corresponding edge in $\Oh{1}$ time
-with a hash table, or $\Oh{|\Sigma|}$ with an array.}
+An important property: each state $s$ has at most one
+$a$-transition for each $a \in \Sigma$, uniquely identified by its
+first character $t_k$ (no two edges out of the same node begin with
+the same character).
+This means we can find the edge for a given character in $\Oh{1}$
+time with a hash table, or $\Oh{|\Sigma|}$ with an array.
 
 \subsection{Online Construction of the Suffix Trie}
 
