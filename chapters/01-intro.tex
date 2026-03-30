@@ -3694,3 +3694,351 @@ Together, the keyword tree, failure links, and output links form the
 complete \textbf{Aho--Corasick automaton}.
 It processes $T$ in a single left-to-right pass in $\Oh{n + m + k}$
 time, where $k$ is the number of pattern occurrences reported.
+
+We now develop the algorithms for computing failure links, output links,
+and performing the search, together with the detailed complexity analysis.
+
+\subsubsection{Computing failure links}
+
+Recall that for a node $v$ in $K(\mathcal{P})$, we write $L(v)$ for
+the string of edge labels on the path from the root to $v$.
+The failure link of $v$ points to the node $m_v$ whose label $L(m_v)$
+is the \emph{longest proper suffix} of $L(v)$ that is also a prefix
+of some pattern in $\mathcal{P}$ --- in other words, $m_v$ is a node
+in $K(\mathcal{P})$.
+
+\begin{lemma}
+  \label{lem:failure-unique}
+  For every node $v \in K(\mathcal{P})$, the node $m_v$ exists and is
+  unique.
+\end{lemma}
+\begin{proof}
+  The root always qualifies: $L(root) = \varepsilon$ is a suffix of
+  every string, and the root is always a node in $K(\mathcal{P})$.
+  Among all nodes whose label is a proper suffix of $L(v)$, the one
+  with the longest label is unique (by the definition of keyword tree,
+  strings label nodes uniquely).
+  Therefore $m_v$ exists and is unique; in the worst case
+  $m_v = root$.
+\end{proof}
+
+\aside{The failure link from $v$ to $m_v$ is the direct multi-pattern
+analogue of $sp'(i)$ in KMP.
+In KMP, $sp'(i)$ gives the longest proper border of $P[1..i]$ such
+that the next character differs; here, $m_v$ gives the longest proper
+suffix of $L(v)$ that is itself a node in the keyword tree.
+The same ``fall back to the longest matching prefix'' idea is at work
+in both cases.}
+
+The key observation for computing failure links efficiently is that
+they can be computed \textbf{level by level} (BFS order) on the keyword
+tree.
+If $v$ is at depth $d$ in the tree, then $m_v$ has depth strictly less
+than $d$ --- so by the time we process $v$, all failure links for
+shallower nodes are already known.
+
+\paragraph{The algorithm.}
+For nodes at depth~1 (children of the root), the failure link always
+points to the root: $L(v)$ is a single character, and the only proper
+suffix is $\varepsilon = L(root)$.
+
+For a node $v$ at depth $d > 1$, let $v'$ be its parent and let
+$t$ be the character on the edge from $v'$ to $v$ (so
+$L(v) = L(v') \cdot t$).
+We want the longest proper suffix of $L(v')t$ that is a node in
+$K(\mathcal{P})$.
+This is the same as asking: starting from $m_{v'}$ (the failure link
+of the parent), does $m_{v'}$ have a child labelled $t$?
+\begin{itemize}[nosep]
+  \item If yes, then $m_v$ is that child.
+  \item If no, follow the failure link from $m_{v'}$ to $m_{m_{v'}}$
+        and ask again.
+        Repeat until either a $t$-child is found or we reach the root.
+        If the root has no $t$-child either, set $m_v = root$.
+\end{itemize}
+
+This is exactly the same ``follow the chain of failure links until we
+find a match'' logic as in KMP's $sp'$ computation --- just lifted to
+a tree.
+
+\begin{algorithm}[H]
+  \caption{Compute failure links for $K(\mathcal{P})$ (BFS)}
+  \label{alg:ac-failure}
+  \KwIn{Keyword tree $K(\mathcal{P})$ with root $r$}
+  \KwOut{Failure link $m_v$ for every node $v$}
+  \For{every child $v$ of $r$}{
+    $m_v \gets r$\;
+  }
+  $Q \gets$ queue of all children of $r$\;
+  \While{$Q$ is not empty}{
+    dequeue $v'$ from $Q$\;
+    \For{every child $v$ of $v'$ with edge label $t$}{
+      $w \gets m_{v'}$\;
+      \While{$w \neq r$ \textbf{and} $w$ has no child labelled $t$}{
+        $w \gets m_w$\;
+      }
+      \If{$w$ has a child labelled $t$}{
+        $m_v \gets$ child of $w$ labelled $t$\;
+      }
+      \Else{
+        $m_v \gets r$\;
+      }
+      enqueue $v$ in $Q$\;
+    }
+  }
+\end{algorithm}
+
+\begin{observation}
+  The algorithm cannot loop: each step of the inner while loop follows
+  a failure link, which strictly decreases the depth of the current
+  node.
+  Since depth is always non-negative, the loop must terminate.
+\end{observation}
+
+\begin{formaldetails}[Failure-link computation: $\Oh{m}$ time]
+\begin{theorem}
+  \label{thm:ac-failure-time}
+  Algorithm~\ref{alg:ac-failure} computes all failure links in
+  $\Oh{m}$ time, where $m = \sum_{i=1}^{z} |P_i|$ is the total length
+  of the patterns.
+\end{theorem}
+\begin{proof}
+  We use an amortised argument identical in spirit to the analysis of
+  KMP preprocessing.
+
+  For every node $v$, define $\mathrm{depth}(v)$ as the length of
+  $L(v)$.
+  When we process node $v$ (child of $v'$ with edge label $t$), the
+  inner while loop starts at $w = m_{v'}$ and follows failure links
+  until it finds a $t$-child or reaches the root.
+  Each failure-link step decreases $\mathrm{depth}(w)$ by at least~1.
+
+  The starting depth of $w = m_{v'}$ satisfies
+  $\mathrm{depth}(m_{v'}) < \mathrm{depth}(v')
+   = \mathrm{depth}(v) - 1$.
+  So the inner loop starts at depth at most $\mathrm{depth}(v) - 2$
+  and can make at most $\mathrm{depth}(v) - 2$ steps (depth never goes
+  below 0).
+
+  Summing over all nodes, the total number of inner-loop steps is
+  bounded by $\sum_v \mathrm{depth}(v) \le m$ (each edge on each
+  root-to-leaf path contributes~1 to the sum of depths, and the total
+  number of edges is $m$).
+  The BFS itself visits each node once.
+  Total: $\Oh{m}$.
+\end{proof}
+\end{formaldetails}
+
+\subsubsection{Computing output links}
+
+Once all failure links are computed, output links are easy to
+determine in the \emph{same BFS pass}.
+
+For each node $v$ processed in BFS order:
+\begin{itemize}[nosep]
+  \item If $m_v$ (the failure-link target of $v$) is itself a
+        complete pattern, then $\mathrm{output}(v) = m_v$.
+  \item Otherwise, $\mathrm{output}(v) = \mathrm{output}(m_v)$
+        (copy the output link of the failure-link target, which was
+        already computed because $m_v$ is at a shallower depth).
+\end{itemize}
+
+This takes $\Oh{1}$ per node, hence $\Oh{m}$ total.
+
+\begin{algorithm}[H]
+  \caption{Compute output links (extends Algorithm~\ref{alg:ac-failure})}
+  \label{alg:ac-output}
+  \tcp{Add these lines inside the BFS of Algorithm~\ref{alg:ac-failure},
+       right after setting $m_v$:}
+  \If{$m_v$ corresponds to a complete pattern}{
+    $\mathrm{output}(v) \gets m_v$\;
+  }
+  \Else{
+    $\mathrm{output}(v) \gets \mathrm{output}(m_v)$\;
+  }
+\end{algorithm}
+
+\aside{The chain $v \to \mathrm{output}(v) \to
+\mathrm{output}(\mathrm{output}(v)) \to \cdots$ lists all patterns
+that end at position $v$ in $T$ (as proper suffixes of $L(v)$).
+During the search, following this chain is what allows the automaton to
+report all overlapping matches at a single position.}
+
+\subsubsection{The Aho--Corasick search}
+
+With the keyword tree, failure links, and output links all precomputed,
+the search phase is clean and simple.
+We maintain a single pointer $w$ into $K(\mathcal{P})$ (initially at
+the root) and scan $T$ left-to-right, one character at a time.
+
+At each position $c$ of $T$:
+\begin{enumerate}[nosep]
+  \item \textbf{Follow failure links until we can advance.}
+        While $w$ is not the root and $w$ has no child labelled $T[c]$,
+        set $w \gets m_w$.
+  \item \textbf{Advance.}
+        If $w$ has a child labelled $T[c]$, move to that child:
+        $w \gets \text{child of } w \text{ labelled } T[c]$.
+  \item \textbf{Report matches.}
+        If $w$ corresponds to a complete pattern, report it.
+        Then follow the output-link chain from $w$ and report every
+        pattern encountered.
+\end{enumerate}
+
+\begin{algorithm}[H]
+  \caption{Aho--Corasick search}
+  \label{alg:ac-search}
+  \KwIn{Text $T[1\ldots n]$, Aho--Corasick automaton
+        $K(\mathcal{P})$ with failure links $m$ and output links}
+  \KwOut{All occurrences of all patterns in $T$}
+  $w \gets root$\;
+  \For{$c \gets 1$ \KwTo $n$}{
+    \While{$w \neq root$ \textbf{and} $w$ has no child labelled $T[c]$}{
+      $w \gets m_w$\tcp*{follow failure link}
+    }
+    \If{$w$ has a child labelled $T[c]$}{
+      $w \gets$ child of $w$ labelled $T[c]$\;
+    }
+    \tcp{Report all patterns ending here}
+    \If{$w$ corresponds to a complete pattern}{
+      \textbf{output} pattern at $w$ ending at position $c$\;
+    }
+    $u \gets \mathrm{output}(w)$\;
+    \While{$u \neq \mathrm{nil}$}{
+      \textbf{output} pattern at $u$ ending at position $c$\;
+      $u \gets \mathrm{output}(u)$\;
+    }
+  }
+\end{algorithm}
+
+\paragraph{Worked example.}
+Consider $\mathcal{P} = \{\texttt{he},\texttt{she},\texttt{his},
+\texttt{hers}\}$ and $T = \texttt{ushers}$.
+The keyword tree with failure and output links is shown in
+Figure~\ref{fig:keyword-tree-failure}.
+
+\begin{enumerate}[nosep]
+  \item $c=1$: $T[1] = \texttt{u}$.  Root has no \texttt{u}-child.
+        $w$ stays at root.  No match.
+  \item $c=2$: $T[2] = \texttt{s}$.  Root has \texttt{s}-child: move
+        to node \texttt{s}.  No match.
+  \item $c=3$: $T[3] = \texttt{h}$.  Node \texttt{s} has
+        \texttt{h}-child: move to node \texttt{sh}.  No match.
+  \item $c=4$: $T[4] = \texttt{e}$.  Node \texttt{sh} has
+        \texttt{e}-child: move to node \texttt{she}.
+        \texttt{she} is a complete pattern $\to$ report
+        ``\texttt{she} at position~2''.
+        Follow output link from \texttt{she}: it points to \texttt{he}
+        (a complete pattern) $\to$ report ``\texttt{he} at position~3''.
+        Output link of \texttt{he} is nil $\to$ stop.
+  \item $c=5$: $T[5] = \texttt{r}$.
+        Node \texttt{she} has no \texttt{r}-child.
+        Follow failure link: \texttt{she} $\to$ \texttt{he}.
+        Node \texttt{he} has \texttt{r}-child: move to node \texttt{her}.
+        No complete pattern at \texttt{her}, output link is nil.
+  \item $c=6$: $T[6] = \texttt{s}$.
+        Node \texttt{her} has \texttt{s}-child: move to \texttt{hers}.
+        \texttt{hers} is a complete pattern $\to$ report
+        ``\texttt{hers} at position~3''.
+        Follow output link of \texttt{hers}: nil $\to$ stop.
+\end{enumerate}
+
+Result: \texttt{she} at~2, \texttt{he} at~3, \texttt{hers} at~3 ---
+all three occurrences found in a single scan of $T$, reading each
+character exactly once.
+
+\subsubsection{Complexity of Aho--Corasick}
+
+\begin{theorem}[Aho--Corasick, 1975]
+  \label{thm:ac-complexity}
+  The Aho--Corasick algorithm finds all occurrences of all patterns in
+  $\mathcal{P}$ in text $T$ in time
+  $\Oh{n + m + k}$
+  where $n = |T|$, $m = \sum |P_i|$ is the total pattern length, and
+  $k$ is the total number of reported occurrences.
+\end{theorem}
+
+\begin{formaldetails}[Proof of $\Oh{n + m + k}$ time]
+\begin{proof}
+  The preprocessing consists of:
+  \begin{itemize}[nosep]
+    \item Building $K(\mathcal{P})$: $\Oh{m}$ time (insert each pattern
+          character-by-character from the root).
+    \item Computing failure links: $\Oh{m}$ time
+          (Theorem~\ref{thm:ac-failure-time}).
+    \item Computing output links: $\Oh{m}$ time (one $\Oh{1}$
+          operation per node in the same BFS).
+  \end{itemize}
+  Total preprocessing: $\Oh{m}$.
+
+  The search phase processes $n$ characters.
+  We use an amortised argument, analogous to the KMP search analysis.
+
+  Define $\mathrm{depth}(w)$ as the depth of the current node in the
+  keyword tree.
+  At each character $T[c]$:
+  \begin{itemize}[nosep]
+    \item The inner while loop (following failure links) decreases
+          $\mathrm{depth}(w)$ by at least 1 per step.
+    \item The ``advance'' step (moving to a child) increases
+          $\mathrm{depth}(w)$ by exactly 1.
+  \end{itemize}
+
+  Over the entire scan, $\mathrm{depth}(w)$ starts at 0 and is
+  increased by at most~1 per character, so it is increased at most $n$
+  times total.
+  Since $\mathrm{depth}(w) \ge 0$ always, the total number of
+  \emph{decreases} (failure-link steps) is also at most $n$.
+  Each failure-link step and each advance step costs $\Oh{1}$
+  (assuming $|\Sigma|$ is constant or using hash-based child lookup).
+
+  The output-link traversal at each position costs $\Oh{1}$ per
+  reported occurrence.
+  Since there are $k$ occurrences total, this contributes $\Oh{k}$.
+
+  Total search time: $\Oh{n + k}$.
+
+  Grand total: $\Oh{m} + \Oh{n + k} = \Oh{n + m + k}$.
+\end{proof}
+\end{formaldetails}
+
+\begin{remark}
+  The $k$ term in $\Oh{n + m + k}$ is necessary and cannot be avoided:
+  there can be $\Th{n \cdot z}$ total occurrences (for example, if all
+  patterns are the same single character and $T$ consists entirely of
+  that character), and we need $\Oh{1}$ time per reported occurrence.
+  The bound is therefore \textbf{output-sensitive}: it is linear in
+  $n + m$ plus a term proportional to the output size.
+\end{remark}
+
+\paragraph{Relaxing the simplifying assumption.}
+Earlier, when we introduced the keyword tree, we assumed that no
+pattern is a proper substring of another.
+With output links, this assumption is no longer needed: if
+$P_i$ is a prefix of $P_j$, then the node for $P_i$ is an internal
+node on the path to the leaf for $P_j$.
+When the search reaches that node on its way deeper, the algorithm
+checks if the node is marked as a complete pattern and reports it.
+Additionally, if $P_i$ is a proper suffix of $L(v)$ for some node
+$v$ reached during the search, the output-link chain from $v$ will
+reach the node for $P_i$ and report it.
+
+\aside{The professor's slides mention the exercise: take
+$\mathcal{P} = \{\texttt{tacatt}, \texttt{ca}\}$ and trace the
+full construction (keyword tree, failure links, output links) and
+search on a sample text.
+This is an excellent exercise to verify understanding: \texttt{ca}
+ends at an internal node, so the output link is needed to detect it.}
+
+\begin{center}
+\begin{tabular}{lcccc}
+  \toprule
+  Algorithm & Preprocessing & Search & Total & Online \\
+  \midrule
+  Naive ($z \times$ KMP) & $\Oh{m}$ & $\Oh{z \cdot n}$ &
+    $\Oh{z \cdot n + m}$ & \checkmark \\
+  Aho--Corasick & $\Oh{m}$ & $\Oh{n + k}$ &
+    $\Oh{n + m + k}$ & \checkmark \\
+  \bottomrule
+\end{tabular}
+\end{center}

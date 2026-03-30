@@ -403,14 +403,39 @@ position~$s$ is at most $\pi(d^m) / \pi(I)$.
   $\frac{\pi(d^m)}{\pi(nm^2)} \approx \frac{m \ln d}{\ln(nm^2)}
   \cdot \frac{1}{m} = \Oh{1/m}$ for $d$ constant.}
 
-When $q$ is large enough (say $q \ge nm$) and chosen as a random
-prime, the expected number of spurious hits across all $n - m + 1$
-positions is $\Oh{n/m}$, giving an expected total time of:
+When $q$ is large enough and chosen as a random prime, the expected
+number of spurious hits becomes small.
+Let us trace the derivation step by step.
+The total running time decomposes as:
 \[
-  \Oh{n + m} + \Oh{n/m}\cdot\Oh{m} = \Oh{n + m}.
+  \underbrace{\Oh{n}}_{\text{sliding window}}
+  \;+\;
+  \underbrace{\Oh{m \cdot (\nu + c)}}_{\text{verification of hits}}
+  \;=\;
+  \Oh{n} + \Oh{m \cdot \nu + m \cdot c}.
 \]
-If the number of true occurrences $\nu$ is constant, this is
-\textbf{expected linear time}.
+Each spurious hit occurs with probability at most $1/q$ (the
+probability that $q$ divides the nonzero difference $|p - t_s|$).
+There are $n - m + 1$ positions, so the expected number of spurious
+hits is $c \le n/q$.
+Substituting:
+\[
+  \Oh{n} + \Oh{m\cdot\nu + m \cdot n/q}.
+\]
+Choosing $q \ge m \cdot n$ makes the spurious-hit term
+$m \cdot n/q \le 1$, i.e.\ less than one expected spurious hit across
+the entire text:
+\[
+  \Oh{n} + \Oh{m\cdot\nu + 1} \;=\; \Oh{n + m\cdot\nu}.
+\]
+If the number of true occurrences $\nu$ is constant (or $\Oh{1}$),
+this is \textbf{expected linear time} $\Oh{n + m}$.
+
+\aside{The key question is: does a sufficiently large prime $q \ge mn$
+exist that is not too large to represent in $\Oh{\log n}$ bits?
+Yes: by the prime number theorem, there are approximately
+$mn / \ln(mn)$ primes up to $mn$, and each fits in $\Oh{\log(mn)}$
+bits --- well within a single machine word for practical $n$ and $m$.}
 
 \subsection{Las~Vegas vs.\ Monte~Carlo}
 
