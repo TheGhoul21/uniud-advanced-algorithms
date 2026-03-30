@@ -120,7 +120,8 @@ match the last $i$ characters of $T[1 \mathinner{.\,.} j]$.
 they mark partial matches that may extend as we read more of~$T$.}
 
 As noted above, this matrix is never stored in full: the algorithm computes it
-one column at a time, overwriting the previous column at each step.
+one column at a time, overwriting the previous column at each step
+(Figure~\ref{fig:sa-matrix}).
 
 % ── Figure: DP matrix diagram ──────────────────────────────
 \begin{figure}[H]
@@ -278,7 +279,8 @@ where $\operatorname{shift}$ means:
 \aside{In C-like code the ``shift down'' on a bit vector stored
 LSB\,=\,position~1 is simply a left shift: \texttt{(M\,<{}<\,1)\,|\,1}.}
 
-On a machine register this is:
+On a machine register, the shift-and-mask operation
+(illustrated step by step in Figure~\ref{fig:sa-step}) becomes:
 \[
   M_j \;=\; \bigl((M_{j-1} \ll 1) \mathbin{|} 1\bigr) \;\mathbin{\texttt{\&}}\; U_{T[j]}.
 \]

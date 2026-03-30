@@ -26,7 +26,8 @@ Take any substring --- say the characters from position $i$ to position
 $j$ in $T$.
 That same piece of text also appears at the \emph{beginning} of the
 suffix that starts at position $i$ (namely $T[i{,}]$).
-In other words, $T[i,j]$ is a prefix of the suffix $T[i{,}]$.
+In other words, $T[i,j]$ is a prefix of the suffix $T[i{,}]$
+(Figure~\ref{fig:substring-prefix-suffix}).
 
 \begin{example}
   Let $T = \texttt{banana}$.
@@ -498,7 +499,8 @@ the 16-node trie has been compressed into just 7 nodes.
 For instance, the path root $\to$ \texttt{c} $\to$ \texttt{ca} in the
 trie (two single-character edges through the implicit node \texttt{c})
 has become a single edge labelled \texttt{ca} going directly from the
-root to the branching node.
+root to the branching node
+(Figure~\ref{fig:compaction-example}).
 
 \begin{figure}[H]
 \centering
@@ -598,7 +600,8 @@ root to the branching node.
   $\$ \notin \Sigma$ to $T$, we guarantee
   that no suffix is a prefix of another.
   This makes every suffix end at a distinct leaf, so the tree
-  has exactly $n+1$ leaves (counting $\$$).
+  has exactly $n+1$ leaves (counting $\$$);
+  see Figure~\ref{fig:stree-cacao} for the result on \texttt{cacao}.
 }
 
 \begin{figure}[H]
@@ -758,7 +761,7 @@ $f(T^{i-1}) = T^{i-1}[2{,}]$,\;
 $f(T^{i-1}[2{,}]) = T^{i-1}[3{,}]$,\; and so on down to
 $f(\varepsilon) = \bot$.
 This chain of suffix links is called the \textbf{boundary path} of
-$\mathrm{STrie}(T^{i-1})$.
+$\mathrm{STrie}(T^{i-1})$ (Figure~\ref{fig:boundary-path}).
 
 \begin{figure}[H]
 \centering
@@ -834,7 +837,8 @@ so is every suffix of $\alpha$ followed by $t_i$).
           boundary path (from the top) that already has a
           $t_i$-transition (and is not a leaf).
   \end{itemize}
-  The boundary path is thus partitioned into three zones:
+  The boundary path is thus partitioned into three zones
+  (Figure~\ref{fig:boundary-zones}):
   \begin{enumerate}[nosep]
     \item $s_1, \ldots, s_{j-1}$: leaves --- extending an existing
           branch (the $t_i$ is appended to the path leading to the leaf).
@@ -896,6 +900,15 @@ so is every suffix of $\alpha$ followed by $t_i$).
 \caption{%
   Partition of the boundary path into three zones when adding
   character $t_i$.
+  \textbf{Zone~1} (red): states $s_1, \ldots, s_{j-1}$ are leaves
+  whose edges extend passively via open transitions --- no work needed.
+  \textbf{Zone~2} (orange): states $s_j, \ldots, s_{j'-1}$ are
+  non-leaf states that lack a $t_i$-transition --- the algorithm
+  creates a new branch from each.
+  \textbf{Zone~3} (green): from the endpoint $s_{j'}$ onwards, every
+  state already has a $t_i$-transition, so the traversal stops.
+  Only Zone~2 requires explicit work; the other two are either free or
+  skipped entirely.
 }
 \label{fig:boundary-zones}
 \end{figure}

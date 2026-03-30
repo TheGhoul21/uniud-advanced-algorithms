@@ -24,7 +24,7 @@ to a digit: for instance, with $\Sigma = \{\texttt{a}, \texttt{b},
 \texttt{c}, \texttt{d}\}$ we set $\texttt{a} \mapsto 0$,
 $\texttt{b} \mapsto 1$, $\texttt{c} \mapsto 2$, $\texttt{d} \mapsto 3$.
 This mapping takes $\Oh{n + m}$ time and is done once as a
-preprocessing step.
+preprocessing step (Figure~\ref{fig:rk-char-to-digit}).
 
 % ── Figure: string-to-number mapping ─────────────────────
 \begin{figure}[H]
@@ -162,6 +162,9 @@ Taking everything modulo $q$:
 \]
 The value $h = d^{m-1} \bmod q$ is precomputed once in $\Oh{m}$ time (or
 $\Oh{\log m}$ using fast exponentiation).
+Figure~\ref{fig:rk-rolling-hash} shows the process visually: the
+leftmost digit is removed, everything shifts left, and the new digit
+enters on the right --- all in $\Oh{1}$ arithmetic operations.
 
 % ── Figure: rolling hash ─────────────────────────────────
 \begin{figure}[H]

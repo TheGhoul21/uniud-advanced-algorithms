@@ -449,12 +449,13 @@ directly to shift $s=8$ and resume comparing from $P\kern0pt[3]$, skipping five 
 
 Basically what the example shows is that if we take the longest prefix\aside{When we say suffix here we mean suffix of the \textbf{matched} portion of $P$, not of $P$ itself. In the example, $\alpha$ is a suffix of $P[1\ldots7]$ but not of the whole $P$.} of $P$ that is also a suffix of the \textbf{matched} portion of $P$, we can shift the pattern so that this prefix is now aligned with the suffix --- and we can resume the search from the character right after this prefix, since we know it must match (otherwise we would have had a mismatch earlier). In other words we have saved some work (namely, five shift indexes) by leveraging the information from the previous comparisons, instead of starting over from scratch, from the very next shift.
 
-But is this correct? Or do we miss some potential matches by jumping directly to $s=8$?
+But is this correct? Or do we miss some potential matches by jumping directly to $s=8$ (Figure~\ref{fig:kmp-shift-idea})?
 
 \begin{figure}[H]
   \centering
   \includegraphics[width=0.38\textwidth]{images/michael-scott.png}
   \caption*{\small ``You miss 100\% of the shots you don't take.'' --- Michael Scott}
+  \label{fig:kmp-shift-idea}
 \end{figure}
 
 Well, it turns out that this is indeed correct, and we won't miss any matches by doing this. The KMP algorithm is based on this very idea, and it guarantees that we will find all occurrences of $P$ in $T$ without missing any, while also achieving a much better time complexity than the naive approach.
@@ -3295,7 +3296,7 @@ are still candidates --- we do not need separate passes for each of them.
 Only when we reach the branching point (depth~2, where one path continues
 with \texttt{a} and the other with \texttt{h}) do the two patterns
 diverge, and the tree automatically ``picks'' the right one based on
-the next character of $T$.
+the next character of $T$ (see Figure~\ref{fig:ktree-scan}).
 
 % ── Figure: single pass over T via K(P) ──────────────────────────
 \begin{figure}[H]
