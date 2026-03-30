@@ -210,6 +210,13 @@
     "text": "Aho-Corasick: Failure Links & Output Links\nThe keyword tree alone restarts from the root at every position. The Aho-Corasick automaton adds two types of pointers:\n\nFailure links (red dashed): when the descent gets stuck, jump to the longest proper suffix of the current path that is also a prefix of some pattern.\nOutput links (green dotted): chain together all patterns that end along the failure-link path, so patterns ending at internal nodes are not missed.\n\n\n\n\n\n\n\n\n\n\nviewof P_ac = Inputs.text({\n  label: \"Patterns (comma-separated):\",\n  value: \"he, she, his, hers\",\n  width: 500\n})"
   },
   {
+    "objectID": "notebooks/07-keyword-tree.html#aho-corasick-search-step-by-step",
+    "href": "notebooks/07-keyword-tree.html#aho-corasick-search-step-by-step",
+    "title": "Keyword Tree — Multiple Pattern Matching",
+    "section": "Aho-Corasick Search — Step by Step",
+    "text": "Aho-Corasick Search — Step by Step\nWatch the automaton process the text character by character. At each step:\n\nBlue node = current position in the automaton\nRed dashed arrow = failure link followed (when the descent gets stuck)\nGreen nodes = patterns reported (via direct match or output link chain)\n\n\n\n\n\n\n\n\n\n\nviewof T_ac_search = Inputs.text({\n  label: \"T:\",\n  value: \"ushers\",\n  width: 500\n})\nviewof P_ac_search = Inputs.text({\n  label: \"Patterns (comma-separated):\",\n  value: \"he, she, his, hers\",\n  width: 500\n})\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nviewof step_ac = Inputs.range([0, ac_max_step], {step: 1, value: 0, label: \"Step:\"})"
+  },
+  {
     "objectID": "notebooks/09-shift-and.html",
     "href": "notebooks/09-shift-and.html",
     "title": "Shift-And Algorithm",
